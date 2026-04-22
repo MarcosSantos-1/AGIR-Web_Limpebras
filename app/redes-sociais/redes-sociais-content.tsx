@@ -59,7 +59,8 @@ function matchesFilter(post: SocialPost, filter: FilterId): boolean {
   return true;
 }
 
-export function RedesSociaisContent() {
+/** Conteúdo da página, dentro de AppShell, para o hook do modal de redes ter contexto. */
+function RedesSociaisPageBody() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -110,10 +111,7 @@ export function RedesSociaisContent() {
   });
 
   return (
-    <AppShell
-      title="Redes sociais"
-      subtitle="Conteúdos, ideias, postagens e acompanhamento de métricas"
-    >
+    <>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="relative min-w-0 flex-1">
           <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
@@ -349,6 +347,17 @@ export function RedesSociaisContent() {
           <p className="text-sm text-zinc-400">Ajuste filtros ou busca</p>
         </div>
       )}
+    </>
+  );
+}
+
+export function RedesSociaisContent() {
+  return (
+    <AppShell
+      title="Redes sociais"
+      subtitle="Conteúdos, ideias, postagens e acompanhamento de métricas"
+    >
+      <RedesSociaisPageBody />
     </AppShell>
   );
 }
