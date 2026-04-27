@@ -22,6 +22,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import {
   Waypoints,
@@ -35,7 +44,10 @@ import {
   Megaphone,
   Layers,
   Type,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
+import { MAPA_PONTOS_VICIO_FORM } from "@/lib/map-features";
 
 export type NovaAcaoTipo = "acao-visita" | "revitalizacao";
 
@@ -56,6 +68,9 @@ export function useNovaAcao() {
 }
 
 const TIPOS_SERVICO = [
+  { value: "visita-tecnica", label: "Visita técnica" },
+  { value: "reuniao", label: "Reunião" },
+  { value: "acao-ambiental", label: "Ação ambiental" },
   { value: "coleta-seletiva", label: "Coleta seletiva / orientação" },
   { value: "fiscalizacao", label: "Fiscalização / vistoria" },
   { value: "panfletagem", label: "Panfletagem" },
@@ -151,14 +166,32 @@ function AcaoVisitaDialog({
   );
   const [fotosError, setFotosError] = React.useState(false);
   const [fotosCount, setFotosCount] = React.useState(0);
+  const [tipoServico, setTipoServico] = React.useState("");
+  const [panfletagemRealizada, setPanfletagemRealizada] = React.useState(false);
+  const [unidadesPanfletos, setUnidadesPanfletos] = React.useState("");
+
+  const isTipoPanfletagem = tipoServico === "panfletagem";
+  const panfletPodeExibir = tipoServico.length > 0;
 
   React.useEffect(() => {
     if (open) {
       setSituacao("agendar");
       setFotosError(false);
       setFotosCount(0);
+      setTipoServico("");
+      setPanfletagemRealizada(false);
+      setUnidadesPanfletos("");
     }
   }, [open]);
+
+  React.useEffect(() => {
+    if (tipoServico === "panfletagem") {
+      setPanfletagemRealizada(true);
+    } else {
+      setPanfletagemRealizada(false);
+      setUnidadesPanfletos("");
+    }
+  }, [tipoServico]);
 
   React.useEffect(() => {
     if (situacao === "agendar") {
@@ -281,7 +314,16 @@ function AcaoVisitaDialog({
                     >
                       Tipo de serviço
                     </Label>
-                    <Select name="tipo-servico" required>
+                    <input
+                      type="hidden"
+                      name="tipo-servico"
+                      value={tipoServico}
+                    />
+                    <Select
+                      value={tipoServico || undefined}
+                      onValueChange={setTipoServico}
+                      required
+                    >
                       <SelectTrigger
                         id="tipo-servico"
                         className="h-11 w-full min-w-0 border-zinc-200 bg-white"
@@ -315,6 +357,99 @@ function AcaoVisitaDialog({
                   </div>
                 </div>
               </SectionBox>
+
+              {panfletPodeExibir && (
+                <SectionBox icon={Megaphone} title="Panfletagem no local">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <Label
+                        htmlFor="unidades-panf-acao"
+                        className="text-zinc-600"
+                      >
+                        Unidades distribuídas
+                      </Label>
+                      {(!isTipoPanfletagem && !panfletagemRealizada) ? (
+                        <input
+                          type="hidden"
+                          name="unidades-panfletos"
+                          value="0"
+                        />
+                      ) : null}
+                      <Input
+                        id="unidades-panf-acao"
+                        name={
+                          isTipoPanfletagem || panfletagemRealizada
+                            ? "unidades-panfletos"
+                            : undefined
+                        }
+                        type="number"
+                        min={0}
+                        placeholder="0"
+                        className="h-11 max-w-xs border-zinc-200"
+                        value={unidadesPanfletos}
+                        onChange={(e) =>
+                          setUnidadesPanfletos(
+                            (isTipoPanfletagem || panfletagemRealizada)
+                              ? e.target.value
+                              : "",
+                          )
+                        }
+                        disabled={!isTipoPanfletagem && !panfletagemRealizada}
+                      />
+                    </div>
+                    <div
+                      className={cn(
+                        "flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2.5 ring-1",
+                        isTipoPanfletagem
+                          ? "bg-amber-50/80 ring-amber-200"
+                          : "bg-white ring-zinc-200",
+                      )}
+                    >
+                      <Checkbox
+                        id="panf-real-acao"
+                        name="panfletagemRealizada"
+                        disabled={isTipoPanfletagem}
+                        checked={isTipoPanfletagem || panfletagemRealizada}
+                        onCheckedChange={(c) => {
+                          if (isTipoPanfletagem) return;
+                          const next = c === true;
+                          setPanfletagemRealizada(next);
+                          if (!next) setUnidadesPanfletos("");
+                        }}
+                      />
+                      <input
+                        type="hidden"
+                        name="panfletagemRealizada"
+                        value={
+                          isTipoPanfletagem || panfletagemRealizada
+                            ? "on"
+                            : "off"
+                        }
+                      />
+                      <Label
+                        htmlFor="panf-real-acao"
+                        className={cn(
+                          "text-sm font-medium leading-tight",
+                          isTipoPanfletagem
+                            ? "cursor-default text-amber-900"
+                            : "cursor-pointer text-zinc-700",
+                        )}
+                      >
+                        {isTipoPanfletagem
+                          ? "Panfletagem (natureza da ação — sempre ativa)"
+                          : "Panfletagem realizada"}
+                      </Label>
+                    </div>
+                  </div>
+                  {isTipoPanfletagem && (
+                    <p className="mt-2 text-xs text-zinc-500">
+                      Para o tipo &quot;Panfletagem&quot;, a ação trata
+                      exclusivamente de panfletagem; não é possível
+                      desativar.
+                    </p>
+                  )}
+                </SectionBox>
+              )}
 
               <SectionBox icon={MapPin} title="Quando e onde">
                 <div className={fieldGrid()}>
@@ -482,6 +617,26 @@ function RevitalizacaoDialog({
   open: boolean;
   onOpenChange: (o: boolean) => void;
 }) {
+  const [pontoViciadoId, setPontoViciadoId] = React.useState<string>("");
+  const [pvComboOpen, setPvComboOpen] = React.useState(false);
+  const [panfletagemRealizada, setPanfletagemRealizada] = React.useState(false);
+  const [unidadesPanfletos, setUnidadesPanfletos] = React.useState("");
+
+  React.useEffect(() => {
+    if (open) {
+      setPontoViciadoId("");
+      setPvComboOpen(false);
+      setPanfletagemRealizada(false);
+      setUnidadesPanfletos("");
+    }
+  }, [open]);
+
+  const pontoSelecionado = pontoViciadoId
+    ? MAPA_PONTOS_VICIO_FORM.find((f) => f.id === pontoViciadoId)
+    : undefined;
+  const enderecoPonto = pontoSelecionado?.address?.trim() ?? "";
+  const subprefeitura = pontoSelecionado?.subprefeitura?.trim() ?? "";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -515,6 +670,102 @@ function RevitalizacaoDialog({
             )}
           >
             <div className="space-y-5">
+              <input type="hidden" name="pontoViciadoId" value={pontoViciadoId} />
+              <input
+                type="hidden"
+                name="subprefeituraPontoViciado"
+                value={subprefeitura}
+              />
+              <SectionBox icon={MapPin} title="Ponto viciado (revitalização)">
+                <div className={cn(fieldGrid(), "items-end gap-4")}>
+                  <div className="space-y-2 sm:col-span-1">
+                    <Label className="text-zinc-600">Ponto viciado</Label>
+                    <Popover open={pvComboOpen} onOpenChange={setPvComboOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          role="combobox"
+                          variant="outline"
+                          aria-expanded={pvComboOpen}
+                          className="h-11 w-full min-w-0 justify-between border-zinc-200 font-normal"
+                        >
+                          {pontoViciadoId ? (
+                            <span className="truncate text-left text-zinc-800">
+                              {pontoViciadoId} — {enderecoPonto}
+                            </span>
+                          ) : (
+                            <span className="text-zinc-500">
+                              Selecione por ID e endereço
+                            </span>
+                          )}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="w-[var(--radix-popover-trigger-width)] p-0"
+                        align="start"
+                      >
+                        <Command>
+                          <CommandInput
+                            placeholder="Buscar id ou endereço…"
+                            className="h-11"
+                          />
+                          <CommandList className="max-h-[min(50vh,320px)]">
+                            <CommandEmpty>
+                              Nenhum ponto encontrado.
+                            </CommandEmpty>
+                            <CommandGroup>
+                              {MAPA_PONTOS_VICIO_FORM.map((f) => {
+                                const addr = f.address?.trim() ?? "";
+                                const value = `${f.id} — ${addr}`;
+                                return (
+                                  <CommandItem
+                                    key={f.id}
+                                    value={value}
+                                    onSelect={() => {
+                                      setPontoViciadoId(f.id);
+                                      setPvComboOpen(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4 shrink-0",
+                                        pontoViciadoId === f.id
+                                          ? "opacity-100"
+                                          : "opacity-0",
+                                      )}
+                                    />
+                                    <span className="line-clamp-2 break-words">
+                                      {f.id} — {addr}
+                                    </span>
+                                  </CommandItem>
+                                );
+                              })}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="space-y-2 sm:col-span-1">
+                    <Label
+                      htmlFor="sub-rev"
+                      className="text-zinc-600"
+                    >
+                      Subprefeitura
+                    </Label>
+                    <Input
+                      id="sub-rev"
+                      name="subprefeituraDisplay"
+                      value={subprefeitura}
+                      readOnly
+                      placeholder="Selecione um ponto viciado"
+                      className="h-11 cursor-default border-zinc-200 bg-zinc-100/80"
+                    />
+                  </div>
+                </div>
+              </SectionBox>
+
               <SectionBox icon={Layers} title="Quantitativos">
                 <div className={cn(fieldGrid(), "gap-4")}>
                   <div className="space-y-2">
@@ -585,17 +836,44 @@ function RevitalizacaoDialog({
                   >
                     Unidades distribuídas
                   </Label>
+                  {!panfletagemRealizada ? (
+                    <input
+                      type="hidden"
+                      name="panfletos"
+                      value="0"
+                    />
+                  ) : null}
                   <Input
                     id="panf-q"
-                    name="panfletos"
+                    name={panfletagemRealizada ? "panfletos" : undefined}
                     type="number"
                     min={0}
                     placeholder="0"
                     className="h-11 w-44 border-zinc-200"
+                    value={unidadesPanfletos}
+                    onChange={(e) =>
+                      setUnidadesPanfletos(
+                        panfletagemRealizada ? e.target.value : "",
+                      )
+                    }
+                    disabled={!panfletagemRealizada}
                   />
                 </div>
                 <div className="flex items-center gap-2.5 rounded-xl bg-white px-3 py-2.5 ring-1 ring-zinc-200">
-                  <Checkbox id="panf-feita" name="panfletagemFeita" />
+                  <input
+                    type="hidden"
+                    name="panfletagemFeita"
+                    value={panfletagemRealizada ? "on" : "off"}
+                  />
+                  <Checkbox
+                    id="panf-feita"
+                    checked={panfletagemRealizada}
+                    onCheckedChange={(c) => {
+                      const on = c === true;
+                      setPanfletagemRealizada(on);
+                      if (!on) setUnidadesPanfletos("");
+                    }}
+                  />
                   <Label
                     htmlFor="panf-feita"
                     className="cursor-pointer text-sm font-medium leading-tight text-zinc-700"

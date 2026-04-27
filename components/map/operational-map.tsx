@@ -1,18 +1,21 @@
 "use client";
 
+import { useEffect } from "react";
 import {
   MapContainer,
   TileLayer,
   LayerGroup,
-  LayersControl,
   Marker,
+  Polygon,
+  useMap,
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { defaultMapView } from "@/lib/constants/map";
+import type { MapPolygon } from "@/lib/map-features";
 
 export type OperationalMapPoint = {
-  id: number;
+  id: string;
   type: string;
   position: [number, number];
   recurrent: boolean;
@@ -22,10 +25,7 @@ export type OperationalMapPoint = {
 const typeHex: Record<string, string> = {
   "ponto-viciado": "#ef4444",
   ecoponto: "#10b981",
-  ubs: "#3b82f6",
-  escola: "#8b5cf6",
-  "area-critica": "#f59e0b",
-  revitalizacao: "#22c55e",
+  "nucleo-habitacional": "#f59e0b",
 };
 
 function makeDivIcon(
@@ -63,16 +63,50 @@ const cartoAttribution =
 const esriAttribution =
   "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community";
 
+type BaseLayer = "carto" | "satellite";
+
 type OperationalMapProps = {
   points: OperationalMapPoint[];
-  selectedId: number | null;
-  onSelectPoint: (id: number) => void;
+  polygons: MapPolygon[];
+  selectedId: string | null;
+  onSelectId: (id: string) => void;
+  /** Padrão: CartoDB Positron. */
+  baseLayer?: BaseLayer;
 };
+
+function FitBoundsToData({
+  points,
+  polygons,
+}: {
+  points: OperationalMapPoint[];
+  polygons: MapPolygon[];
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    const b = L.latLngBounds([]);
+    for (const p of points) {
+      b.extend(p.position);
+    }
+    for (const poly of polygons) {
+      for (const pos of poly.positions) {
+        b.extend(pos);
+      }
+    }
+    if (b.isValid()) {
+      map.fitBounds(b, { padding: [40, 40], maxZoom: 14 });
+    }
+  }, [map, points, polygons]);
+
+  return null;
+}
 
 export function OperationalMap({
   points,
+  polygons,
   selectedId,
-  onSelectPoint,
+  onSelectId,
+  baseLayer = "carto",
 }: OperationalMapProps) {
   return (
     <MapContainer
@@ -82,35 +116,52 @@ export function OperationalMap({
       style={{ minHeight: 520 }}
       scrollWheelZoom
     >
-      <LayersControl position="topright">
-        <LayersControl.BaseLayer name="CartoDB Positron" checked>
+      <FitBoundsToData points={points} polygons={polygons} />
+      {baseLayer === "carto" ? (
+        <TileLayer
+          attribution={cartoAttribution}
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          subdomains="abcd"
+          maxZoom={20}
+        />
+      ) : (
+        <LayerGroup>
           <TileLayer
-            attribution={cartoAttribution}
-            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-            subdomains="abcd"
+            attribution={esriAttribution}
+            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
             maxZoom={20}
           />
-        </LayersControl.BaseLayer>
-        <LayersControl.BaseLayer name="Satélite Esri (vias e rótulos)">
-          <LayerGroup>
-            <TileLayer
-              attribution={esriAttribution}
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-              maxZoom={20}
-            />
-            <TileLayer
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}"
-              opacity={1}
-              maxZoom={20}
-            />
-            <TileLayer
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
-              opacity={1}
-              maxZoom={20}
-            />
-          </LayerGroup>
-        </LayersControl.BaseLayer>
-      </LayersControl>
+          <TileLayer
+            url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}"
+            opacity={1}
+            maxZoom={20}
+          />
+          <TileLayer
+            url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
+            opacity={1}
+            maxZoom={20}
+          />
+        </LayerGroup>
+      )}
+
+      {polygons.map((poly) => {
+        const isSel = selectedId === poly.id;
+        return (
+          <Polygon
+            key={poly.id}
+            positions={poly.positions}
+            pathOptions={{
+              color: isSel ? "#b45309" : poly.fillColor,
+              weight: isSel ? 3 : 2,
+              fillColor: poly.fillColor,
+              fillOpacity: isSel ? 0.4 : 0.22,
+            }}
+            eventHandlers={{
+              click: () => onSelectId(poly.id),
+            }}
+          />
+        );
+      })}
 
       {points.map((p) => (
         <Marker
@@ -123,7 +174,7 @@ export function OperationalMap({
             p.occurrences
           )}
           eventHandlers={{
-            click: () => onSelectPoint(p.id),
+            click: () => onSelectId(p.id),
           }}
           zIndexOffset={selectedId === p.id ? 1000 : 0}
         />

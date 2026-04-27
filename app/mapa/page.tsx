@@ -3,7 +3,7 @@
 import { AppShell } from "@/components/layout/app-shell";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Plus,
   Filter,
@@ -11,10 +11,8 @@ import {
   MapPin,
   AlertTriangle,
   Recycle,
-  Building2,
-  GraduationCap,
   Trash2,
-  RefreshCcw,
+  Home,
   X,
   ChevronRight,
   Camera,
@@ -23,7 +21,14 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { OperationalMapPoint } from "@/components/map/operational-map";
-import { formatDateBr } from "@/lib/utils";
+import { formatDateBr, cn } from "@/lib/utils";
+import {
+  getMapaPointById,
+  MAPA_MARKERS,
+  MAPA_POLYGONS,
+  type MapDisplayPoint,
+  type MapPolygon,
+} from "@/lib/map-features";
 
 const OperationalMap = dynamic(
   () =>
@@ -41,148 +46,74 @@ const OperationalMap = dynamic(
 const pointTypes = [
   { id: "ponto-viciado", label: "Ponto Viciado", icon: Trash2, color: "bg-red-500", textColor: "text-red-500" },
   { id: "ecoponto", label: "Ecoponto", icon: Recycle, color: "bg-emerald-500", textColor: "text-emerald-500" },
-  { id: "ubs", label: "UBS", icon: Building2, color: "bg-blue-500", textColor: "text-blue-500" },
-  { id: "escola", label: "Escola", icon: GraduationCap, color: "bg-violet-500", textColor: "text-violet-500" },
-  { id: "area-critica", label: "Área Crítica", icon: AlertTriangle, color: "bg-amber-500", textColor: "text-amber-500" },
-  { id: "revitalizacao", label: "Revitalização", icon: RefreshCcw, color: "bg-green-500", textColor: "text-green-500" },
-];
+  { id: "nucleo-habitacional", label: "Núcleo habitacional", icon: Home, color: "bg-amber-500", textColor: "text-amber-500" },
+] as const;
 
 const statusFilters = [
   { id: "all", label: "Todos" },
   { id: "ativo", label: "Ativo" },
+  { id: "inativo", label: "Inativo" },
   { id: "resolvido", label: "Resolvido" },
   { id: "em-andamento", label: "Em Andamento" },
   { id: "recorrente", label: "Recorrente" },
-];
+] as const;
 
-const mockPoints = [
-  {
-    id: 1,
-    type: "ponto-viciado",
-    title: "Ponto Viciado - R. Silva Jardim",
-    address: "R. Silva Jardim, 450",
-    status: "ativo",
-    lastAction: "2026-04-18",
-    responsible: "Igor Supervisor",
-    recurrent: true,
-    occurrences: 5,
-    position: [-23.5629, -46.6544] as [number, number],
-  },
-  {
-    id: 2,
-    type: "ecoponto",
-    title: "Ecoponto Zona Norte",
-    address: "R. Industrial, 890",
-    status: "ativo",
-    lastAction: "2026-04-20",
-    responsible: "Maria",
-    recurrent: false,
-    occurrences: 0,
-    position: [-23.5011, -46.6789] as [number, number],
-  },
-  {
-    id: 3,
-    type: "ubs",
-    title: "UBS Centro",
-    address: "Av. Principal, 450",
-    status: "ativo",
-    lastAction: "2026-04-15",
-    responsible: "Luciana",
-    recurrent: false,
-    occurrences: 0,
-    position: [-23.5505, -46.6333] as [number, number],
-  },
-  {
-    id: 4,
-    type: "escola",
-    title: "Escola Mun. Nova Esperança",
-    address: "R. das Palmeiras, 123",
-    status: "ativo",
-    lastAction: "2026-04-19",
-    responsible: "Maria",
-    recurrent: false,
-    occurrences: 0,
-    position: [-23.5401, -46.6258] as [number, number],
-  },
-  {
-    id: 5,
-    type: "area-critica",
-    title: "Área Crítica - Marginal",
-    address: "Av. Marginal, km 5",
-    status: "em-andamento",
-    lastAction: "2026-04-17",
-    responsible: "Igor Supervisor",
-    recurrent: true,
-    occurrences: 8,
-    position: [-23.5752, -46.6401] as [number, number],
-  },
-  {
-    id: 6,
-    type: "revitalizacao",
-    title: "Revitalização Praça Central",
-    address: "Praça da República",
-    status: "em-andamento",
-    lastAction: "2026-04-21",
-    responsible: "Igor Supervisor",
-    recurrent: false,
-    occurrences: 0,
-    position: [-23.5436, -46.6356] as [number, number],
-  },
-  {
-    id: 7,
-    type: "ponto-viciado",
-    title: "Ponto Viciado - Terminal",
-    address: "Terminal Rodoviário",
-    status: "resolvido",
-    lastAction: "2026-04-10",
-    responsible: "Luciana",
-    recurrent: false,
-    occurrences: 2,
-    position: [-23.5162, -46.6259] as [number, number],
-  },
-];
+type MapItem = MapDisplayPoint | MapPolygon;
 
 export default function MapaPage() {
-  const [selectedTypes, setSelectedTypes] = useState<string[]>(pointTypes.map((t) => t.id));
+  const [selectedTypes, setSelectedTypes] = useState<string[]>(
+    pointTypes.map((t) => t.id)
+  );
   const [selectedStatus, setSelectedStatus] = useState("all");
-  const [selectedPoint, setSelectedPoint] = useState<typeof mockPoints[0] | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [mapBase, setMapBase] = useState<"carto" | "satellite">("carto");
+
+  const { filteredMarkers, filteredPolygons, visibleCount } = useMemo(() => {
+    const markers = MAPA_MARKERS.filter(
+      (p) => selectedTypes.includes(p.type) && (selectedStatus === "all" || p.status === selectedStatus)
+    );
+    const polygons = MAPA_POLYGONS.filter(
+      (p) => selectedTypes.includes(p.type) && (selectedStatus === "all" || p.status === selectedStatus)
+    );
+    return {
+      filteredMarkers: markers,
+      filteredPolygons: polygons,
+      visibleCount: markers.length + polygons.length,
+    };
+  }, [selectedTypes, selectedStatus]);
+
+  const mapLayerPoints: OperationalMapPoint[] = useMemo(
+    () =>
+      filteredMarkers.map((p) => ({
+        id: p.id,
+        type: p.type,
+        position: p.position,
+        recurrent: p.recurrent,
+        occurrences: p.occurrences,
+      })),
+    [filteredMarkers]
+  );
+
+  const selectedItem: MapItem | null = getMapaPointById(selectedId);
 
   const toggleType = (typeId: string) => {
     setSelectedTypes((prev) =>
-      prev.includes(typeId)
-        ? prev.filter((t) => t !== typeId)
-        : [...prev, typeId]
+      prev.includes(typeId) ? prev.filter((t) => t !== typeId) : [...prev, typeId]
     );
   };
 
-  const filteredPoints = mockPoints.filter((point) => {
-    const typeMatch = selectedTypes.includes(point.type);
-    const statusMatch = selectedStatus === "all" || point.status === selectedStatus;
-    return typeMatch && statusMatch;
-  });
-
-  const mapLayerPoints: OperationalMapPoint[] = filteredPoints.map((p) => ({
-    id: p.id,
-    type: p.type,
-    position: p.position,
-    recurrent: p.recurrent,
-    occurrences: p.occurrences,
-  }));
-
   const getTypeConfig = (type: string) => {
-    return pointTypes.find((t) => t.id === type) || pointTypes[0];
+    return pointTypes.find((t) => t.id === type) ?? pointTypes[0];
   };
 
   return (
     <AppShell title="Mapa Operacional" subtitle="Visualização territorial">
       <div className="flex gap-6">
-        {/* Sidebar Filters */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           className="w-72 shrink-0 space-y-6"
         >
-          {/* Type Filters */}
           <div className="rounded-2xl bg-white p-5 shadow-lg shadow-zinc-200/50">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="font-semibold text-zinc-900">Tipos de Ponto</h3>
@@ -195,6 +126,7 @@ export default function MapaPage() {
                 return (
                   <button
                     key={type.id}
+                    type="button"
                     onClick={() => toggleType(type.id)}
                     className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-all ${
                       isSelected
@@ -219,7 +151,6 @@ export default function MapaPage() {
             </div>
           </div>
 
-          {/* Status Filters */}
           <div className="rounded-2xl bg-white p-5 shadow-lg shadow-zinc-200/50">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="font-semibold text-zinc-900">Status</h3>
@@ -229,6 +160,7 @@ export default function MapaPage() {
               {statusFilters.map((status) => (
                 <button
                   key={status.id}
+                  type="button"
                   onClick={() => setSelectedStatus(status.id)}
                   className={`w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-all ${
                     selectedStatus === status.id
@@ -242,14 +174,12 @@ export default function MapaPage() {
             </div>
           </div>
 
-          {/* Add Point Button */}
           <Button className="w-full rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] py-6 text-white shadow-lg shadow-[#f318e3]/25">
             <Plus className="mr-2 h-5 w-5" />
             Adicionar Ponto
           </Button>
         </motion.div>
 
-        {/* Map Area */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -258,12 +188,11 @@ export default function MapaPage() {
         >
           <div className="absolute inset-0 z-0 h-full w-full min-h-[520px]">
             <OperationalMap
+              baseLayer={mapBase}
               points={mapLayerPoints}
-              selectedId={selectedPoint?.id ?? null}
-              onSelectPoint={(id) => {
-                const p = mockPoints.find((m) => m.id === id) ?? null;
-                setSelectedPoint(p);
-              }}
+              polygons={filteredPolygons}
+              selectedId={selectedId}
+              onSelectId={(id) => setSelectedId(id)}
             />
           </div>
 
@@ -281,18 +210,51 @@ export default function MapaPage() {
             </div>
           </div>
 
-          <div className="pointer-events-none absolute right-4 top-4 z-[1000]">
+          <div className="pointer-events-none absolute right-4 top-4 z-[1000] flex flex-col items-end gap-2">
             <div className="pointer-events-auto rounded-xl bg-white/90 px-4 py-2 shadow-md backdrop-blur-sm">
               <span className="text-sm font-semibold text-zinc-900">
-                {filteredPoints.length}
+                {visibleCount}
               </span>
               <span className="ml-1 text-sm text-zinc-500">pontos visíveis</span>
+            </div>
+            <div
+              className="pointer-events-auto flex items-center overflow-hidden rounded-full border border-zinc-200/80 bg-white/95 p-0.5 shadow-md backdrop-blur-sm"
+              role="group"
+              aria-label="Tipo de mapa de fundo"
+            >
+              <button
+                type="button"
+                title="Mapa padrão (CartoDB Positron)"
+                aria-pressed={mapBase === "carto"}
+                onClick={() => setMapBase("carto")}
+                className={cn(
+                  "rounded-full px-3 py-2 text-lg leading-none transition",
+                  mapBase === "carto"
+                    ? "bg-zinc-900 text-white shadow-sm"
+                    : "text-zinc-500 hover:bg-zinc-100",
+                )}
+              >
+                <span role="img" aria-label="Mapa de ruas">🗺️</span>
+              </button>
+              <button
+                type="button"
+                title="Vista de satélite (Esri)"
+                aria-pressed={mapBase === "satellite"}
+                onClick={() => setMapBase("satellite")}
+                className={cn(
+                  "rounded-full px-3 py-2 text-lg leading-none transition",
+                  mapBase === "satellite"
+                    ? "bg-zinc-900 text-white shadow-sm"
+                    : "text-zinc-500 hover:bg-zinc-100",
+                )}
+              >
+                <span role="img" aria-label="Satélite">🛰️</span>
+              </button>
             </div>
           </div>
         </motion.div>
 
-        {/* Point Detail Panel */}
-        {selectedPoint && (
+        {selectedItem && (
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -301,21 +263,29 @@ export default function MapaPage() {
             <div className="rounded-2xl bg-white p-5 shadow-lg shadow-zinc-200/50">
               <div className="mb-4 flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${getTypeConfig(selectedPoint.type).color}`}>
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl ${getTypeConfig(selectedItem.type).color}`}
+                  >
                     {(() => {
-                      const Icon = getTypeConfig(selectedPoint.type).icon;
+                      const Icon = getTypeConfig(selectedItem.type).icon;
                       return <Icon className="h-5 w-5 text-white" />;
                     })()}
                   </div>
                   <div>
-                    <span className={`text-xs font-medium ${getTypeConfig(selectedPoint.type).textColor}`}>
-                      {getTypeConfig(selectedPoint.type).label}
+                    <span
+                      className={`text-xs font-medium ${getTypeConfig(selectedItem.type).textColor}`}
+                    >
+                      {getTypeConfig(selectedItem.type).label}
                     </span>
-                    <h3 className="font-semibold text-zinc-900">{selectedPoint.title}</h3>
+                    <h3 className="font-semibold text-zinc-900">{selectedItem.title}</h3>
+                    <p className="text-xs font-medium text-zinc-500">
+                      {selectedItem.id}
+                    </p>
                   </div>
                 </div>
                 <button
-                  onClick={() => setSelectedPoint(null)}
+                  type="button"
+                  onClick={() => setSelectedId(null)}
                   className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
                 >
                   <X className="h-4 w-4" />
@@ -325,25 +295,42 @@ export default function MapaPage() {
               <div className="space-y-3 border-t border-zinc-100 pt-4">
                 <div className="flex items-center gap-3 text-sm">
                   <MapPin className="h-4 w-4 text-zinc-400" />
-                  <span className="text-zinc-600">{selectedPoint.address}</span>
+                  <span className="text-zinc-600">{selectedItem.address}</span>
                 </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <Clock className="h-4 w-4 text-zinc-400" />
-                  <span className="text-zinc-600">Última ação: {formatDateBr(selectedPoint.lastAction)}</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <User className="h-4 w-4 text-zinc-400" />
-                  <span className="text-zinc-600">{selectedPoint.responsible}</span>
-                </div>
+                {selectedItem.lastAction && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <Clock className="h-4 w-4 text-zinc-400" />
+                    <span className="text-zinc-600">
+                      Última ação: {formatDateBr(selectedItem.lastAction)}
+                    </span>
+                  </div>
+                )}
+                {selectedItem.responsible && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <User className="h-4 w-4 text-zinc-400" />
+                    <span className="text-zinc-600">{selectedItem.responsible}</span>
+                  </div>
+                )}
+                {selectedItem.detailLines && selectedItem.detailLines.length > 0 && (
+                  <ul className="space-y-2 border-t border-zinc-100 pt-3 text-sm text-zinc-600">
+                    {selectedItem.detailLines.map((d) => (
+                      <li key={`${d.label}-${d.value}`}>
+                        <span className="font-medium text-zinc-700">{d.label}:</span> {d.value}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
 
-              {selectedPoint.recurrent && (
+              {selectedItem.recurrent && selectedItem.occurrences > 0 && (
                 <div className="mt-4 rounded-xl bg-red-50 p-3">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4 text-red-500" />
-                    <span className="text-sm font-medium text-red-700">Ponto Recorrente</span>
+                    <span className="text-sm font-medium text-red-700">Ponto recorrente</span>
                   </div>
-                  <p className="mt-1 text-xs text-red-600">{selectedPoint.occurrences} ocorrências registradas</p>
+                  <p className="mt-1 text-xs text-red-600">
+                    {selectedItem.occurrences} ocorrência(s) registrada(s)
+                  </p>
                 </div>
               )}
 
