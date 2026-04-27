@@ -2,7 +2,7 @@
 
 import { AppShell } from "@/components/layout/app-shell";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Search,
   Filter,
@@ -22,6 +22,9 @@ import {
   Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatDateBr } from "@/lib/utils";
+import { ActionCompletionDialog } from "@/components/acao-registro/action-completion-dialog";
+import type { ActionCompletionPayload } from "@/components/acao-registro/action-completion-dialog";
 
 const statusConfig = {
   concluido: { label: "Concluído", icon: CheckCircle2, color: "bg-emerald-100 text-emerald-700", iconColor: "text-emerald-500" },
@@ -46,7 +49,7 @@ const historyRecords = [
     title: "Revitalização Praça Central",
     type: "revitalizacao",
     status: "concluido",
-    date: "2025-04-21",
+    date: "2026-04-21",
     time: "08:00 - 12:00",
     location: "Praça da República - Centro",
     responsible: "Igor Supervisor",
@@ -59,7 +62,7 @@ const historyRecords = [
     title: "Vistoria Ecoponto Zona Norte",
     type: "vistoria",
     status: "concluido",
-    date: "2025-04-20",
+    date: "2026-04-20",
     time: "14:00 - 16:00",
     location: "R. Industrial, 890 - Zona Norte",
     responsible: "Maria",
@@ -72,7 +75,7 @@ const historyRecords = [
     title: "Limpeza Ponto Viciado R. Silva Jardim",
     type: "limpeza",
     status: "parcial",
-    date: "2025-04-18",
+    date: "2026-04-18",
     time: "09:00 - 11:30",
     location: "R. Silva Jardim, 450 - Centro",
     responsible: "Luciana",
@@ -85,7 +88,7 @@ const historyRecords = [
     title: "Ação Educativa Escola Municipal",
     type: "acao-ambiental",
     status: "concluido",
-    date: "2025-04-19",
+    date: "2026-04-19",
     time: "08:30 - 11:30",
     location: "Escola Mun. Nova Esperança",
     responsible: "Maria",
@@ -98,7 +101,7 @@ const historyRecords = [
     title: "Fiscalização Setor Industrial",
     type: "fiscalizacao",
     status: "concluido",
-    date: "2025-04-17",
+    date: "2026-04-17",
     time: "09:00 - 12:00",
     location: "R. Industrial, 500-800",
     responsible: "Igor Supervisor",
@@ -111,7 +114,7 @@ const historyRecords = [
     title: "Visita Técnica UBS Centro",
     type: "visita-tecnica",
     status: "concluido",
-    date: "2025-04-15",
+    date: "2026-04-15",
     time: "10:00 - 11:00",
     location: "Av. Principal, 450 - Centro",
     responsible: "Luciana",
@@ -124,7 +127,7 @@ const historyRecords = [
     title: "Reunião Comunitária - Bairro Jardim",
     type: "visita-institucional",
     status: "concluido",
-    date: "2025-04-14",
+    date: "2026-04-14",
     time: "19:00 - 21:00",
     location: "Centro Comunitário Jardim",
     responsible: "Igor Supervisor",
@@ -137,7 +140,7 @@ const historyRecords = [
     title: "Limpeza Área Crítica Marginal",
     type: "limpeza",
     status: "cancelado",
-    date: "2025-04-12",
+    date: "2026-04-12",
     time: "08:00 - 12:00",
     location: "Av. Marginal, km 5",
     responsible: "Igor Supervisor",
@@ -150,7 +153,7 @@ const historyRecords = [
     title: "Panfletagem — Conscientização descarte correto",
     type: "panfletagem",
     status: "concluido",
-    date: "2025-04-16",
+    date: "2026-04-16",
     time: "08:00 - 13:00",
     location: "Praça da República e entorno — Centro",
     responsible: "Igor Supervisor",
@@ -166,17 +169,124 @@ const historyRecords = [
   },
 ];
 
+const HISTORICO_EDITS_KEY = "agir_historico_v1";
+const HISTORICO_DELETED_KEY = "agir_historico_deleted_v1";
+
+function splitHistoryTime(timeStr: string): { start: string; end: string } {
+  const p = timeStr.split(/\s*[-–—]\s*/);
+  if (p.length >= 2) {
+    return { start: p[0]!.trim(), end: p[1]!.trim() };
+  }
+  return { start: timeStr.trim(), end: "" };
+}
+
 export default function HistoricoPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [expandedRecord, setExpandedRecord] = useState<number | null>(null);
+  const [historicoEdits, setHistoricoEdits] = useState<
+    Record<number, ActionCompletionPayload>
+  >({});
+  const [hiddenRecordIds, setHiddenRecordIds] = useState<Set<number>>(
+    new Set(),
+  );
+  const [editingRecordId, setEditingRecordId] = useState<number | null>(null);
 
-  const filteredRecords = historyRecords.filter((record) => {
+  useEffect(() => {
+    try {
+      const rawD = localStorage.getItem(HISTORICO_DELETED_KEY);
+      if (rawD) {
+        const a = JSON.parse(rawD) as number[];
+        setHiddenRecordIds(new Set(a));
+      }
+    } catch {
+      /* ignore */
+    }
+    try {
+      const raw = localStorage.getItem(HISTORICO_EDITS_KEY);
+      if (raw) {
+        const p = JSON.parse(raw) as Record<string, ActionCompletionPayload>;
+        setHistoricoEdits(
+          Object.fromEntries(
+            Object.entries(p).map(([k, v]) => [Number(k), v]),
+          ) as Record<number, ActionCompletionPayload>,
+        );
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const persistHistorico = (id: number, payload: ActionCompletionPayload) => {
+    setHistoricoEdits((prev) => {
+      const next = { ...prev, [id]: payload };
+      try {
+        localStorage.setItem(HISTORICO_EDITS_KEY, JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  };
+
+  const mergeRecord = (record: (typeof historyRecords)[0]) => {
+    const p = historicoEdits[record.id];
+    if (!p) {
+      return { ...record, extraPhotos: [] as string[] };
+    }
+    const timeDisplay =
+      p.timeStart && p.timeEnd
+        ? `${p.timeStart} - ${p.timeEnd}`
+        : p.timeStart || record.time;
+    return {
+      ...record,
+      title: p.title !== undefined && p.title !== "" ? p.title : record.title,
+      date: p.date ?? record.date,
+      time: timeDisplay,
+      location: p.location ?? record.location,
+      responsible: p.responsible ?? record.responsible,
+      description: p.description,
+      observations: p.observations,
+      extraPhotos: p.photoDataUrls ?? [],
+    };
+  };
+
+  const deleteHistoricoRecord = (id: number) => {
+    setHiddenRecordIds((prev) => {
+      const n = new Set(prev);
+      n.add(id);
+      try {
+        localStorage.setItem(HISTORICO_DELETED_KEY, JSON.stringify([...n]));
+      } catch {
+        /* ignore */
+      }
+      return n;
+    });
+    setHistoricoEdits((prev) => {
+      if (!(id in prev)) return prev;
+      const { [id]: _removed, ...rest } = prev;
+      try {
+        localStorage.setItem(HISTORICO_EDITS_KEY, JSON.stringify(rest));
+      } catch {
+        /* ignore */
+      }
+      return rest;
+    });
+    setExpandedRecord((e) => (e === id ? null : e));
+  };
+
+  const visibleRecords = historyRecords.filter(
+    (r) => !hiddenRecordIds.has(r.id),
+  );
+
+  const filteredRecords = visibleRecords.filter((record) => {
+    const row = mergeRecord(record);
+    const q = searchQuery.toLowerCase();
     const searchMatch =
-      record.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      record.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      record.responsible.toLowerCase().includes(searchQuery.toLowerCase());
+      row.title.toLowerCase().includes(q) ||
+      row.location.toLowerCase().includes(q) ||
+      row.responsible.toLowerCase().includes(q);
     const typeMatch = selectedType === "all" || record.type === selectedType;
     const statusMatch = selectedStatus === "all" || record.status === selectedStatus;
     return searchMatch && typeMatch && statusMatch;
@@ -185,6 +295,14 @@ export default function HistoricoPage() {
   const toggleExpand = (id: number) => {
     setExpandedRecord(expandedRecord === id ? null : id);
   };
+
+  const editingRecordBase =
+    editingRecordId != null
+      ? historyRecords.find((r) => r.id === editingRecordId)
+      : undefined;
+  const editingMerged = editingRecordBase
+    ? mergeRecord(editingRecordBase)
+    : null;
 
   return (
     <AppShell title="Histórico" subtitle="Registro oficial de ações realizadas">
@@ -234,7 +352,7 @@ export default function HistoricoPage() {
           className="rounded-2xl bg-white p-5 shadow-lg shadow-zinc-200/50"
         >
           <p className="text-sm font-medium text-zinc-500">Total de Registros</p>
-          <p className="mt-2 text-3xl font-semibold text-zinc-900">{historyRecords.length}</p>
+          <p className="mt-2 text-3xl font-semibold text-zinc-900">{visibleRecords.length}</p>
         </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -244,7 +362,7 @@ export default function HistoricoPage() {
         >
           <p className="text-sm font-medium text-zinc-500">Concluídos</p>
           <p className="mt-2 text-3xl font-semibold text-emerald-600">
-            {historyRecords.filter((r) => r.status === "concluido").length}
+            {visibleRecords.filter((r) => r.status === "concluido").length}
           </p>
         </motion.div>
         <motion.div
@@ -255,7 +373,7 @@ export default function HistoricoPage() {
         >
           <p className="text-sm font-medium text-zinc-500">Parciais</p>
           <p className="mt-2 text-3xl font-semibold text-amber-600">
-            {historyRecords.filter((r) => r.status === "parcial").length}
+            {visibleRecords.filter((r) => r.status === "parcial").length}
           </p>
         </motion.div>
         <motion.div
@@ -266,7 +384,7 @@ export default function HistoricoPage() {
         >
           <p className="text-sm font-medium text-zinc-500">Total de Fotos</p>
           <p className="mt-2 text-3xl font-semibold text-[#9b0ba6]">
-            {historyRecords.reduce((sum, r) => sum + r.photos, 0)}
+            {visibleRecords.reduce((sum, r) => sum + r.photos, 0)}
           </p>
         </motion.div>
       </div>
@@ -278,6 +396,7 @@ export default function HistoricoPage() {
 
         <div className="space-y-4">
           {filteredRecords.map((record, index) => {
+            const row = mergeRecord(record);
             const status = statusConfig[record.status as keyof typeof statusConfig];
             const type = typeConfig[record.type as keyof typeof typeConfig];
             const StatusIcon = status.icon;
@@ -305,7 +424,7 @@ export default function HistoricoPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-3">
-                        <h4 className="font-semibold text-zinc-900">{record.title}</h4>
+                        <h4 className="font-semibold text-zinc-900">{row.title}</h4>
                         <span className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${status.color}`}>
                           <StatusIcon className={`h-3 w-3 ${status.iconColor}`} />
                           {status.label}
@@ -315,23 +434,23 @@ export default function HistoricoPage() {
                       <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-zinc-500">
                         <span className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
-                          {record.date}
+                          {formatDateBr(row.date)}
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="h-4 w-4" />
-                          {record.time}
+                          {row.time}
                         </span>
                         <span className="flex items-center gap-1">
                           <MapPin className="h-4 w-4" />
-                          {record.location}
+                          {row.location}
                         </span>
                         <span className="flex items-center gap-1">
                           <User className="h-4 w-4" />
-                          {record.responsible}
+                          {row.responsible}
                         </span>
                         <span className="flex items-center gap-1">
                           <Image className="h-4 w-4" />
-                          {record.photos} fotos
+                          {record.photos + row.extraPhotos.length} fotos
                         </span>
                       </div>
                     </div>
@@ -343,7 +462,7 @@ export default function HistoricoPage() {
                         className="h-9 gap-1.5 rounded-lg text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
                         onClick={(e) => {
                           e.stopPropagation();
-                          /* persistência + edição em etapa seguinte */
+                          setEditingRecordId(record.id);
                         }}
                       >
                         <Pencil className="h-3.5 w-3.5" />
@@ -427,18 +546,18 @@ export default function HistoricoPage() {
                       <div className="grid grid-cols-2 gap-6">
                         <div>
                           <p className="text-xs font-medium uppercase text-zinc-400">O que foi feito</p>
-                          <p className="mt-2 text-sm text-zinc-700">{record.description}</p>
+                          <p className="mt-2 text-sm text-zinc-700">{row.description}</p>
                         </div>
                         <div>
                           <p className="text-xs font-medium uppercase text-zinc-400">Observações</p>
-                          <p className="mt-2 text-sm text-zinc-700">{record.observations}</p>
+                          <p className="mt-2 text-sm text-zinc-700">{row.observations}</p>
                         </div>
                       </div>
 
-                      {record.photos > 0 && (
+                      {(record.photos > 0 || row.extraPhotos.length > 0) && (
                         <div className="mt-4">
                           <p className="text-xs font-medium uppercase text-zinc-400">Evidências</p>
-                          <div className="mt-2 flex gap-2">
+                          <div className="mt-2 flex flex-wrap gap-2">
                             {[...Array(Math.min(record.photos, 4))].map((_, i) => (
                               <div
                                 key={i}
@@ -450,6 +569,18 @@ export default function HistoricoPage() {
                                 +{record.photos - 4}
                               </div>
                             )}
+                            {row.extraPhotos.map((url, i) => (
+                              <div
+                                key={`ex-${i}`}
+                                className="h-16 w-16 overflow-hidden rounded-lg border border-zinc-200"
+                              >
+                                <img
+                                  src={url}
+                                  alt=""
+                                  className="h-full w-full object-cover"
+                                />
+                              </div>
+                            ))}
                           </div>
                         </div>
                       )}
@@ -484,6 +615,54 @@ export default function HistoricoPage() {
           </p>
         </div>
       )}
+
+      <ActionCompletionDialog
+        key={editingRecordId ?? "off"}
+        open={editingRecordId != null}
+        onOpenChange={(o) => {
+          if (!o) setEditingRecordId(null);
+        }}
+        title={
+          editingMerged
+            ? `Editar registro — ${editingMerged.title}`
+            : ""
+        }
+        subtitle="Alterações salvas neste dispositivo (localStorage)."
+        showMetaFields
+        showDeleteButton
+        onDelete={
+          editingRecordId != null
+            ? () => {
+                deleteHistoricoRecord(editingRecordId);
+                setEditingRecordId(null);
+              }
+            : undefined
+        }
+        initial={(() => {
+          if (!editingRecordBase) {
+            return { description: "", observations: "", photoDataUrls: [] };
+          }
+          const r = editingRecordBase;
+          const p = historicoEdits[r.id];
+          const { start, end } = splitHistoryTime(r.time);
+          return {
+            title: p?.title ?? r.title,
+            date: p?.date ?? r.date,
+            timeStart: p?.timeStart ?? start,
+            timeEnd: p?.timeEnd ?? end,
+            location: p?.location ?? r.location,
+            responsible: p?.responsible ?? r.responsible,
+            description: p?.description ?? r.description,
+            observations: p?.observations ?? r.observations,
+            photoDataUrls: p?.photoDataUrls ?? [],
+          };
+        })()}
+        submitLabel="Salvar"
+        onSubmit={(payload) => {
+          if (editingRecordId == null) return;
+          persistHistorico(editingRecordId, payload);
+        }}
+      />
     </AppShell>
   );
 }

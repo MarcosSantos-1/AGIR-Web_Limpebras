@@ -68,7 +68,7 @@ export const socialPosts: SocialPost[] = [
   {
     id: 1,
     status: "agendado",
-    date: "22/04/2025",
+    date: "2026-04-22",
     tipo: "Reel",
     tema: "Dicas de descarte correto — Ecoponto",
     responsavel: "Maria",
@@ -82,7 +82,7 @@ export const socialPosts: SocialPost[] = [
   {
     id: 2,
     status: "rascunho",
-    date: "23/04/2025",
+    date: "2026-04-23",
     tipo: "Post",
     tema: "Campanha de conscientização — carrossel",
     responsavel: "Luciana",
@@ -97,7 +97,7 @@ export const socialPosts: SocialPost[] = [
   {
     id: 3,
     status: "publicado",
-    date: "20/04/2025",
+    date: "2026-04-20",
     tipo: "Story",
     tema: "Bastidores da ação no bairro Jardim",
     responsavel: "Igor Supervisor",
@@ -107,7 +107,7 @@ export const socialPosts: SocialPost[] = [
     visualizacoes: 1240,
     curtidas: 86,
     compartilhamentos: 12,
-    metricasAtualizadasEm: "21/04/2025 — 18:42",
+    metricasAtualizadasEm: "21/04/2026 — 18:42",
     fotos: [
       { id: 6, color: "bg-sky-200" },
       { id: 7, color: "bg-sky-100" },
@@ -116,7 +116,7 @@ export const socialPosts: SocialPost[] = [
   {
     id: 4,
     status: "agendado",
-    date: "25/04/2025",
+    date: "2026-04-25",
     tipo: "Post",
     tema: "Resultados da revitalização — antes e depois",
     responsavel: "Maria",
@@ -129,7 +129,7 @@ export const socialPosts: SocialPost[] = [
   {
     id: 5,
     status: "publicado",
-    date: "18/04/2025",
+    date: "2026-04-18",
     tipo: "Post",
     tema: "Antes e depois — Praça Central",
     responsavel: "Igor Supervisor",
@@ -139,7 +139,7 @@ export const socialPosts: SocialPost[] = [
     visualizacoes: 8420,
     curtidas: 512,
     compartilhamentos: 89,
-    metricasAtualizadasEm: "22/04/2025 — 09:15",
+    metricasAtualizadasEm: "22/04/2026 — 09:15",
     fotos: [
       { id: 10, color: "bg-zinc-300" },
       { id: 11, color: "bg-emerald-200" },
@@ -148,7 +148,7 @@ export const socialPosts: SocialPost[] = [
   {
     id: 6,
     status: "rascunho",
-    date: "26/04/2025",
+    date: "2026-04-26",
     tipo: "Reel",
     tema: "Entrevista com educador ambiental (teaser 15s)",
     responsavel: "Luciana",

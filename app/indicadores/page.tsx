@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { formatDateBr } from "@/lib/utils";
 import {
   BarChart,
   Bar,
@@ -152,7 +153,7 @@ const communicationKpis = [
 
 const socialContentRows = [
   {
-    date: "2025-04-18",
+    date: "2026-04-18",
     tipo: "Reel" as const,
     tema: "Coleta seletiva no bairro",
     status: "publicado" as const,
@@ -160,7 +161,7 @@ const socialContentRows = [
     link: "instagram.com/p/...",
   },
   {
-    date: "2025-04-20",
+    date: "2026-04-20",
     tipo: "Post" as const,
     tema: "Dica da semana: compostagem",
     status: "rascunho" as const,
@@ -168,7 +169,7 @@ const socialContentRows = [
     link: "—",
   },
   {
-    date: "2025-04-22",
+    date: "2026-04-22",
     tipo: "Story" as const,
     tema: "Bastidores | Ecoponto",
     status: "agendado" as const,
@@ -179,7 +180,7 @@ const socialContentRows = [
 
 const panfletagemRows = [
   {
-    date: "2025-04-15",
+    date: "2026-04-15",
     equipe: "Igor, Maria, Luciana",
     panfletos: 800,
     locais: 4,
@@ -187,7 +188,7 @@ const panfletagemRows = [
     obs: "Praças e terminal",
   },
   {
-    date: "2025-04-19",
+    date: "2026-04-19",
     equipe: "Maria, Luciana",
     panfletos: 520,
     locais: 3,
@@ -288,7 +289,7 @@ export default function IndicadoresPage() {
               <TableBody>
                 {socialContentRows.map((row) => (
                   <TableRow key={`${row.date}-${row.tema}`}>
-                    <TableCell className="whitespace-nowrap text-zinc-600">{row.date}</TableCell>
+                    <TableCell className="whitespace-nowrap text-zinc-600">{formatDateBr(row.date)}</TableCell>
                     <TableCell>{row.tipo}</TableCell>
                     <TableCell className="max-w-[200px]">{row.tema}</TableCell>
                     <TableCell>
@@ -337,7 +338,7 @@ export default function IndicadoresPage() {
               <TableBody>
                 {panfletagemRows.map((row) => (
                   <TableRow key={row.date}>
-                    <TableCell className="whitespace-nowrap text-zinc-600">{row.date}</TableCell>
+                    <TableCell className="whitespace-nowrap text-zinc-600">{formatDateBr(row.date)}</TableCell>
                     <TableCell>{row.equipe}</TableCell>
                     <TableCell className="text-right font-medium tabular-nums">
                       {row.panfletos.toLocaleString("pt-BR")}

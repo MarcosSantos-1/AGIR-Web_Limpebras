@@ -2,7 +2,7 @@
 
 import { AppShell } from "@/components/layout/app-shell";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Search,
   Filter,
@@ -20,6 +20,9 @@ import {
   FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatDateBr } from "@/lib/utils";
+import { ActionCompletionDialog } from "@/components/acao-registro/action-completion-dialog";
+import type { ActionCompletionPayload } from "@/components/acao-registro/action-completion-dialog";
 
 const filterOptions = [
   { id: "all", label: "Todas" },
@@ -36,7 +39,7 @@ const photoSets = [
     title: "Revitalização Praça Central",
     type: "antes-depois",
     location: "Praça da República - Centro",
-    date: "2025-04-21",
+    date: "2026-04-21",
     responsible: "Igor Supervisor",
     photos: [
       { id: 1, type: "antes", color: "bg-zinc-300" },
@@ -48,7 +51,7 @@ const photoSets = [
     title: "Limpeza Ponto Viciado R. Silva Jardim",
     type: "antes-depois",
     location: "R. Silva Jardim, 450",
-    date: "2025-04-18",
+    date: "2026-04-18",
     responsible: "Luciana",
     photos: [
       { id: 3, type: "antes", color: "bg-red-200" },
@@ -60,7 +63,7 @@ const photoSets = [
     title: "Vistoria Ecoponto Zona Norte",
     type: "por-acao",
     location: "R. Industrial, 890",
-    date: "2025-04-20",
+    date: "2026-04-20",
     responsible: "Maria",
     photos: [
       { id: 5, type: "vistoria", color: "bg-blue-200" },
@@ -73,7 +76,7 @@ const photoSets = [
     title: "Ação Educativa Escola Municipal",
     type: "por-acao",
     location: "Escola Mun. Nova Esperança",
-    date: "2025-04-19",
+    date: "2026-04-19",
     responsible: "Maria",
     photos: [
       { id: 8, type: "evento", color: "bg-violet-200" },
@@ -87,7 +90,7 @@ const photoSets = [
     title: "Fiscalização Setor Industrial",
     type: "por-acao",
     location: "R. Industrial, 500-800",
-    date: "2025-04-17",
+    date: "2026-04-17",
     responsible: "Igor Supervisor",
     photos: [
       { id: 12, type: "fiscalizacao", color: "bg-amber-200" },
@@ -99,7 +102,7 @@ const photoSets = [
     title: "Área Crítica Marginal - Progresso",
     type: "antes-depois",
     location: "Av. Marginal, km 5",
-    date: "2025-04-15",
+    date: "2026-04-15",
     responsible: "Igor Supervisor",
     photos: [
       { id: 14, type: "antes", color: "bg-red-300" },
@@ -109,12 +112,46 @@ const photoSets = [
   },
 ];
 
+const GALERIA_EDITS_KEY = "agir_galeria_v1";
+
 export default function GaleriaPage() {
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxSet, setLightboxSet] = useState<typeof photoSets[0] | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [galeriaEdits, setGaleriaEdits] = useState<
+    Record<number, ActionCompletionPayload>
+  >({});
+  const [editingSetId, setEditingSetId] = useState<number | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(GALERIA_EDITS_KEY);
+      if (raw) {
+        const p = JSON.parse(raw) as Record<string, ActionCompletionPayload>;
+        setGaleriaEdits(
+          Object.fromEntries(
+            Object.entries(p).map(([k, v]) => [Number(k), v]),
+          ) as Record<number, ActionCompletionPayload>,
+        );
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const persistGaleria = (id: number, payload: ActionCompletionPayload) => {
+    setGaleriaEdits((prev) => {
+      const next = { ...prev, [id]: payload };
+      try {
+        localStorage.setItem(GALERIA_EDITS_KEY, JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  };
 
   const filteredSets = photoSets.filter((set) => {
     const filterMatch = selectedFilter === "all" || set.type === selectedFilter;
@@ -189,7 +226,7 @@ export default function GaleriaPage() {
                 <div className="mt-1 flex items-center gap-4 text-sm text-zinc-500">
                   <span className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
-                    {set.date}
+                    {formatDateBr(set.date)}
                   </span>
                   <span className="flex items-center gap-1">
                     <User className="h-4 w-4" />
@@ -204,6 +241,34 @@ export default function GaleriaPage() {
                 </span>
               )}
             </div>
+
+            {galeriaEdits[set.id]?.description && (
+              <p className="mb-2 text-sm font-medium text-zinc-800">
+                {galeriaEdits[set.id].description}
+              </p>
+            )}
+            {galeriaEdits[set.id]?.observations && (
+              <p className="mb-2 text-sm text-zinc-600">
+                {galeriaEdits[set.id].observations}
+              </p>
+            )}
+            {galeriaEdits[set.id]?.photoDataUrls &&
+              galeriaEdits[set.id]!.photoDataUrls.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {galeriaEdits[set.id]!.photoDataUrls.map((url, i) => (
+                    <div
+                      key={`g-ed-${set.id}-${i}`}
+                      className="h-16 w-16 overflow-hidden rounded-xl border border-zinc-100"
+                    >
+                      <img
+                        src={url}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
 
             {/* Photos Preview */}
             {set.type === "antes-depois" && set.photos.length >= 2 ? (
@@ -261,9 +326,7 @@ export default function GaleriaPage() {
                   variant="outline"
                   size="sm"
                   className="rounded-lg"
-                  onClick={() => {
-                    /* persistência + edição em etapa seguinte */
-                  }}
+                  onClick={() => setEditingSetId(set.id)}
                 >
                   <Pencil className="mr-2 h-4 w-4" />
                   Editar
@@ -365,6 +428,40 @@ export default function GaleriaPage() {
           </div>
         </motion.div>
       )}
+
+      <ActionCompletionDialog
+        key={editingSetId ?? "off"}
+        variant="gallery"
+        open={editingSetId != null}
+        onOpenChange={(o) => {
+          if (!o) setEditingSetId(null);
+        }}
+        title={
+          editingSetId != null
+            ? `Editar álbum — ${
+                photoSets.find((s) => s.id === editingSetId)?.title ?? ""
+              }`
+            : ""
+        }
+        subtitle="Envio de fotos adicionais e anotações. Dados salvos neste dispositivo."
+        initial={(() => {
+          const s = photoSets.find((x) => x.id === editingSetId);
+          if (!s) {
+            return { description: "", observations: "", photoDataUrls: [] };
+          }
+          const p = galeriaEdits[s.id];
+          return {
+            description: p?.description ?? "",
+            observations: p?.observations ?? "",
+            photoDataUrls: p?.photoDataUrls ?? [],
+          };
+        })()}
+        submitLabel="Salvar álbum"
+        onSubmit={(payload) => {
+          if (editingSetId == null) return;
+          persistGaleria(editingSetId, payload);
+        }}
+      />
     </AppShell>
   );
 }

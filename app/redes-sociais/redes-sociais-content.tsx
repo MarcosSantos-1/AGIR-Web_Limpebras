@@ -3,6 +3,7 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { useConteudoSocialModal } from "@/components/redes-sociais/conteudo-social-modal-provider";
 import { socialPosts, type SocialPost } from "@/data/social-posts";
+import { formatDateBr } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -185,7 +186,7 @@ function RedesSociaisPageBody() {
                   <span>
                     <span className="text-xs text-zinc-400">Pauta / data</span>
                     <br />
-                    {set.date}
+                    {formatDateBr(set.date)}
                   </span>
                 </div>
                 <div className="flex items-start gap-2 text-sm text-zinc-600">

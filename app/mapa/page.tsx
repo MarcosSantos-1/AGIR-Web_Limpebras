@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { OperationalMapPoint } from "@/components/map/operational-map";
+import { formatDateBr } from "@/lib/utils";
 
 const OperationalMap = dynamic(
   () =>
@@ -61,7 +62,7 @@ const mockPoints = [
     title: "Ponto Viciado - R. Silva Jardim",
     address: "R. Silva Jardim, 450",
     status: "ativo",
-    lastAction: "2025-04-18",
+    lastAction: "2026-04-18",
     responsible: "Igor Supervisor",
     recurrent: true,
     occurrences: 5,
@@ -73,7 +74,7 @@ const mockPoints = [
     title: "Ecoponto Zona Norte",
     address: "R. Industrial, 890",
     status: "ativo",
-    lastAction: "2025-04-20",
+    lastAction: "2026-04-20",
     responsible: "Maria",
     recurrent: false,
     occurrences: 0,
@@ -85,7 +86,7 @@ const mockPoints = [
     title: "UBS Centro",
     address: "Av. Principal, 450",
     status: "ativo",
-    lastAction: "2025-04-15",
+    lastAction: "2026-04-15",
     responsible: "Luciana",
     recurrent: false,
     occurrences: 0,
@@ -97,7 +98,7 @@ const mockPoints = [
     title: "Escola Mun. Nova Esperança",
     address: "R. das Palmeiras, 123",
     status: "ativo",
-    lastAction: "2025-04-19",
+    lastAction: "2026-04-19",
     responsible: "Maria",
     recurrent: false,
     occurrences: 0,
@@ -109,7 +110,7 @@ const mockPoints = [
     title: "Área Crítica - Marginal",
     address: "Av. Marginal, km 5",
     status: "em-andamento",
-    lastAction: "2025-04-17",
+    lastAction: "2026-04-17",
     responsible: "Igor Supervisor",
     recurrent: true,
     occurrences: 8,
@@ -121,7 +122,7 @@ const mockPoints = [
     title: "Revitalização Praça Central",
     address: "Praça da República",
     status: "em-andamento",
-    lastAction: "2025-04-21",
+    lastAction: "2026-04-21",
     responsible: "Igor Supervisor",
     recurrent: false,
     occurrences: 0,
@@ -133,7 +134,7 @@ const mockPoints = [
     title: "Ponto Viciado - Terminal",
     address: "Terminal Rodoviário",
     status: "resolvido",
-    lastAction: "2025-04-10",
+    lastAction: "2026-04-10",
     responsible: "Luciana",
     recurrent: false,
     occurrences: 2,
@@ -328,7 +329,7 @@ export default function MapaPage() {
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                   <Clock className="h-4 w-4 text-zinc-400" />
-                  <span className="text-zinc-600">Última ação: {selectedPoint.lastAction}</span>
+                  <span className="text-zinc-600">Última ação: {formatDateBr(selectedPoint.lastAction)}</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                   <User className="h-4 w-4 text-zinc-400" />

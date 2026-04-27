@@ -1,7 +1,9 @@
 "use client";
 
+import { agendaEventUrl, getAgendaEventById } from "@/data/agenda-events";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
 
 const days = ["D", "S", "T", "Q", "Q", "S", "S"];
 const dates = [
@@ -42,6 +44,8 @@ const dates = [
   { day: 3, currentMonth: false },
 ];
 
+const nextHighlight = getAgendaEventById(4);
+
 export function QuickCalendar() {
   return (
     <motion.div
@@ -51,7 +55,7 @@ export function QuickCalendar() {
       className="rounded-3xl bg-white p-5 shadow-lg shadow-zinc-200/50"
     >
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-base font-semibold text-zinc-900">Abril 2025</h3>
+        <h3 className="text-base font-semibold text-zinc-900">Abril 2026</h3>
         <div className="flex gap-1">
           <button className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 hover:bg-zinc-200">
             <ChevronLeft className="h-4 w-4" />
@@ -92,10 +96,25 @@ export function QuickCalendar() {
 
       <div className="mt-4 space-y-2">
         <p className="text-xs font-medium uppercase text-zinc-400">Próximos eventos</p>
-        <div className="rounded-xl bg-gradient-to-r from-[#f318e3]/5 to-[#6a0eaf]/5 p-3">
-          <p className="text-sm font-medium text-zinc-900">Revitalização R. das Flores</p>
-          <p className="text-xs text-zinc-500">22 Abr • 08:00 - 12:00</p>
-        </div>
+        {nextHighlight ? (
+          <Link
+            href={agendaEventUrl(nextHighlight.id, {
+              date: nextHighlight.date,
+              view: "list",
+            })}
+            scroll={false}
+            className="block rounded-xl bg-gradient-to-r from-[#f318e3]/5 to-[#6a0eaf]/5 p-3 transition-shadow hover:shadow-md"
+          >
+            <p className="text-sm font-medium text-zinc-900">{nextHighlight.title}</p>
+            <p className="text-xs text-zinc-500">
+              {new Date(nextHighlight.date + "T12:00:00").toLocaleDateString("pt-BR", {
+                day: "numeric",
+                month: "short",
+              })}{" "}
+              • {nextHighlight.time} - {nextHighlight.endTime}
+            </p>
+          </Link>
+        ) : null}
       </div>
     </motion.div>
   );

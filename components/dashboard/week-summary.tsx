@@ -1,48 +1,15 @@
 "use client";
 
+import {
+  DASHBOARD_AGENDA,
+  agendaEventUrl,
+  agendaHomeUrl,
+  getWeekSummaryColumns,
+} from "@/data/agenda-events";
+import { useAgendaEvents } from "@/contexts/agenda-events-context";
 import { motion } from "framer-motion";
 import { CheckCircle2, Clock, AlertCircle, ChevronRight } from "lucide-react";
-
-const weekData = [
-  {
-    day: "Seg",
-    date: "21",
-    tasks: [
-      { title: "Vistoria Ponto 23", status: "pending", time: "09:00" },
-      { title: "Reunião Equipe", status: "done", time: "14:00" },
-    ],
-  },
-  {
-    day: "Ter",
-    date: "22",
-    tasks: [
-      { title: "Revitalização R. das Flores", status: "pending", time: "08:00" },
-      { title: "Visita UBS Centro", status: "pending", time: "15:00" },
-    ],
-  },
-  {
-    day: "Qua",
-    date: "23",
-    tasks: [
-      { title: "Fiscalização Setor B", status: "pending", time: "10:00" },
-    ],
-  },
-  {
-    day: "Qui",
-    date: "24",
-    tasks: [
-      { title: "Ação Ambiental Escola", status: "pending", time: "08:30" },
-      { title: "Coleta Ponto Crítico", status: "urgent", time: "13:00" },
-    ],
-  },
-  {
-    day: "Sex",
-    date: "25",
-    tasks: [
-      { title: "Relatório Semanal", status: "pending", time: "16:00" },
-    ],
-  },
-];
+import Link from "next/link";
 
 const statusConfig = {
   done: { icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-50" },
@@ -51,6 +18,9 @@ const statusConfig = {
 };
 
 export function WeekSummary() {
+  const { events } = useAgendaEvents();
+  const weekData = getWeekSummaryColumns(DASHBOARD_AGENDA.weekStartIso, events);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -61,12 +31,15 @@ export function WeekSummary() {
       <div className="mb-5 flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-zinc-900">Resumo da Semana</h3>
-          <p className="text-sm text-zinc-500">21 - 25 de Abril</p>
+          <p className="text-sm text-zinc-500">{DASHBOARD_AGENDA.weekLabel}</p>
         </div>
-        <button className="flex items-center gap-1 text-sm font-medium text-[#9b0ba6] hover:underline">
+        <Link
+          href={agendaHomeUrl(DASHBOARD_AGENDA.weekStartIso)}
+          className="flex items-center gap-1 text-sm font-medium text-[#9b0ba6] hover:underline"
+        >
           Ver agenda completa
           <ChevronRight className="h-4 w-4" />
-        </button>
+        </Link>
       </div>
 
       <div className="grid grid-cols-5 gap-3">
@@ -91,16 +64,19 @@ export function WeekSummary() {
             </div>
             <div className="space-y-2">
               {day.tasks.map((task, taskIndex) => {
-                const config = statusConfig[task.status as keyof typeof statusConfig];
+                const config = statusConfig[task.status];
                 const Icon = config.icon;
-                return (
+                const inner = (
                   <div
-                    key={taskIndex}
-                    className={`rounded-xl ${config.bg} p-2.5`}
+                    className={`rounded-xl ${config.bg} p-2.5 ${
+                      task.eventId > 0
+                        ? "cursor-pointer transition-shadow hover:shadow-md"
+                        : ""
+                    }`}
                   >
                     <div className="flex items-start gap-2">
                       <Icon className={`mt-0.5 h-3.5 w-3.5 ${config.color}`} />
-                      <div className="flex-1 min-w-0">
+                      <div className="min-w-0 flex-1">
                         <p className="truncate text-xs font-medium text-zinc-700">
                           {task.title}
                         </p>
@@ -109,6 +85,23 @@ export function WeekSummary() {
                     </div>
                   </div>
                 );
+
+                if (task.eventId > 0) {
+                  return (
+                    <Link
+                      key={`${day.day}-${taskIndex}`}
+                      href={agendaEventUrl(task.eventId, {
+                        date: DASHBOARD_AGENDA.weekStartIso,
+                        view: "list",
+                      })}
+                      scroll={false}
+                    >
+                      {inner}
+                    </Link>
+                  );
+                }
+
+                return <div key={`${day.day}-${taskIndex}`}>{inner}</div>;
               })}
             </div>
           </div>

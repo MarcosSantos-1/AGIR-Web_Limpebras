@@ -2,6 +2,7 @@
 
 import { getDashboardSocialPosts } from "@/data/social-posts";
 import type { SocialContentStatus } from "@/data/social-posts";
+import { formatDateBr } from "@/lib/utils";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -68,6 +69,7 @@ export function SocialContentSchedule() {
         </div>
         <Link
           href="/redes-sociais"
+          scroll={false}
           className="flex shrink-0 items-center gap-1 text-sm font-medium text-[#9b0ba6] hover:underline"
         >
           Ver todas
@@ -108,7 +110,9 @@ export function SocialContentSchedule() {
                   <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
                     Data
                   </p>
-                  <p className="mt-1 text-sm font-medium text-zinc-800">{row.date}</p>
+                  <p className="mt-1 text-sm font-medium text-zinc-800">
+                    {formatDateBr(row.date)}
+                  </p>
                 </div>
               </div>
 
