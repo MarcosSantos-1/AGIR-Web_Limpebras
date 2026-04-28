@@ -16,3 +16,11 @@ export function formatDateBr(value: string): string {
   }
   return value
 }
+
+/** Uma URL por linha; ignora linhas vazias. */
+export function parseLinksMultiline(text: string): string[] {
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+}

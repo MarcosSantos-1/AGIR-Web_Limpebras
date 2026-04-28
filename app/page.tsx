@@ -13,7 +13,7 @@ export default function DashboardPage() {
   return (
     <AppShell
       title="Home"
-      subtitle="Segunda-feira, 21 de Abril de 2025"
+      subtitle="Segunda-feira, 29 de Abril de 2025"
     >
       {/* Stats Cards (comentado; métricas no painel Indicadores) */}
       {/* <StatsCards /> */}

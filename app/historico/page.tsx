@@ -17,14 +17,22 @@ import {
   ChevronDown,
   ChevronRight,
   FileText,
-  ExternalLink,
   Users,
   Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { serviceTypeColor } from "@/lib/constants/service-type-colors";
 import { formatDateBr } from "@/lib/utils";
 import { ActionCompletionDialog } from "@/components/acao-registro/action-completion-dialog";
 import type { ActionCompletionPayload } from "@/components/acao-registro/action-completion-dialog";
+import { PostLinksDisplay } from "@/components/acao-registro/post-links";
 
 const statusConfig = {
   concluido: { label: "Concluído", icon: CheckCircle2, color: "bg-emerald-100 text-emerald-700", iconColor: "text-emerald-500" },
@@ -33,15 +41,16 @@ const statusConfig = {
 };
 
 const typeConfig = {
-  revitalizacao: { label: "Revitalização", color: "bg-green-500" },
-  vistoria: { label: "Vistoria", color: "bg-cyan-500" },
-  "visita-tecnica": { label: "Visita Técnica", color: "bg-blue-500" },
-  "visita-institucional": { label: "Visita Institucional", color: "bg-violet-500" },
-  fiscalizacao: { label: "Fiscalização", color: "bg-red-500" },
-  "acao-ambiental": { label: "Ação Ambiental", color: "bg-emerald-500" },
-  limpeza: { label: "Limpeza", color: "bg-amber-500" },
-  panfletagem: { label: "Panfletagem", color: "bg-orange-500" },
-};
+  revitalizacao: { label: "Revitalização" },
+  vistoria: { label: "Vistoria" },
+  "visita-tecnica": { label: "Visita Técnica" },
+  "visita-institucional": { label: "Visita Institucional" },
+  reuniao: { label: "Reunião" },
+  fiscalizacao: { label: "Fiscalização" },
+  "acao-ambiental": { label: "Ação Ambiental" },
+  limpeza: { label: "Limpeza" },
+  panfletagem: { label: "Panfletagem" },
+} as const;
 
 const historyRecords = [
   {
@@ -56,6 +65,7 @@ const historyRecords = [
     description: "Plantio de 50 mudas, poda de árvores existentes, limpeza geral da área",
     observations: "Ação bem sucedida. Comunidade participou ativamente.",
     photos: 12,
+    linksPostagem: ["https://www.instagram.com/explore/tags/revitalizacao"],
   },
   {
     id: 2,
@@ -108,6 +118,7 @@ const historyRecords = [
     description: "Fiscalização após denúncia de descarte irregular",
     observations: "Identificada empresa responsável. Auto de infração emitido.",
     photos: 10,
+    linksPostagem: ["https://facebook.com"],
   },
   {
     id: 6,
@@ -231,9 +242,13 @@ export default function HistoricoPage() {
   };
 
   const mergeRecord = (record: (typeof historyRecords)[0]) => {
+    const baseLinks =
+      "linksPostagem" in record && Array.isArray(record.linksPostagem)
+        ? [...record.linksPostagem]
+        : [];
     const p = historicoEdits[record.id];
     if (!p) {
-      return { ...record, extraPhotos: [] as string[] };
+      return { ...record, extraPhotos: [] as string[], linksPostagem: baseLinks };
     }
     const timeDisplay =
       p.timeStart && p.timeEnd
@@ -249,6 +264,7 @@ export default function HistoricoPage() {
       description: p.description,
       observations: p.observations,
       extraPhotos: p.photoDataUrls ?? [],
+      linksPostagem: p.linksPostagem ?? baseLinks,
     };
   };
 
@@ -286,7 +302,8 @@ export default function HistoricoPage() {
     const searchMatch =
       row.title.toLowerCase().includes(q) ||
       row.location.toLowerCase().includes(q) ||
-      row.responsible.toLowerCase().includes(q);
+      row.responsible.toLowerCase().includes(q) ||
+      (row.linksPostagem?.some((u) => u.toLowerCase().includes(q)) ?? false);
     const typeMatch = selectedType === "all" || record.type === selectedType;
     const statusMatch = selectedStatus === "all" || record.status === selectedStatus;
     return searchMatch && typeMatch && statusMatch;
@@ -318,30 +335,32 @@ export default function HistoricoPage() {
             className="h-12 w-full rounded-xl border-0 bg-white pl-12 pr-4 text-sm shadow-lg shadow-zinc-200/50 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#f318e3]/20"
           />
         </div>
-        <select
-          value={selectedType}
-          onChange={(e) => setSelectedType(e.target.value)}
-          className="h-12 rounded-xl border-0 bg-white px-4 text-sm shadow-lg shadow-zinc-200/50 focus:outline-none focus:ring-2 focus:ring-[#f318e3]/20"
-        >
-          <option value="all">Todos os Tipos</option>
-          {Object.entries(typeConfig).map(([key, config]) => (
-            <option key={key} value={key}>
-              {config.label}
-            </option>
-          ))}
-        </select>
-        <select
-          value={selectedStatus}
-          onChange={(e) => setSelectedStatus(e.target.value)}
-          className="h-12 rounded-xl border-0 bg-white px-4 text-sm shadow-lg shadow-zinc-200/50 focus:outline-none focus:ring-2 focus:ring-[#f318e3]/20"
-        >
-          <option value="all">Todos os Status</option>
-          {Object.entries(statusConfig).map(([key, config]) => (
-            <option key={key} value={key}>
-              {config.label}
-            </option>
-          ))}
-        </select>
+        <Select value={selectedType} onValueChange={setSelectedType}>
+          <SelectTrigger className="h-12 min-w-[200px] rounded-xl border-0 bg-white px-4 text-sm shadow-lg shadow-zinc-200/50 focus:ring-2 focus:ring-[#f318e3]/20">
+            <SelectValue placeholder="Tipo" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os Tipos</SelectItem>
+            {Object.entries(typeConfig).map(([key, config]) => (
+              <SelectItem key={key} value={key}>
+                {config.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+          <SelectTrigger className="h-12 min-w-[180px] rounded-xl border-0 bg-white px-4 text-sm shadow-lg shadow-zinc-200/50 focus:ring-2 focus:ring-[#f318e3]/20">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os Status</SelectItem>
+            {Object.entries(statusConfig).map(([key, config]) => (
+              <SelectItem key={key} value={key}>
+                {config.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Stats Summary */}
@@ -398,7 +417,10 @@ export default function HistoricoPage() {
           {filteredRecords.map((record, index) => {
             const row = mergeRecord(record);
             const status = statusConfig[record.status as keyof typeof statusConfig];
-            const type = typeConfig[record.type as keyof typeof typeConfig];
+            const type =
+              typeConfig[record.type as keyof typeof typeConfig] ?? {
+                label: record.type,
+              };
             const StatusIcon = status.icon;
             const isExpanded = expandedRecord === record.id;
 
@@ -411,7 +433,10 @@ export default function HistoricoPage() {
                 className="relative pl-16"
               >
                 {/* Timeline Dot */}
-                <div className={`absolute left-4 top-6 flex h-5 w-5 items-center justify-center rounded-full ${type.color} ring-4 ring-white`}>
+                <div
+                  className="absolute left-4 top-6 flex h-5 w-5 items-center justify-center rounded-full ring-4 ring-white"
+                  style={{ backgroundColor: serviceTypeColor(record.type) }}
+                >
                   <div className="h-2 w-2 rounded-full bg-white" />
                 </div>
 
@@ -430,7 +455,12 @@ export default function HistoricoPage() {
                           {status.label}
                         </span>
                       </div>
-                      <p className="mt-1 text-sm text-[#9b0ba6]">{type.label}</p>
+                      <p
+                        className="mt-1 text-sm font-medium"
+                        style={{ color: serviceTypeColor(record.type) }}
+                      >
+                        {type.label}
+                      </p>
                       <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-zinc-500">
                         <span className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
@@ -516,30 +546,15 @@ export default function HistoricoPage() {
                             <p className="text-xs font-medium uppercase text-zinc-400">Fotos tiradas</p>
                             <p className="mt-1 text-sm text-zinc-800">{record.photos}</p>
                           </div>
-                          <div className="sm:col-span-2">
-                            <p className="text-xs font-medium uppercase text-zinc-400">
-                              Links de postagem
-                            </p>
-                            {record.linksPostagem && record.linksPostagem.length > 0 ? (
-                              <ul className="mt-2 space-y-1">
-                                {record.linksPostagem.map((url, i) => (
-                                  <li key={`${record.id}-link-${i}`}>
-                                    <a
-                                      href={url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-1 text-sm font-medium text-[#9b0ba6] hover:underline"
-                                    >
-                                      {url}
-                                      <ExternalLink className="h-3.5 w-3.5" />
-                                    </a>
-                                  </li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p className="mt-1 text-sm text-zinc-400">—</p>
-                            )}
-                          </div>
+                        </div>
+                      )}
+
+                      {row.linksPostagem && row.linksPostagem.length > 0 && (
+                        <div className="mb-6">
+                          <PostLinksDisplay
+                            urls={row.linksPostagem}
+                            stopCardClick
+                          />
                         </div>
                       )}
 
@@ -640,11 +655,20 @@ export default function HistoricoPage() {
         }
         initial={(() => {
           if (!editingRecordBase) {
-            return { description: "", observations: "", photoDataUrls: [] };
+            return {
+              description: "",
+              observations: "",
+              photoDataUrls: [],
+              linksPostagem: [],
+            };
           }
           const r = editingRecordBase;
           const p = historicoEdits[r.id];
           const { start, end } = splitHistoryTime(r.time);
+          const baseLinks =
+            "linksPostagem" in r && Array.isArray(r.linksPostagem)
+              ? [...r.linksPostagem]
+              : [];
           return {
             title: p?.title ?? r.title,
             date: p?.date ?? r.date,
@@ -655,6 +679,7 @@ export default function HistoricoPage() {
             description: p?.description ?? r.description,
             observations: p?.observations ?? r.observations,
             photoDataUrls: p?.photoDataUrls ?? [],
+            linksPostagem: p ? (p.linksPostagem ?? baseLinks) : baseLinks,
           };
         })()}
         submitLabel="Salvar"

@@ -28,7 +28,8 @@ type EditableAgendaKeys =
   | "responsible"
   | "observations"
   | "completionDescription"
-  | "completionPhotoDataUrls";
+  | "completionPhotoDataUrls"
+  | "linksPostagem";
 
 type AgendaOverride = Partial<Pick<AgendaEvent, EditableAgendaKeys>>;
 

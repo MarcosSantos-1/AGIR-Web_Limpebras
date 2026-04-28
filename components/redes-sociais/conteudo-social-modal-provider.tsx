@@ -24,18 +24,17 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import {
   Share2,
-  ImagePlus,
-  X,
-  Plus,
   Lightbulb,
   FileEdit,
   CalendarClock,
   CheckCircle2,
 } from "lucide-react";
+import {
+  SocialMediaDropzone,
+  type SocialConteudoMediaItem,
+} from "@/components/redes-sociais/social-media-dropzone";
 
 export type ConteudoStatusFase = "ideia" | "rascunho" | "agendado" | "publicado";
-
-type MediaItem = { id: string; file: File; preview: string };
 
 type ConteudoCtx = { open: () => void; close: () => void; isOpen: boolean };
 const Ctx = React.createContext<ConteudoCtx | null>(null);
@@ -76,10 +75,6 @@ const STATUS_OPTIONS: {
 ];
 
 const TIPOS = ["Post", "Reel", "Story"] as const;
-
-function nextMediaId() {
-  return `m-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
 
 function ModalHeroHeader() {
   return (
@@ -158,8 +153,7 @@ function ConteudoFormDialog({
   const [dataPublicacao, setDataPublicacao] = React.useState("");
   const [horaPublicacao, setHoraPublicacao] = React.useState("");
   const [notas, setNotas] = React.useState("");
-  const [media, setMedia] = React.useState<MediaItem[]>([]);
-  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const [media, setMedia] = React.useState<SocialConteudoMediaItem[]>([]);
 
   React.useEffect(() => {
     if (!open) return;
@@ -181,30 +175,6 @@ function ConteudoFormDialog({
     setHoraPublicacao("");
     setNotas("");
   }, [open]);
-
-  const addFiles = (list: FileList | null) => {
-    if (!list?.length) return;
-    setMedia((prev) => {
-      const next: MediaItem[] = [...prev];
-      for (const file of Array.from(list)) {
-        if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
-          continue;
-        }
-        const id = nextMediaId();
-        next.push({ id, file, preview: URL.createObjectURL(file) });
-      }
-      return next;
-    });
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  const removeMedia = (id: string) => {
-    setMedia((prev) => {
-      const item = prev.find((i) => i.id === id);
-      if (item) URL.revokeObjectURL(item.preview);
-      return prev.filter((i) => i.id !== id);
-    });
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -435,78 +405,12 @@ function ConteudoFormDialog({
                 />
               </div>
 
-              <div className="rounded-2xl border border-dashed border-zinc-200 bg-white p-4 sm:p-5">
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-zinc-800">
-                    <ImagePlus className="h-4 w-4 text-[#9b0ba6]" />
-                    Mídias
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*,video/*"
-                      multiple
-                      className="sr-only"
-                      onChange={(e) => addFiles(e.target.files)}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="rounded-lg"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <Plus className="mr-1.5 h-3.5 w-3.5" />
-                      Adicionar arquivos
-                    </Button>
-                  </div>
-                </div>
-                <p className="mb-3 text-xs text-zinc-500">
-                  Imagens e vídeos. Adicione quantos quiser; remova itens com o X.
-                </p>
-                {media.length > 0 ? (
-                  <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                    {media.map((m) => (
-                      <li
-                        key={m.id}
-                        className="group relative aspect-square overflow-hidden rounded-xl bg-zinc-100 ring-1 ring-zinc-200"
-                      >
-                        {m.file.type.startsWith("image/") ? (
-                          <img
-                            src={m.preview}
-                            alt=""
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <video
-                            src={m.preview}
-                            className="h-full w-full object-cover"
-                            muted
-                            playsInline
-                            preload="metadata"
-                          />
-                        )}
-                        <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/50 to-transparent p-2">
-                          <p className="w-full truncate text-[10px] text-white">
-                            {m.file.name}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeMedia(m.id)}
-                          className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-zinc-700 shadow-md ring-1 ring-zinc-200 transition hover:bg-red-50 hover:text-red-600"
-                          aria-label="Remover mídia"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-zinc-400">Nenhum arquivo ainda.</p>
-                )}
-              </div>
+              <SocialMediaDropzone
+                items={media}
+                onChange={setMedia}
+                label="Mídias"
+                hint="Clique ou arraste imagens e vídeos para esta área"
+              />
             </div>
           </div>
           <Separator className="shrink-0" />

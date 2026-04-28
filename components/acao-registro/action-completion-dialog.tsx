@@ -1,5 +1,12 @@
 "use client";
 
+import {
+  ActionPhotoDropzone,
+  ACTION_PHOTO_MAX,
+} from "@/components/acao-registro/action-photo-dropzone";
+import { LinksPostagemEditor } from "@/components/acao-registro/post-links";
+import { DatePickerField } from "@/components/forms/date-picker-field";
+import { TimePickerField } from "@/components/forms/time-picker-field";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,9 +19,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
-import { ImageIcon, Trash2, Upload } from "lucide-react";
-import { useCallback, useEffect, useId, useState } from "react";
+import { cn, parseLinksMultiline } from "@/lib/utils";
+import { useEffect, useId, useState } from "react";
 
 export type ActionCompletionPayload = {
   /** Título (agenda / histórico) */
@@ -28,19 +34,9 @@ export type ActionCompletionPayload = {
   description: string;
   observations: string;
   photoDataUrls: string[];
+  /** URLs de postagens (redes, matérias, etc.) — uma por linha no formulário */
+  linksPostagem?: string[];
 };
-
-const MAX_PHOTOS = 12;
-const MAX_FILE_BYTES = 2 * 1024 * 1024; // 2 MB
-
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result));
-    r.onerror = () => reject(new Error("leitura do arquivo"));
-    r.readAsDataURL(file);
-  });
-}
 
 type Props = {
   open: boolean;
@@ -85,6 +81,7 @@ export function ActionCompletionDialog({
   const [responsible, setResponsible] = useState("");
   const [description, setDescription] = useState("");
   const [observations, setObservations] = useState("");
+  const [linksText, setLinksText] = useState("");
   const [photoDataUrls, setPhotoDataUrls] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -98,6 +95,7 @@ export function ActionCompletionDialog({
     setResponsible(initial?.responsible ?? "");
     setDescription(initial?.description ?? "");
     setObservations(initial?.observations ?? "");
+    setLinksText((initial?.linksPostagem ?? []).join("\n"));
     setPhotoDataUrls(initial?.photoDataUrls ? [...initial.photoDataUrls] : []);
   }, [
     open,
@@ -109,34 +107,17 @@ export function ActionCompletionDialog({
     initial?.responsible,
     initial?.description,
     initial?.observations,
+    initial?.linksPostagem,
     initial?.photoDataUrls,
   ]);
 
-  const onFiles = useCallback(
-    async (files: FileList | null) => {
-      if (!files?.length) return;
-      const next: string[] = [...photoDataUrls];
-      for (const file of Array.from(files)) {
-        if (next.length >= MAX_PHOTOS) break;
-        if (!file.type.startsWith("image/")) continue;
-        if (file.size > MAX_FILE_BYTES) continue;
-        try {
-          const dataUrl = await readFileAsDataUrl(file);
-          next.push(dataUrl);
-        } catch {
-          /* skip */
-        }
-      }
-      setPhotoDataUrls(next);
-    },
-    [photoDataUrls],
-  );
-
   const buildPayload = (): ActionCompletionPayload => {
+    const links = parseLinksMultiline(linksText);
     const base: ActionCompletionPayload = {
       description: description.trim(),
       observations: observations.trim(),
       photoDataUrls,
+      linksPostagem: links,
     };
     if (showMetaFields) {
       return {
@@ -206,44 +187,45 @@ export function ActionCompletionDialog({
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <Label htmlFor={`${baseId}-date`}>Data</Label>
-                  <Input
-                    id={`${baseId}-date`}
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="mt-1.5 rounded-xl"
-                  />
+                  <div className="mt-1.5">
+                    <DatePickerField
+                      id={`${baseId}-date`}
+                      value={date}
+                      onChange={setDate}
+                    />
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <Label htmlFor={`${baseId}-ts`}>Início</Label>
-                    <Input
-                      id={`${baseId}-ts`}
-                      type="time"
-                      value={timeStart}
-                      onChange={(e) => setTimeStart(e.target.value)}
-                      className="mt-1.5 rounded-xl"
-                    />
+                    <div className="mt-1.5">
+                      <TimePickerField
+                        id={`${baseId}-ts`}
+                        value={timeStart}
+                        onChange={setTimeStart}
+                      />
+                    </div>
                   </div>
                   <div>
                     <Label htmlFor={`${baseId}-te`}>Fim</Label>
-                    <Input
-                      id={`${baseId}-te`}
-                      type="time"
-                      value={timeEnd}
-                      onChange={(e) => setTimeEnd(e.target.value)}
-                      className="mt-1.5 rounded-xl"
-                    />
+                    <div className="mt-1.5">
+                      <TimePickerField
+                        id={`${baseId}-te`}
+                        value={timeEnd}
+                        onChange={setTimeEnd}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
               <div>
-                <Label htmlFor={`${baseId}-loc`}>Local</Label>
+                <Label htmlFor={`${baseId}-loc`}>Local / endereço</Label>
                 <Input
                   id={`${baseId}-loc`}
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   className="mt-1.5 rounded-xl"
+                  placeholder="Rua, número, bairro ou nome do local"
                 />
               </div>
               <div>
@@ -281,65 +263,26 @@ export function ActionCompletionDialog({
             />
           </div>
 
-          <div
-            className={cn(
-              "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/80 p-4",
-              isGallery &&
-                "border-[#9b0ba6]/30 bg-gradient-to-br from-[#f318e3]/5 to-[#6a0eaf]/5",
-            )}
-          >
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 text-sm font-medium text-zinc-800">
-                  <Upload
-                    className={cn("h-4 w-4", isGallery ? "text-[#9b0ba6]" : "text-zinc-500")}
-                  />
-                  Fotos {isGallery && "(enfatizado)"}
-                </div>
-                <span className="text-xs text-zinc-500">
-                  {photoDataUrls.length}/{MAX_PHOTOS} · imagens · máx. 2 MB
-                </span>
-              </div>
-              <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white py-6 text-sm text-zinc-500 transition hover:border-[#f318e3]/30 hover:bg-zinc-50/80">
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="sr-only"
-                  onChange={(e) => {
-                    void onFiles(e.target.files);
-                    e.target.value = "";
-                  }}
-                />
-                <ImageIcon className="h-8 w-8 text-zinc-400" />
-                <span>Clique para enviar ou solte arquivos aqui</span>
-              </label>
-              {photoDataUrls.length > 0 && (
-                <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
-                  {photoDataUrls.map((url, i) => (
-                    <div
-                      key={`${i}-${url.slice(0, 20)}`}
-                      className="group relative aspect-square overflow-hidden rounded-lg border border-zinc-100"
-                    >
-                      <img
-                        src={url}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                      <button
-                        type="button"
-                        className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-md bg-black/50 text-white opacity-0 transition group-hover:opacity-100"
-                        onClick={() =>
-                          setPhotoDataUrls((prev) => prev.filter((_, j) => j !== i))
-                        }
-                        aria-label="Remover foto"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-          </div>
+          <LinksPostagemEditor
+            id={`${baseId}-links`}
+            value={linksText}
+            onChange={setLinksText}
+            hint={
+              showMetaFields
+                ? "Aparece no histórico e na agenda quando houver pelo menos um link."
+                : "Um link por linha, opcional."
+            }
+            textareaClassName="mt-0 rounded-xl"
+          />
+
+          <ActionPhotoDropzone
+            photoDataUrls={photoDataUrls}
+            onChange={setPhotoDataUrls}
+            maxPhotos={ACTION_PHOTO_MAX}
+            variant={isGallery ? "emphasis" : "default"}
+            label={isGallery ? "Fotos (enfatizado)" : "Fotos"}
+            hint="Clique para enviar ou solte imagens nesta área"
+          />
         </div>
 
         <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-between sm:gap-2">

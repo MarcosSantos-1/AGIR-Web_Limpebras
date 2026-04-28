@@ -47,6 +47,10 @@ import {
   Check,
   ChevronsUpDown,
 } from "lucide-react";
+import { DatePickerField } from "@/components/forms/date-picker-field";
+import { TimePickerField } from "@/components/forms/time-picker-field";
+import { ActionPhotoDropzone } from "@/components/acao-registro/action-photo-dropzone";
+import { LinksPostagemEditor } from "@/components/acao-registro/post-links";
 import { MAPA_PONTOS_VICIO_FORM } from "@/lib/map-features";
 
 export type NovaAcaoTipo = "acao-visita" | "revitalizacao";
@@ -68,12 +72,13 @@ export function useNovaAcao() {
 }
 
 const TIPOS_SERVICO = [
-  { value: "visita-tecnica", label: "Visita técnica" },
+  { value: "visita-tecnica", label: "Visita Técnica" },
   { value: "reuniao", label: "Reunião" },
-  { value: "acao-ambiental", label: "Ação ambiental" },
+  { value: "acao-ambiental", label: "Ação Ambiental" },
+  { value: "fiscalizacao", label: "Fiscalização" },
+  { value: "vistoria", label: "Vistoria" },
+  { value: "panfletagem", label: "Panfletagem somente" },
   { value: "coleta-seletiva", label: "Coleta seletiva / orientação" },
-  { value: "fiscalizacao", label: "Fiscalização / vistoria" },
-  { value: "panfletagem", label: "Panfletagem" },
   { value: "capacitacao", label: "Capacitação / palestra" },
   { value: "outro", label: "Outro" },
 ] as const;
@@ -165,7 +170,14 @@ function AcaoVisitaDialog({
     "agendar",
   );
   const [fotosError, setFotosError] = React.useState(false);
-  const [fotosCount, setFotosCount] = React.useState(0);
+  const [camposErro, setCamposErro] = React.useState(false);
+  const [acaoData, setAcaoData] = React.useState("");
+  const [acaoHorario, setAcaoHorario] = React.useState("");
+  const [localEndereco, setLocalEndereco] = React.useState("");
+  const [descricaoFeito, setDescricaoFeito] = React.useState("");
+  const [observacoesGerais, setObservacoesGerais] = React.useState("");
+  const [linksPostagemText, setLinksPostagemText] = React.useState("");
+  const [fotoDataUrls, setFotoDataUrls] = React.useState<string[]>([]);
   const [tipoServico, setTipoServico] = React.useState("");
   const [panfletagemRealizada, setPanfletagemRealizada] = React.useState(false);
   const [unidadesPanfletos, setUnidadesPanfletos] = React.useState("");
@@ -177,7 +189,14 @@ function AcaoVisitaDialog({
     if (open) {
       setSituacao("agendar");
       setFotosError(false);
-      setFotosCount(0);
+      setCamposErro(false);
+      setAcaoData("");
+      setAcaoHorario("");
+      setLocalEndereco("");
+      setDescricaoFeito("");
+      setObservacoesGerais("");
+      setLinksPostagemText("");
+      setFotoDataUrls([]);
       setTipoServico("");
       setPanfletagemRealizada(false);
       setUnidadesPanfletos("");
@@ -196,7 +215,7 @@ function AcaoVisitaDialog({
   React.useEffect(() => {
     if (situacao === "agendar") {
       setFotosError(false);
-      setFotosCount(0);
+      setFotoDataUrls([]);
     }
   }, [situacao]);
 
@@ -221,11 +240,20 @@ function AcaoVisitaDialog({
           className="flex min-h-0 flex-1 flex-col"
           onSubmit={(e) => {
             e.preventDefault();
-            if (situacao === "finalizado" && fotosCount === 0) {
+            setCamposErro(false);
+            setFotosError(false);
+            if (!tipoServico) {
+              setCamposErro(true);
+              return;
+            }
+            if (!acaoData.trim() || !localEndereco.trim() || !descricaoFeito.trim()) {
+              setCamposErro(true);
+              return;
+            }
+            if (situacao === "finalizado" && fotoDataUrls.length === 0) {
               setFotosError(true);
               return;
             }
-            setFotosError(false);
             onOpenChange(false);
           }}
         >
@@ -236,6 +264,12 @@ function AcaoVisitaDialog({
             )}
           >
             <div className="space-y-5">
+              {camposErro && (
+                <p className="rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-sm font-medium text-red-700">
+                  Preencha tipo de serviço, data, local / endereço e o campo
+                  &quot;O que foi feito&quot; (ou o previsto, se for agendamento).
+                </p>
+              )}
               <div className="space-y-3">
                 <Label className="text-sm font-medium text-zinc-700">
                   Situação
@@ -460,11 +494,10 @@ function AcaoVisitaDialog({
                     >
                       Data
                     </Label>
-                    <Input
+                    <DatePickerField
                       id="acao-data"
-                      name="data"
-                      type="date"
-                      className="h-11 border-zinc-200"
+                      value={acaoData}
+                      onChange={setAcaoData}
                       required
                     />
                   </div>
@@ -475,11 +508,10 @@ function AcaoVisitaDialog({
                     >
                       Horário (opcional)
                     </Label>
-                    <Input
+                    <TimePickerField
                       id="acao-horario"
-                      name="horario"
-                      type="time"
-                      className="h-11 border-zinc-200"
+                      value={acaoHorario}
+                      onChange={setAcaoHorario}
                     />
                   </div>
                   <div className="space-y-2 sm:col-span-2">
@@ -493,7 +525,9 @@ function AcaoVisitaDialog({
                       id="acao-local"
                       name="local"
                       className="h-11 border-zinc-200"
-                      placeholder="Rua, bairro, ponto de referência"
+                      placeholder="Rua, número, bairro ou nome do local"
+                      value={localEndereco}
+                      onChange={(e) => setLocalEndereco(e.target.value)}
                       required
                     />
                   </div>
@@ -522,28 +556,57 @@ function AcaoVisitaDialog({
                     : "Informações da ação concluída"
                 }
               >
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="acao-info"
-                    className="text-zinc-600"
-                  >
-                    {situacao === "agendar"
-                      ? "O que está previsto, observações e encaminhamentos"
-                      : "O que foi feito, resultados e observações do terreno"}
-                  </Label>
-                  <Textarea
-                    id="acao-info"
-                    name="informacoes"
-                    placeholder={
-                      situacao === "agendar"
-                        ? "Descreva o objetivo da visita, materiais necessários, etc."
-                        : "O que foi feito, resultados e encaminhamentos, etc."
-                    }
-                    className="min-h-[120px] resize-y border-zinc-200"
-                    required
-                  />
+                <div className="grid gap-4">
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="acao-feito"
+                      className="text-zinc-600"
+                    >
+                      {situacao === "agendar"
+                        ? "O que está previsto"
+                        : "O que foi feito"}
+                    </Label>
+                    <Textarea
+                      id="acao-feito"
+                      name="oQueFoiFeito"
+                      value={descricaoFeito}
+                      onChange={(e) => setDescricaoFeito(e.target.value)}
+                      placeholder={
+                        situacao === "agendar"
+                          ? "Objetivo, materiais, encaminhamentos previstos…"
+                          : "Resumo do trabalho realizado, etapas e resultados…"
+                      }
+                      className="min-h-[100px] resize-y border-zinc-200"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="acao-obs"
+                      className="text-zinc-600"
+                    >
+                      Observações
+                    </Label>
+                    <Textarea
+                      id="acao-obs"
+                      name="observacoes"
+                      value={observacoesGerais}
+                      onChange={(e) => setObservacoesGerais(e.target.value)}
+                      placeholder="Notas, pendências, próximos passos…"
+                      className="min-h-[88px] resize-y border-zinc-200"
+                    />
+                  </div>
                 </div>
               </SectionBox>
+
+              <LinksPostagemEditor
+                id="acao-links-postagem"
+                name="linksPostagem"
+                value={linksPostagemText}
+                onChange={setLinksPostagemText}
+                hint="Um link por linha. No histórico e na agenda, cada URL aparece como atalho com ícone de abrir em nova página."
+                textareaClassName="bg-white"
+              />
 
               {situacao === "finalizado" && (
                 <div
@@ -564,19 +627,15 @@ function AcaoVisitaDialog({
                     Para ações finalizadas, anexe ao menos uma imagem comprovando
                     a realização.
                   </p>
-                  <Input
-                    key="fotos-finalizado"
-                    id="fotos-acao"
-                    name="fotos"
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="h-12 w-full min-w-0 max-w-full cursor-pointer border-amber-200/80 bg-white file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-100 file:px-3 file:py-1.5 file:text-sm"
-                    onChange={(e) => {
-                      const n = e.target.files?.length ?? 0;
-                      setFotosCount(n);
-                      if (n > 0) setFotosError(false);
+                  <ActionPhotoDropzone
+                    photoDataUrls={fotoDataUrls}
+                    onChange={(urls) => {
+                      setFotoDataUrls(urls);
+                      if (urls.length > 0) setFotosError(false);
                     }}
+                    variant="amber"
+                    label="Fotos"
+                    hint="Clique ou arraste imagens para esta área"
                   />
                   {fotosError && (
                     <p className="mt-2 text-sm font-medium text-red-600">
@@ -619,6 +678,9 @@ function RevitalizacaoDialog({
 }) {
   const [pontoViciadoId, setPontoViciadoId] = React.useState<string>("");
   const [pvComboOpen, setPvComboOpen] = React.useState(false);
+  const [pvSearch, setPvSearch] = React.useState("");
+  const [revFotoUrls, setRevFotoUrls] = React.useState<string[]>([]);
+  const [linksPostagemText, setLinksPostagemText] = React.useState("");
   const [panfletagemRealizada, setPanfletagemRealizada] = React.useState(false);
   const [unidadesPanfletos, setUnidadesPanfletos] = React.useState("");
 
@@ -626,6 +688,9 @@ function RevitalizacaoDialog({
     if (open) {
       setPontoViciadoId("");
       setPvComboOpen(false);
+      setPvSearch("");
+      setRevFotoUrls([]);
+      setLinksPostagemText("");
       setPanfletagemRealizada(false);
       setUnidadesPanfletos("");
     }
@@ -636,6 +701,16 @@ function RevitalizacaoDialog({
     : undefined;
   const enderecoPonto = pontoSelecionado?.address?.trim() ?? "";
   const subprefeitura = pontoSelecionado?.subprefeitura?.trim() ?? "";
+
+  const filteredPv = React.useMemo(() => {
+    const q = pvSearch.trim().toLowerCase();
+    if (!q) return [];
+    return MAPA_PONTOS_VICIO_FORM.filter(
+      (f) =>
+        f.id.toLowerCase().includes(q) ||
+        (f.address ?? "").toLowerCase().includes(q),
+    );
+  }, [pvSearch]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -680,7 +755,13 @@ function RevitalizacaoDialog({
                 <div className={cn(fieldGrid(), "items-end gap-4")}>
                   <div className="space-y-2 sm:col-span-1">
                     <Label className="text-zinc-600">Ponto viciado</Label>
-                    <Popover open={pvComboOpen} onOpenChange={setPvComboOpen}>
+                    <Popover
+                      open={pvComboOpen}
+                      onOpenChange={(o) => {
+                        setPvComboOpen(o);
+                        if (o) setPvSearch("");
+                      }}
+                    >
                       <PopoverTrigger asChild>
                         <Button
                           type="button"
@@ -695,7 +776,7 @@ function RevitalizacaoDialog({
                             </span>
                           ) : (
                             <span className="text-zinc-500">
-                              Selecione por ID e endereço
+                              Busque por ID ou endereço
                             </span>
                           )}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -705,25 +786,30 @@ function RevitalizacaoDialog({
                         className="w-[var(--radix-popover-trigger-width)] p-0"
                         align="start"
                       >
-                        <Command>
+                        <Command shouldFilter={false}>
                           <CommandInput
-                            placeholder="Buscar id ou endereço…"
+                            placeholder="Digite ID ou endereço…"
                             className="h-11"
+                            value={pvSearch}
+                            onValueChange={setPvSearch}
                           />
                           <CommandList className="max-h-[min(50vh,320px)]">
                             <CommandEmpty>
-                              Nenhum ponto encontrado.
+                              {pvSearch.trim()
+                                ? "Nenhum ponto encontrado."
+                                : "Digite para filtrar — só aparecem resultados da busca."}
                             </CommandEmpty>
                             <CommandGroup>
-                              {MAPA_PONTOS_VICIO_FORM.map((f) => {
+                              {filteredPv.map((f) => {
                                 const addr = f.address?.trim() ?? "";
-                                const value = `${f.id} — ${addr}`;
                                 return (
                                   <CommandItem
                                     key={f.id}
-                                    value={value}
+                                    value={f.id}
+                                    keywords={[f.id, addr]}
                                     onSelect={() => {
                                       setPontoViciadoId(f.id);
+                                      setPvSearch("");
                                       setPvComboOpen(false);
                                     }}
                                   >
@@ -883,24 +969,25 @@ function RevitalizacaoDialog({
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-dashed border-zinc-200 bg-white p-5 sm:p-6">
-                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-zinc-800">
-                  <ImagePlus className="h-4 w-4 text-[#9b0ba6]" />
-                  Upload de fotos
-                </div>
-                <Input
-                  id="fotos-rev"
-                  name="fotos"
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="h-12 w-full min-w-0 max-w-full cursor-pointer border-zinc-200 file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-100 file:px-3 file:py-1.5 file:text-sm"
-                />
-                <p className="mt-2 text-xs text-zinc-500">
-                  Antes, durante e depois — envie quantas imagens forem
-                  necessárias.
-                </p>
-              </div>
+              <LinksPostagemEditor
+                id="rev-links-postagem"
+                name="linksPostagem"
+                value={linksPostagemText}
+                onChange={setLinksPostagemText}
+                hint="Um link por linha. No histórico e na agenda, cada URL aparece como atalho com ícone de abrir em nova página."
+                textareaClassName="bg-white"
+              />
+
+              <ActionPhotoDropzone
+                photoDataUrls={revFotoUrls}
+                onChange={setRevFotoUrls}
+                variant="emphasis"
+                label="Upload de fotos"
+                hint="Clique ou arraste — antes, durante e depois"
+              />
+              <p className="-mt-2 text-xs text-zinc-500 sm:-mt-3">
+                Envie quantas imagens forem necessárias.
+              </p>
             </div>
           </div>
           <Separator className="shrink-0" />

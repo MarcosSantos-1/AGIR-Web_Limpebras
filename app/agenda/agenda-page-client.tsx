@@ -3,6 +3,7 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { useAgendaEvents } from "@/contexts/agenda-events-context";
 import { ActionCompletionDialog } from "@/components/acao-registro/action-completion-dialog";
+import { PostLinksDisplay } from "@/components/acao-registro/post-links";
 import { agendaEventUrl, type AgendaEvent, type AgendaEventStatus } from "@/data/agenda-events";
 import { formatDateBr } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -18,23 +19,31 @@ import {
   CheckCircle2,
   XCircle,
   RotateCcw,
-  ExternalLink,
   Users,
   Image,
   Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { DatePickerField } from "@/components/forms/date-picker-field";
+import { serviceTypeColor } from "@/lib/constants/service-type-colors";
 
 const eventTypes = [
-  { id: "all", label: "Todos", color: "bg-zinc-500" },
-  { id: "revitalizacao", label: "Revitalização", color: "bg-emerald-500" },
-  { id: "visita-tecnica", label: "Visita Técnica", color: "bg-blue-500" },
-  { id: "visita-institucional", label: "Visita Institucional", color: "bg-violet-500" },
-  { id: "acao-ambiental", label: "Ação Ambiental", color: "bg-green-500" },
-  { id: "reuniao", label: "Reunião", color: "bg-amber-500" },
-  { id: "fiscalizacao", label: "Fiscalização", color: "bg-red-500" },
-  { id: "vistoria", label: "Vistoria", color: "bg-cyan-500" },
-  { id: "panfletagem", label: "Panfletagem", color: "bg-orange-500" },
+  { id: "all", label: "Todos" },
+  { id: "revitalizacao", label: "Revitalização" },
+  { id: "visita-tecnica", label: "Visita Técnica" },
+  { id: "visita-institucional", label: "Visita Institucional" },
+  { id: "acao-ambiental", label: "Ação Ambiental" },
+  { id: "reuniao", label: "Reunião" },
+  { id: "fiscalizacao", label: "Fiscalização" },
+  { id: "vistoria", label: "Vistoria" },
+  { id: "panfletagem", label: "Panfletagem" },
 ];
 
 const statusOptions = [
@@ -248,7 +257,10 @@ export function AgendaPageClient() {
                 : "bg-white text-zinc-600 shadow-sm hover:bg-zinc-50"
             }`}
           >
-            <span className={`h-2 w-2 rounded-full ${type.color}`} />
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ backgroundColor: serviceTypeColor(type.id) }}
+            />
             {type.label}
           </button>
         ))}
@@ -414,7 +426,12 @@ export function AgendaPageClient() {
                       >
                         <div className="mb-2 flex items-center gap-2">
                           <span
-                            className={`h-2 w-2 rounded-full ${typeConfig.color}`}
+                            className="h-2 w-2 rounded-full"
+                            style={{
+                              backgroundColor: serviceTypeColor(
+                                event.type,
+                              ),
+                            }}
                           />
                           <span className="text-[10px] font-medium text-zinc-500">
                             {event.time}
@@ -518,7 +535,14 @@ export function AgendaPageClient() {
                               title={event.title}
                             >
                               <div className="truncate">
-                                <span className={`mr-0.5 inline-block h-1.5 w-1.5 rounded-full ${typeConfig.color}`} />
+                                <span
+                                  className="mr-0.5 inline-block h-1.5 w-1.5 rounded-full"
+                                  style={{
+                                    backgroundColor: serviceTypeColor(
+                                      event.type,
+                                    ),
+                                  }}
+                                />
                                 {event.time} {event.title}
                               </div>
                               {event.type === "panfletagem" &&
@@ -545,36 +569,41 @@ export function AgendaPageClient() {
 
       {viewMode === "list" && (
         <div className="mb-4 flex flex-wrap items-end gap-4 rounded-2xl bg-white p-4 shadow-lg shadow-zinc-200/50">
-          <div className="min-w-[140px]">
+          <div className="min-w-[200px] flex-1 max-w-xs">
             <span className="mb-1 block text-xs font-medium text-zinc-500">
               Status
             </span>
-            <select
+            <Select
               value={listStatusFilter}
-              onChange={(e) =>
-                setListStatusFilter(e.target.value as "all" | AgendaEventStatus)
+              onValueChange={(v) =>
+                setListStatusFilter(v as "all" | AgendaEventStatus)
               }
-              className="h-10 w-full min-w-[180px] rounded-xl border-0 bg-zinc-50 px-3 text-sm text-zinc-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#f318e3]/20"
             >
-              <option value="all">Todos</option>
-              {statusOptions.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="h-10 w-full rounded-xl border-zinc-200 bg-zinc-50 shadow-sm">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {statusOptions.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <span className="mb-1 block text-xs font-medium text-zinc-500">
               Data
             </span>
             <div className="flex flex-wrap items-center gap-2">
-              <input
-                type="date"
-                value={listDateFilter}
-                onChange={(e) => setListDateFilter(e.target.value)}
-                className="h-10 rounded-xl border-0 bg-zinc-50 px-3 text-sm text-zinc-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#f318e3]/20"
-              />
+              <div className="min-w-[200px]">
+                <DatePickerField
+                  value={listDateFilter}
+                  onChange={setListDateFilter}
+                  placeholder="Todas as datas"
+                />
+              </div>
               {listDateFilter && (
                 <Button
                   type="button"
@@ -635,7 +664,10 @@ export function AgendaPageClient() {
                   <div className="flex items-start justify-between">
                     <div className="flex gap-4">
                       <div
-                        className={`flex h-12 w-12 items-center justify-center rounded-xl ${typeConfig.color}`}
+                        className="flex h-12 w-12 items-center justify-center rounded-xl text-white"
+                        style={{
+                          backgroundColor: serviceTypeColor(event.type),
+                        }}
                       >
                         <Calendar className="h-6 w-6 text-white" />
                       </div>
@@ -651,7 +683,10 @@ export function AgendaPageClient() {
                             {statusConfig.label}
                           </span>
                         </div>
-                        <p className="mt-1 text-sm text-[#9b0ba6]">
+                        <p
+                          className="mt-1 text-sm font-medium"
+                          style={{ color: serviceTypeColor(event.type) }}
+                        >
                           {typeConfig.label}
                         </p>
                         <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-zinc-500">
@@ -704,33 +739,16 @@ export function AgendaPageClient() {
                                   <p className="text-zinc-800">{event.fotosTiradas}</p>
                                 </div>
                               </div>
-                              <div className="sm:col-span-2">
-                                <p className="text-xs font-medium uppercase text-zinc-400">
-                                  Links de postagem
-                                </p>
-                                {event.linksPostagem && event.linksPostagem.length > 0 ? (
-                                  <ul className="mt-1 space-y-1">
-                                    {event.linksPostagem.map((url, i) => (
-                                      <li key={`${event.id}-link-${i}`}>
-                                        <a
-                                          href={url}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="inline-flex items-center gap-1 font-medium text-[#9b0ba6] hover:underline"
-                                          onClick={(e) => e.stopPropagation()}
-                                        >
-                                          {url}
-                                          <ExternalLink className="h-3.5 w-3.5" />
-                                        </a>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                ) : (
-                                  <p className="text-zinc-400">—</p>
-                                )}
-                              </div>
                             </div>
                           )}
+                        {event.linksPostagem && event.linksPostagem.length > 0 && (
+                          <div className="mt-4">
+                            <PostLinksDisplay
+                              urls={event.linksPostagem}
+                              stopCardClick
+                            />
+                          </div>
+                        )}
                         {event.status === "concluido" && event.completionDescription && (
                           <p className="mt-2 text-sm text-zinc-700">
                             <span className="font-medium text-zinc-600">Registro: </span>
@@ -872,6 +890,7 @@ export function AgendaPageClient() {
           description: completionTarget?.completionDescription ?? "",
           observations: completionTarget?.observations ?? "",
           photoDataUrls: completionTarget?.completionPhotoDataUrls ?? [],
+          linksPostagem: completionTarget?.linksPostagem ?? [],
         }}
         submitLabel="Salvar registro"
         onSubmit={(p) => {
@@ -887,6 +906,7 @@ export function AgendaPageClient() {
             completionDescription: p.description,
             observations: p.observations,
             completionPhotoDataUrls: p.photoDataUrls,
+            linksPostagem: p.linksPostagem ?? [],
           });
         }}
       />
