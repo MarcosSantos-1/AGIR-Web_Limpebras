@@ -1,7 +1,6 @@
 /**
- * Calcula `[startIso, endIso]` cobrindo a vista da Agenda (lista filtra ~mês;
- * semana 7 dias; mês usa grid do calendário). Inclui `extraIsoDays`
- * [highlight URL, filtros] antes do padding opcional para não perder registros.
+ * Intervalos yyyy-MM-dd para queries Firestore.
+ * Vista Agenda usa um único envelope de mês civil (menos dados) + dias extras opcionais.
  */
 
 export function yyyyMmDd(d: Date): string {
@@ -25,51 +24,6 @@ function parseYyMmDd(s: string): Date | null {
   }
   const dt = new Date(y, m - 1, d, 12, 0, 0, 0);
   return dt;
-}
-
-function padRange(
-  start: Date,
-  end: Date,
-  padDays: number,
-): { startIso: string; endIso: string } {
-  const lo = start.getTime() <= end.getTime() ? start : end;
-  const hi = start.getTime() <= end.getTime() ? end : start;
-  const s = new Date(lo);
-  s.setHours(12, 0, 0, 0);
-  s.setDate(s.getDate() - padDays);
-  const e = new Date(hi);
-  e.setHours(12, 0, 0, 0);
-  e.setDate(e.getDate() + padDays);
-  return { startIso: yyyyMmDd(s), endIso: yyyyMmDd(e) };
-}
-
-/** Domingo antes ou igual ao dia `d` (hora ~meio‑dia anti‑fusos). */
-function startSundayWeek(d: Date): Date {
-  const x = new Date(d);
-  x.setHours(12, 0, 0, 0);
-  const wd = x.getDay();
-  x.setDate(x.getDate() - wd);
-  return x;
-}
-
-function endSaturdayWeek(startSunday: Date): Date {
-  const x = new Date(startSunday);
-  x.setDate(x.getDate() + 6);
-  return x;
-}
-
-/** Extremos do grid do calendário mensal (dias fantasmas incluídos). */
-function calendarMonthGridBounds(anchor: Date): { start: Date; end: Date } {
-  const y = anchor.getFullYear();
-  const m = anchor.getMonth();
-  const first = new Date(y, m, 1, 12, 0, 0, 0);
-  const pad = first.getDay();
-  const gridStart = new Date(y, m, 1 - pad, 12, 0, 0, 0);
-  const dim = new Date(y, m + 1, 0).getDate();
-  const trailing = (7 - ((pad + dim) % 7)) % 7;
-  const numCells = pad + dim + trailing;
-  const gridEnd = new Date(y, m, (1 - pad) + numCells - 1, 12, 0, 0, 0);
-  return { start: gridStart, end: gridEnd };
 }
 
 function mergeExtents(
@@ -98,53 +52,43 @@ function mergeExtents(
   };
 }
 
-/**
- * Intervalo yyyy-MM-dd usado pela query Firestore da página Agenda (+ padding dias).
- */
-export function agendaFirestoreRangeForViewport(
-  selectedDate: Date,
-  viewMode: "week" | "month" | "list",
-  opts?: {
-    /** event= na URL ou data filtro na lista — sempre incluídos quando válidos */
-    extraIsoDays?: Array<string | null | undefined>;
-    /** dias antes/de depois dos extremos calculados */
-    padDays?: number;
-  },
-): { startIso: string; endIso: string } {
-  const pad = opts?.padDays ?? 7;
-  let core: { start: Date; end: Date };
-  switch (viewMode) {
-    case "week": {
-      const ws = startSundayWeek(selectedDate);
-      const we = endSaturdayWeek(ws);
-      core = { start: ws, end: we };
-      break;
+/** `yyyy-MM` ou `yyyy-MM-dd` → primeiro dia do mês (meio-dia anti-fuso). */
+export function anchorDateFromYearMonthYm(s: string): Date | null {
+  const trimmed = s.trim();
+  const ym = /^(\d{4})-(\d{2})$/.exec(trimmed);
+  if (ym) {
+    const y = Number(ym[1]);
+    const m = Number(ym[2]);
+    if (
+      Number.isFinite(y) &&
+      Number.isFinite(m) &&
+      m >= 1 &&
+      m <= 12
+    ) {
+      return new Date(y, m - 1, 1, 12, 0, 0, 0);
     }
-    case "month": {
-      core = calendarMonthGridBounds(selectedDate);
-      break;
-    }
-    case "list":
-    default: {
-      const y = selectedDate.getFullYear();
-      const m = selectedDate.getMonth();
-      core = {
-        start: new Date(y, m, 1, 12, 0, 0, 0),
-        end: new Date(y, m + 1, 0, 12, 0, 0, 0),
-      };
-      break;
-    }
+    return null;
   }
-  const extra = [...(opts?.extraIsoDays ?? [])];
-  const base = mergeExtents(
-    {
-      startIso: yyyyMmDd(core.start),
-      endIso: yyyyMmDd(core.end),
-    },
-    extra.flatMap((x) => (x && /^\d{4}-\d{2}-\d{2}$/.test(x) ? [x] : [])),
+  const d = parseYyMmDd(trimmed);
+  if (!d) return null;
+  return new Date(d.getFullYear(), d.getMonth(), 1, 12, 0, 0, 0);
+}
+
+/**
+ * Mês civil (inclusive), sem padding. Mescla datas extras (`?event=` etc.).
+ */
+export function calendarMonthFirestoreRange(
+  anchor: Date,
+  opts?: { extraIsoDays?: Array<string | null | undefined> },
+): { startIso: string; endIso: string } {
+  const y = anchor.getFullYear();
+  const m = anchor.getMonth();
+  const core = {
+    startIso: yyyyMmDd(new Date(y, m, 1, 12, 0, 0, 0)),
+    endIso: yyyyMmDd(new Date(y, m + 1, 0, 12, 0, 0, 0)),
+  };
+  const extras = [...(opts?.extraIsoDays ?? [])].flatMap((x) =>
+    typeof x === "string" && /^\d{4}-\d{2}-\d{2}$/.test(x.trim()) ? [x.trim()] : [],
   );
-  const s = parseYyMmDd(base.startIso);
-  const e = parseYyMmDd(base.endIso);
-  if (!s || !e) return base;
-  return padRange(s, e, pad);
+  return mergeExtents(core, extras);
 }

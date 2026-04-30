@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/select";
 import { DatePickerField } from "@/components/forms/date-picker-field";
 import { serviceTypeColor } from "@/lib/constants/service-type-colors";
+import { SubregionalBadge } from "@/components/subregional-badge";
 
 const eventTypes = [
   { id: "all", label: "Todos" },
@@ -471,6 +472,20 @@ function AgendaPageContent() {
                         <p className="text-sm font-medium text-zinc-900 line-clamp-2">
                           {event.title}
                         </p>
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                          <span
+                            className="text-[10px] font-semibold"
+                            style={{
+                              color: serviceTypeColor(event.type),
+                            }}
+                          >
+                            {typeConfig.label}
+                          </span>
+                          <SubregionalBadge
+                            subregional={event.subregional}
+                            size="compact"
+                          />
+                        </div>
                         <div className="mt-2 flex items-center gap-1">
                           <StatusIcon className={`h-3 w-3 ${statusConfig.color.split(" ")[0]}`} />
                           <span className="text-[10px] text-zinc-500">
@@ -575,6 +590,21 @@ function AgendaPageContent() {
                                   }}
                                 />
                                 {event.time} {event.title}
+                              </div>
+                              <div className="mt-0.5 flex flex-wrap items-center gap-1">
+                                <span
+                                  className="truncate text-[9px] font-medium text-zinc-600"
+                                  style={{
+                                    color: serviceTypeColor(event.type),
+                                  }}
+                                >
+                                  {typeConfig.label}
+                                </span>
+                                <SubregionalBadge
+                                  subregional={event.subregional}
+                                  size="compact"
+                                  className="max-w-[6rem]"
+                                />
                               </div>
                               {event.type === "panfletagem" &&
                                 "panfletosDistribuidos" in event && (
@@ -714,12 +744,15 @@ function AgendaPageContent() {
                             {statusConfig.label}
                           </span>
                         </div>
-                        <p
-                          className="mt-1 text-sm font-medium"
-                          style={{ color: serviceTypeColor(event.type) }}
-                        >
-                          {typeConfig.label}
-                        </p>
+                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                          <p
+                            className="text-sm font-medium"
+                            style={{ color: serviceTypeColor(event.type) }}
+                          >
+                            {typeConfig.label}
+                          </p>
+                          <SubregionalBadge subregional={event.subregional} />
+                        </div>
                         <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-zinc-500">
                           <span className="flex items-center gap-1">
                             <Clock className="h-4 w-4" />
@@ -838,6 +871,14 @@ function AgendaPageContent() {
                                         type="button"
                                         onClick={() => {
                                           if (s.id === "concluido") {
+                                            openAgendaEventForEdit(event.id, {
+                                              openAsFinalizado: true,
+                                            });
+                                            setListStatusPickerOpen(false);
+                                            setListSelectedId(null);
+                                            return;
+                                          }
+                                          if (s.id === "pendente" && event.status === "pendente") {
                                             openAgendaEventForEdit(event.id);
                                             setListStatusPickerOpen(false);
                                             setListSelectedId(null);

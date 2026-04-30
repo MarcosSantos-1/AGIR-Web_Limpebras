@@ -14,10 +14,20 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Qualquer utilizador autenticado lê perfis (lista para equipas / modais).
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if false;
     }
     match /users/{userId}/dailyChecklistItems/{itemId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    match /teamIntegrantes/{docId} {
+      allow read, write: if request.auth != null;
+    }
+    match /emailInvites/{docId} {
+      allow read, write: if request.auth != null;
     }
   }
 }

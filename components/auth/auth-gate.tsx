@@ -9,7 +9,7 @@ import { ProfileOnboardingDialog } from "@/components/settings/profile-onboardin
 import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useEffect } from "react";
 
-const PUBLIC_PATHS = new Set(["/login"]);
+const PUBLIC_PATHS = new Set(["/login", "/login/email-link"]);
 
 export function AuthGate({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();

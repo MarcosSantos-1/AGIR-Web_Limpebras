@@ -4,6 +4,7 @@
  */
 
 import { getCurrentWeekMondayIso } from "@/lib/date/week";
+import type { SubregionalId } from "@/lib/constants/subregionais";
 
 export const DASHBOARD_AGENDA = {
   weekStartIso: "2026-04-21",
@@ -32,9 +33,13 @@ export type AgendaEvent = {
   time: string;
   endTime: string;
   location: string;
+  /** Subregional territorial (indicadores / distribuição). */
+  subregional?: SubregionalId;
   priority: "high" | "medium" | "low";
   observations: string;
   equipe?: string;
+  /** Ordem da equipa no terreno (modais). */
+  equipeIntegrantes?: string[];
   panfletosDistribuidos?: number;
   locaisAtendidos?: string;
   fotosTiradas?: number;

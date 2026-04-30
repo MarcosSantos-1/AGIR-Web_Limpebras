@@ -3,7 +3,9 @@ import {
   deleteDoc,
   doc,
   onSnapshot,
+  query,
   setDoc,
+  where,
   type Unsubscribe,
 } from "firebase/firestore";
 import type { HistoryRecordDoc } from "@/data/history-records";
@@ -20,6 +22,13 @@ function docToHistory(
   return { ...data, id } as HistoryRecordDoc;
 }
 
+function sortHistoryDesc(a: HistoryRecordDoc, b: HistoryRecordDoc): number {
+  return b.date.localeCompare(a.date) || b.id - a.id;
+}
+
+/**
+ * Lista toda a coleção (uso legado; evitar onde possível — prefira intervalo mensal).
+ */
 export function subscribeHistoryRecords(
   onNext: (records: HistoryRecordDoc[]) => void,
   onError?: (e: Error) => void,
@@ -31,7 +40,32 @@ export function subscribeHistoryRecords(
     (snap) => {
       const rows = snap.docs
         .map((d) => docToHistory(d.id, d.data() as Record<string, unknown>))
-        .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+        .sort(sortHistoryDesc);
+      onNext(rows);
+    },
+    (err) => onError?.(err as Error),
+  );
+}
+
+/** Ouvinte restrito ao mês (yyyy-MM-dd entre `startIso` e `endIso`, inclusive). */
+export function subscribeHistoryRecordsInDateRange(
+  startIso: string,
+  endIso: string,
+  onNext: (records: HistoryRecordDoc[]) => void,
+  onError?: (e: Error) => void,
+): Unsubscribe {
+  const db = getFirebaseDb();
+  const q = query(
+    collection(db, HISTORY_COLLECTION),
+    where("date", ">=", startIso),
+    where("date", "<=", endIso),
+  );
+  return onSnapshot(
+    q,
+    (snap) => {
+      const rows = snap.docs
+        .map((d) => docToHistory(d.id, d.data() as Record<string, unknown>))
+        .sort(sortHistoryDesc);
       onNext(rows);
     },
     (err) => onError?.(err as Error),

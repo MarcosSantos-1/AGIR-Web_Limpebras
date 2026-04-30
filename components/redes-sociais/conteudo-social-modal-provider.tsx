@@ -34,6 +34,9 @@ import {
   type SocialConteudoMediaItem,
 } from "@/components/redes-sociais/social-media-dropzone";
 import { useSocialPosts } from "@/contexts/social-posts-context";
+import { useAuth } from "@/contexts/auth-context";
+import { useUserProfile } from "@/contexts/user-profile-context";
+import { firstNameForResponsible } from "@/lib/auth/responsible-default";
 import { uploadFileToPath } from "@/lib/storage/upload-helpers";
 import type {
   SocialContentStatus,
@@ -349,6 +352,8 @@ function ConteudoFormDialog({
   onOpenChange: (o: boolean) => void;
 }) {
   const { persistPost } = useSocialPosts();
+  const { user } = useAuth();
+  const { profile } = useUserProfile();
   const [fase, setFase] = React.useState<ConteudoStatusFase>("ideia");
   const [tema, setTema] = React.useState("");
   const [tipo, setTipo] = React.useState<SocialContentTipo>("Post");
@@ -414,7 +419,10 @@ function ConteudoFormDialog({
       fase,
       tema,
       tipo,
-      responsavel,
+      responsavel:
+        responsavel.trim() ||
+        firstNameForResponsible(user, profile?.nome) ||
+        "—",
       ideiaTexto,
       legenda,
       linkArquivo,

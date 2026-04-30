@@ -13,9 +13,11 @@ import {
   Moon,
   Sun,
   MessageCircle,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProfileForm } from "@/components/settings/profile-form";
+import { EquipaAcessoSection } from "@/components/settings/equipa-acesso-section";
 
 /** Suporte pelo WhatsApp Business (texto pré-preenchido). */
 const WHATSAPP_SUPPORT_URL =
@@ -27,6 +29,12 @@ const settingsSections = [
     label: "Perfil",
     icon: User,
     description: "Informações pessoais e conta",
+  },
+  {
+    id: "equipe",
+    label: "Equipe e acessos",
+    icon: Users,
+    description: "Nomes, contas e convites por e-mail",
   },
   {
     id: "aparencia",
@@ -111,6 +119,12 @@ export default function ConfiguracoesPage() {
           {activeSection === "perfil" && (
             <div className="space-y-6">
               <ProfileForm layout="settings" />
+              <div className="rounded-3xl border border-zinc-100 bg-zinc-50/40 p-4 text-sm text-zinc-600">
+                <p className="font-medium text-zinc-800">Equipe</p>
+                <p className="mt-1">
+                  Convites por link e nomes para as equipes nos modais estão em <strong>Equipe e acesso</strong>.
+                </p>
+              </div>
               <div className="rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50">
                 <h3 className="mb-4 text-lg font-semibold text-zinc-900">Senha</h3>
                 <p className="mb-4 text-sm text-zinc-500">
@@ -122,6 +136,8 @@ export default function ConfiguracoesPage() {
               </div>
             </div>
           )}
+
+          {activeSection === "equipe" && <EquipaAcessoSection />}
 
           {activeSection === "aparencia" && (
             <div className="relative space-y-6">

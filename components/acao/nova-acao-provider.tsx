@@ -49,16 +49,24 @@ import {
   Loader2,
 } from "lucide-react";
 import { DatePickerField } from "@/components/forms/date-picker-field";
+import { SubregionalSelectField } from "@/components/forms/subregional-select-field";
 import { TimePickerField } from "@/components/forms/time-picker-field";
 import { ActionPhotoDropzone } from "@/components/acao-registro/action-photo-dropzone";
+import { EquipeIntegrantesField } from "@/components/acao/equipe-integrantes-field";
 import { LinksPostagemEditor } from "@/components/acao-registro/post-links";
+import { integrantesFromAgendaEvent } from "@/lib/agenda/equipe-parsing";
 import { MAPA_PONTOS_VICIO_FORM } from "@/lib/map-features";
 import { useAuth } from "@/contexts/auth-context";
+import { useUserProfile } from "@/contexts/user-profile-context";
+import type { HistoryRecordDoc } from "@/data/history-records";
 import {
   createAgendaDocument,
   fetchAgendaEventByNumericId,
+  mergeWriteAgendaEvent,
   updateAgendaEventFields,
 } from "@/lib/firestore/agenda";
+import { replaceHistoryFromCompletedAgendaEvent } from "@/lib/history-persist";
+import { historyRecordDocToAgendaEvent } from "@/lib/history-to-agenda";
 import { replaceDataUrlsWithStorage } from "@/lib/storage/upload-helpers";
 import type {
   AgendaEvent,
@@ -68,13 +76,25 @@ import type {
 import { format } from "date-fns";
 import { useAgendaEvents } from "@/contexts/agenda-events-context";
 import { AGENDA_TIME_UNSPECIFIED } from "@/lib/agenda/time-display";
+import { firstNameForResponsible } from "@/lib/auth/responsible-default";
+import {
+  subregionalIdFromSubprefeitura,
+  subregionalMeta,
+  type SubregionalId,
+} from "@/lib/constants/subregionais";
 
 export type NovaAcaoTipo = "acao-visita" | "revitalizacao";
 
 export type NovaAcaoUIMode =
   | { kind: "none" }
   | { kind: "nova"; tipo: NovaAcaoTipo }
-  | { kind: "edit"; id: number };
+  | {
+      kind: "edit";
+      id: number;
+      openAsFinalizado?: boolean;
+      /** Quando o compromisso não existe em `agendaEvents` (ex.: só no histórico). */
+      historyFallbackAgenda?: AgendaEvent;
+    };
 
 type NovaAcaoContextValue = {
   /** Modo atual (nova ação ou edição de compromisso). */
@@ -83,7 +103,12 @@ type NovaAcaoContextValue = {
   open: NovaAcaoTipo | null;
   openModal: (t: NovaAcaoTipo) => void;
   /** Abre o mesmo formulário Nova Ação / Revitalização com dados já salvos no Firestore. */
-  openAgendaEventForEdit: (id: number) => void;
+  openAgendaEventForEdit: (
+    id: number,
+    opts?: { openAsFinalizado?: boolean },
+  ) => void;
+  /** Abre Ação/Visita ou Revitalização a partir de um registro do Histórico. */
+  openHistoryRecordForEdit: (record: HistoryRecordDoc) => void;
   close: () => void;
 };
 
@@ -255,11 +280,14 @@ function AcaoVisitaDialog({
   open,
   onOpenChange,
   initialEvent,
+  preferFinalizado,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   /** Se definido, modo edição (mesmo formulário que “Nova ação”). */
   initialEvent: AgendaEvent | null;
+  /** Ex.: fluxo da agenda ao escolher “Concluído” — já abre em Finalizado. */
+  preferFinalizado?: boolean;
 }) {
   const [situacao, setSituacao] = React.useState<"agendar" | "finalizado">(
     "agendar",
@@ -277,10 +305,17 @@ function AcaoVisitaDialog({
   const [unidadesPanfletos, setUnidadesPanfletos] = React.useState("");
   const [tituloAcao, setTituloAcao] = React.useState("");
   const [responsavelAcao, setResponsavelAcao] = React.useState("");
+  const [subregionalAcao, setSubregionalAcao] = React.useState<
+    SubregionalId | ""
+  >("");
   const [saving, setSaving] = React.useState(false);
   const [saveError, setSaveError] = React.useState<string | null>(null);
+  const [equipeIntegrantes, setEquipeIntegrantes] = React.useState<string[]>(
+    [],
+  );
 
   const { user } = useAuth();
+  const { profile } = useUserProfile();
 
   const isTipoPanfletagem = tipoServico === "panfletagem";
   const panfletPodeExibir = tipoServico.length > 0;
@@ -302,6 +337,8 @@ function AcaoVisitaDialog({
       setUnidadesPanfletos("");
       setTituloAcao("");
       setResponsavelAcao("");
+      setSubregionalAcao("");
+      setEquipeIntegrantes([]);
       setSaveError(null);
       setSaving(false);
       return;
@@ -320,10 +357,13 @@ function AcaoVisitaDialog({
       tEnd === AGENDA_TIME_UNSPECIFIED;
     setAcaoHorario(unspecified ? "" : tStart);
     setLocalEndereco(initialEvent.location);
+    setSubregionalAcao(initialEvent.subregional ?? "");
     setResponsavelAcao(
       initialEvent.responsible === "—" ? "" : initialEvent.responsible,
     );
-    setSituacao(initialEvent.status === "concluido" ? "finalizado" : "agendar");
+    const completionUi =
+      initialEvent.status === "concluido" || !!preferFinalizado;
+    setSituacao(completionUi ? "finalizado" : "agendar");
     if (initialEvent.status === "concluido") {
       setDescricaoFeito(initialEvent.completionDescription ?? "");
       setObservacoesGerais(initialEvent.observations ?? "");
@@ -335,8 +375,13 @@ function AcaoVisitaDialog({
       );
       setDescricaoFeito(previsto);
       setObservacoesGerais(extra);
-      setLinksPostagemText("");
-      setFotoDataUrls([]);
+      if (preferFinalizado) {
+        setLinksPostagemText((initialEvent.linksPostagem ?? []).join("\n"));
+        setFotoDataUrls([...(initialEvent.completionPhotoDataUrls ?? [])]);
+      } else {
+        setLinksPostagemText("");
+        setFotoDataUrls([]);
+      }
     }
     const p = initialEvent.panfletosDistribuidos;
     if (typeof p === "number" && Number.isFinite(p)) {
@@ -348,7 +393,8 @@ function AcaoVisitaDialog({
       setUnidadesPanfletos("");
       setPanfletagemRealizada(initialEvent.type === "panfletagem");
     }
-  }, [open, initialEvent?.id]);
+    setEquipeIntegrantes(integrantesFromAgendaEvent(initialEvent));
+  }, [open, initialEvent?.id, preferFinalizado]);
 
   /** Troca tipo de serviço e regras de panfletagem sem “apagar” unidades vindas da edição. */
   function onTipoServicoChange(v: string) {
@@ -388,7 +434,8 @@ function AcaoVisitaDialog({
               !tipoServico ||
               !tituloAcao.trim() ||
               !acaoData.trim() ||
-              !localEndereco.trim()
+              !localEndereco.trim() ||
+              !subregionalAcao
             ) {
               setCamposErro(true);
               return;
@@ -423,11 +470,14 @@ function AcaoVisitaDialog({
               type: tipo,
               status,
               responsible:
-                responsavelAcao.trim() || user?.email?.trim() || "—",
+                responsavelAcao.trim() ||
+                firstNameForResponsible(user, profile?.nome) ||
+                "—",
               date: acaoData,
               time: clock,
               endTime: clock,
               location: localEndereco.trim(),
+              subregional: subregionalAcao,
               priority: situacao === "finalizado" ? "high" : "medium",
               observations,
               ...(completionDescription != null &&
@@ -447,12 +497,27 @@ function AcaoVisitaDialog({
                 patch.panfletosDistribuidos = parsed;
               }
             }
+            const integrantesNomes = equipeIntegrantes
+              .map((s) => s.trim())
+              .filter(Boolean);
+            patch.equipeIntegrantes = integrantesNomes;
+            patch.equipe =
+              integrantesNomes.length > 0 ? integrantesNomes.join(", ") : "";
             setSaving(true);
             try {
               let targetId: number;
               if (initialEvent?.id != null) {
-                await updateAgendaEventFields(initialEvent.id, patch);
                 targetId = initialEvent.id;
+                const remote = await fetchAgendaEventByNumericId(targetId);
+                if (remote) {
+                  await updateAgendaEventFields(targetId, patch);
+                } else {
+                  await mergeWriteAgendaEvent({
+                    ...initialEvent,
+                    ...patch,
+                    id: targetId,
+                  });
+                }
               } else {
                 targetId = await createAgendaDocument(patch);
               }
@@ -469,6 +534,10 @@ function AcaoVisitaDialog({
                     completionPhotoDataUrls: urls,
                   });
                 }
+              }
+              if (situacao === "finalizado") {
+                const fresh = await fetchAgendaEventByNumericId(targetId);
+                if (fresh) await replaceHistoryFromCompletedAgendaEvent(fresh);
               }
               onOpenChange(false);
             } catch (err) {
@@ -493,7 +562,8 @@ function AcaoVisitaDialog({
               )}
               {camposErro && (
                 <p className="rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-sm font-medium text-red-700">
-                  Preencha tipo de serviço, título, data e local / endereço.
+                  Preencha tipo de serviço, título, data, local / endereço e
+                  subregional.
                 </p>
               )}
               <div className="space-y-3">
@@ -776,8 +846,22 @@ function AcaoVisitaDialog({
                       onChange={(e) => setResponsavelAcao(e.target.value)}
                     />
                   </div>
+                  <SubregionalSelectField
+                    id="acao-subregional"
+                    value={subregionalAcao}
+                    onChange={setSubregionalAcao}
+                    error={camposErro && !subregionalAcao}
+                  />
                 </div>
               </SectionBox>
+
+              <EquipeIntegrantesField
+                fieldKey={String(initialEvent?.id ?? "nova")}
+                subscribeActive={open}
+                value={equipeIntegrantes}
+                onChange={setEquipeIntegrantes}
+                disabled={saving}
+              />
 
               <SectionBox
                 icon={Briefcase}
@@ -902,10 +986,12 @@ function RevitalizacaoDialog({
   open,
   onOpenChange,
   initialEvent,
+  preferFinalizado,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   initialEvent: AgendaEvent | null;
+  preferFinalizado?: boolean;
 }) {
   const [situacaoRev, setSituacaoRev] = React.useState<
     "agendar" | "finalizado"
@@ -926,6 +1012,8 @@ function RevitalizacaoDialog({
   const [saveErrorRev, setSaveErrorRev] = React.useState<string | null>(null);
   const [savingRev, setSavingRev] = React.useState(false);
   const [pontoErro, setPontoErro] = React.useState(false);
+  const { user } = useAuth();
+  const { profile } = useUserProfile();
 
   React.useEffect(() => {
     if (!open) return;
@@ -952,7 +1040,9 @@ function RevitalizacaoDialog({
     setPontoErro(false);
     setDataRevitalizacao(initialEvent.date);
     setSituacaoRev(
-      initialEvent.status === "concluido" ? "finalizado" : "agendar",
+      initialEvent.status === "concluido" || preferFinalizado
+        ? "finalizado"
+        : "agendar",
     );
     const fromTit = extractIdFromTituloRev(initialEvent.title);
     const fromObs = extractPontoViciado(initialEvent.observations ?? "");
@@ -963,7 +1053,7 @@ function RevitalizacaoDialog({
     setVolumeRev(parsed.volume);
     setKgRev(parsed.kg);
     setEquipeRev(parsed.equipe);
-    if (initialEvent.status === "concluido") {
+    if (initialEvent.status === "concluido" || preferFinalizado) {
       setRevFotoUrls([...(initialEvent.completionPhotoDataUrls ?? [])]);
       setLinksPostagemText((initialEvent.linksPostagem ?? []).join("\n"));
     } else {
@@ -974,7 +1064,7 @@ function RevitalizacaoDialog({
     const un = typeof p === "number" ? String(p) : "";
     setUnidadesPanfletos(un);
     setPanfletagemRealizada(!!un && Number.parseFloat(un) > 0);
-  }, [open, initialEvent?.id]);
+  }, [open, initialEvent?.id, preferFinalizado]);
 
   React.useEffect(() => {
     if (pontoViciadoId) setPontoErro(false);
@@ -1070,15 +1160,18 @@ function RevitalizacaoDialog({
               }
             }
 
+            const subFromSp = subregionalIdFromSubprefeitura(subprefeitura);
             const patch: Omit<AgendaEvent, "id"> = {
               title,
               type: "revitalizacao",
               status,
-              responsible: "—",
+              responsible:
+                firstNameForResponsible(user, profile?.nome) || "—",
               date: dataRevitalizacao,
               time: timeSlot,
               endTime: endSlot,
               location: enderecoPonto || "—",
+              ...(subFromSp ? { subregional: subFromSp } : {}),
               priority: "medium",
               observations,
             };
@@ -1095,8 +1188,17 @@ function RevitalizacaoDialog({
             try {
               let targetId: number;
               if (initialEvent?.id != null) {
-                await updateAgendaEventFields(initialEvent.id, patch);
                 targetId = initialEvent.id;
+                const remote = await fetchAgendaEventByNumericId(targetId);
+                if (remote) {
+                  await updateAgendaEventFields(targetId, patch);
+                } else {
+                  await mergeWriteAgendaEvent({
+                    ...initialEvent,
+                    ...patch,
+                    id: targetId,
+                  });
+                }
               } else {
                 targetId = await createAgendaDocument(patch);
               }
@@ -1113,6 +1215,10 @@ function RevitalizacaoDialog({
                     completionPhotoDataUrls: urls,
                   });
                 }
+              }
+              if (situacaoRev === "finalizado") {
+                const fresh = await fetchAgendaEventByNumericId(targetId);
+                if (fresh) await replaceHistoryFromCompletedAgendaEvent(fresh);
               }
               onOpenChange(false);
             } catch (err) {
@@ -1295,6 +1401,27 @@ function RevitalizacaoDialog({
                       placeholder="Selecione um ponto viciado"
                       className="h-11 cursor-default border-zinc-200 bg-zinc-100/80"
                     />
+                    {subprefeitura ? (
+                      <p className="mt-1.5 text-xs text-zinc-500">
+                        {(() => {
+                          const id = subregionalIdFromSubprefeitura(subprefeitura);
+                          return id ? (
+                            <>
+                              Nos Indicadores, contabiliza como{" "}
+                              <span className="font-medium text-zinc-700">
+                                {subregionalMeta(id).label}
+                              </span>
+                              .
+                            </>
+                          ) : (
+                            <>
+                              Esta subprefeitura ainda não tem correspondência
+                              automática nos Indicadores.
+                            </>
+                          );
+                        })()}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
               </SectionBox>
@@ -1525,12 +1652,16 @@ function NovaAcaoModals({
     setEditSnap(undefined);
     void fetchAgendaEventByNumericId(ui.id).then((d) => {
       if (cancelled) return;
-      if (!d) {
-        setEditSnap(null);
-        onUiClose();
+      if (d) {
+        setEditSnap(d);
         return;
       }
-      setEditSnap(d);
+      if (ui.kind === "edit" && ui.historyFallbackAgenda) {
+        setEditSnap(ui.historyFallbackAgenda);
+        return;
+      }
+      setEditSnap(null);
+      onUiClose();
     });
     return () => {
       cancelled = true;
@@ -1562,6 +1693,9 @@ function NovaAcaoModals({
       ? editSnap
       : null;
 
+  const openAsFinalizado =
+    ui.kind === "edit" && !!ui.openAsFinalizado;
+
   return (
     <>
       <AcaoVisitaDialog
@@ -1570,6 +1704,7 @@ function NovaAcaoModals({
           if (!o) onUiClose();
         }}
         initialEvent={initialAcao}
+        preferFinalizado={openAsFinalizado}
       />
       <RevitalizacaoDialog
         open={showRevitaliza}
@@ -1577,6 +1712,7 @@ function NovaAcaoModals({
           if (!o) onUiClose();
         }}
         initialEvent={initialRev}
+        preferFinalizado={openAsFinalizado}
       />
     </>
   );
@@ -1592,7 +1728,20 @@ export function NovaAcaoProvider({ children }: { children: React.ReactNode }) {
       mode: ui,
       open: legacyOpen,
       openModal: (t) => setUi({ kind: "nova", tipo: t }),
-      openAgendaEventForEdit: (id: number) => setUi({ kind: "edit", id }),
+      openAgendaEventForEdit: (id, opts) =>
+        setUi({
+          kind: "edit",
+          id,
+          ...(opts?.openAsFinalizado ? { openAsFinalizado: true } : {}),
+        }),
+      openHistoryRecordForEdit: (record) =>
+        setUi({
+          kind: "edit",
+          id: record.id,
+          openAsFinalizado:
+            record.status === "concluido" || record.status === "parcial",
+          historyFallbackAgenda: historyRecordDocToAgendaEvent(record),
+        }),
       close: () => setUi({ kind: "none" }),
     }),
     [ui],

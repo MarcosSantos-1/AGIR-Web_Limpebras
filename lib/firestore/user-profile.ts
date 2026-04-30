@@ -1,5 +1,7 @@
 import {
+  collection,
   doc,
+  getDocs,
   onSnapshot,
   setDoc,
   type DocumentData,
@@ -12,6 +14,8 @@ export const DEFAULT_PROFILE_GRADIENT = {
   to: "#6a0eaf",
 } as const;
 
+export type AccessRole = "admin" | "standard";
+
 export type UserProfileDoc = {
   nome: string;
   cargo: string;
@@ -21,7 +25,12 @@ export type UserProfileDoc = {
   /** E-mail atual do Auth (somente cópia informativa) */
   emailSynced: string | null;
   completedAtMs: number | null;
+  accessRole: AccessRole;
 };
+
+function coerceAccessRole(v: unknown): AccessRole {
+  return v === "admin" ? "admin" : "standard";
+}
 
 function coerceProfile(data: DocumentData): UserProfileDoc {
   return {
@@ -40,6 +49,7 @@ function coerceProfile(data: DocumentData): UserProfileDoc {
       typeof data.emailSynced === "string" ? data.emailSynced : null,
     completedAtMs:
       typeof data.completedAtMs === "number" ? data.completedAtMs : null,
+    accessRole: coerceAccessRole(data.accessRole),
   };
 }
 
@@ -91,4 +101,39 @@ export async function saveUserProfile(
     },
     { merge: true },
   );
+}
+
+/** Resumo para listagem (equipa / modais). */
+export type UserDirectoryEntry = {
+  uid: string;
+  nome: string;
+  emailSynced: string | null;
+  accessRole: AccessRole;
+};
+
+export function displayNameFromDirectoryEntry(
+  row: UserDirectoryEntry,
+): string | null {
+  const n = row.nome?.trim();
+  if (n) return n;
+  const e = row.emailSynced?.trim();
+  if (e) {
+    const local = e.split("@")[0]?.trim();
+    if (local) return local;
+  }
+  return null;
+}
+
+export async function fetchUserDirectory(): Promise<UserDirectoryEntry[]> {
+  const db = getFirebaseDb();
+  const snap = await getDocs(collection(db, "users"));
+  return snap.docs.map((d) => {
+    const p = coerceProfile(d.data());
+    return {
+      uid: d.id,
+      nome: p.nome,
+      emailSynced: p.emailSynced,
+      accessRole: p.accessRole,
+    };
+  });
 }

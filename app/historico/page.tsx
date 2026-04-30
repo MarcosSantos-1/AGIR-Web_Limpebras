@@ -2,7 +2,7 @@
 
 import { AppShell } from "@/components/layout/app-shell";
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import {
   Search,
   Calendar,
@@ -17,6 +17,7 @@ import {
   FileText,
   Users,
   Pencil,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,18 +29,27 @@ import {
 } from "@/components/ui/select";
 import { serviceTypeColor } from "@/lib/constants/service-type-colors";
 import { formatDateBr } from "@/lib/utils";
-import { ActionCompletionDialog } from "@/components/acao-registro/action-completion-dialog";
 import { PostLinksDisplay } from "@/components/acao-registro/post-links";
+import { SubregionalBadge } from "@/components/subregional-badge";
 import type { HistoryRecordDoc } from "@/data/history-records";
 import {
+  subscribeHistoryRecordsInDateRange,
   deleteHistoryRecord,
-  subscribeHistoryRecords,
 } from "@/lib/firestore/history";
 import {
+  deleteAgendaEvent,
+  subscribeAgendaEventsInDateRange,
+} from "@/lib/firestore/agenda";
+import {
   displayHistoryRow,
-  persistHistoryDialog,
-  splitHistoryTime,
+  historyRecordDocFromCompletedAgendaEvent,
 } from "@/lib/history-persist";
+import {
+  anchorDateFromYearMonthYm,
+  calendarMonthFirestoreRange,
+} from "@/lib/date/agenda-view-range";
+import type { AgendaEvent } from "@/data/agenda-events";
+import { useNovaAcao } from "@/components/acao/nova-acao-provider";
 
 const statusConfig = {
   concluido: { label: "Concluído", icon: CheckCircle2, color: "bg-emerald-100 text-emerald-700", iconColor: "text-emerald-500" },
@@ -60,18 +70,66 @@ const typeConfig = {
 } as const;
 
 export default function HistoricoPage() {
+  return (
+    <AppShell title="Histórico" subtitle="Registro oficial de ações realizadas">
+      <HistoricoPageBody />
+    </AppShell>
+  );
+}
+
+function HistoricoPageBody() {
+  const [monthYm, setMonthYm] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [expandedRecord, setExpandedRecord] = useState<number | null>(null);
   const [records, setRecords] = useState<HistoryRecordDoc[]>([]);
-  const [editingRecordId, setEditingRecordId] = useState<number | null>(null);
+  const [agendaMonthEvents, setAgendaMonthEvents] = useState<AgendaEvent[]>(
+    [],
+  );
+  const { openHistoryRecordForEdit } = useNovaAcao();
+
+  const bounds = useMemo(() => {
+    const anchor =
+      anchorDateFromYearMonthYm(monthYm) ??
+      new Date(new Date().getFullYear(), new Date().getMonth(), 1, 12, 0, 0, 0);
+    return calendarMonthFirestoreRange(anchor);
+  }, [monthYm]);
 
   useEffect(() => {
-    return subscribeHistoryRecords(setRecords);
-  }, []);
+    return subscribeHistoryRecordsInDateRange(
+      bounds.startIso,
+      bounds.endIso,
+      setRecords,
+    );
+  }, [bounds.startIso, bounds.endIso]);
 
-  const visibleRecords = records;
+  useEffect(() => {
+    return subscribeAgendaEventsInDateRange(
+      bounds.startIso,
+      bounds.endIso,
+      setAgendaMonthEvents,
+    );
+  }, [bounds.startIso, bounds.endIso]);
+
+  const visibleRecords = useMemo(() => {
+    const byId = new Map<number, HistoryRecordDoc>();
+    for (const r of records) {
+      byId.set(r.id, r);
+    }
+    for (const e of agendaMonthEvents) {
+      if (e.status !== "concluido") continue;
+      if (!byId.has(e.id)) {
+        byId.set(e.id, historyRecordDocFromCompletedAgendaEvent(e));
+      }
+    }
+    return [...byId.values()].sort(
+      (a, b) => b.date.localeCompare(a.date) || b.id - a.id,
+    );
+  }, [records, agendaMonthEvents]);
 
   const filteredRecords = visibleRecords.filter((record) => {
     const row = displayHistoryRow(record);
@@ -90,19 +148,40 @@ export default function HistoricoPage() {
     setExpandedRecord(expandedRecord === id ? null : id);
   };
 
-  const editingRecordBase =
-    editingRecordId != null
-      ? records.find((r) => r.id === editingRecordId)
-      : undefined;
-  const editingMerged = editingRecordBase
-    ? displayHistoryRow(editingRecordBase)
-    : null;
+  const handleDeleteRecord = async (record: HistoryRecordDoc, e: MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    if (
+      !confirm(
+        "Eliminar permanentemente? O histórico e o compromisso na agenda são apagados de vez.",
+      )
+    ) {
+      return;
+    }
+    try {
+      await Promise.all([
+        deleteHistoryRecord(record.id),
+        deleteAgendaEvent(record.id),
+      ]);
+    } catch (err) {
+      console.error(err);
+      alert("Não foi possível excluir. Tente de novo.");
+    }
+  };
 
   return (
-    <AppShell title="Histórico" subtitle="Registro oficial de ações realizadas">
+    <>
       {/* Filters */}
-      <div className="mb-6 flex items-center gap-4">
-        <div className="relative flex-1">
+      <div className="mb-6 flex flex-wrap items-end gap-4">
+        <label className="flex min-w-[200px] flex-col gap-1.5">
+          <span className="text-xs font-medium text-zinc-500">Mês</span>
+          <input
+            type="month"
+            value={monthYm}
+            onChange={(e) => setMonthYm(e.target.value)}
+            className="h-12 rounded-xl border-0 bg-white px-4 text-sm font-medium shadow-lg shadow-zinc-200/50 focus:outline-none focus:ring-2 focus:ring-[#f318e3]/20"
+          />
+        </label>
+        <div className="relative min-w-[220px] flex-1">
           <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
           <input
             type="text"
@@ -140,7 +219,7 @@ export default function HistoricoPage() {
         </Select>
       </div>
 
-      {/* Stats Summary */}
+      {/* Stats Summary — cards pausados; só contador textual por enquanto
       <div className="mb-8 grid grid-cols-4 gap-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -187,6 +266,16 @@ export default function HistoricoPage() {
           </p>
         </motion.div>
       </div>
+      */}
+
+      <p className="mb-8 text-sm text-zinc-600">
+        <span className="font-semibold tabular-nums text-zinc-900">
+          {visibleRecords.length}
+        </span>{" "}
+        {visibleRecords.length === 1
+          ? "registro neste mês"
+          : "registros neste mês"}
+      </p>
 
       {/* Timeline */}
       <div className="relative">
@@ -196,7 +285,9 @@ export default function HistoricoPage() {
         <div className="space-y-4">
           {filteredRecords.map((record, index) => {
             const row = displayHistoryRow(record);
-            const status = statusConfig[record.status as keyof typeof statusConfig];
+            const status =
+              statusConfig[record.status as keyof typeof statusConfig] ??
+              statusConfig.concluido;
             const type =
               typeConfig[record.type as keyof typeof typeConfig] ?? {
                 label: record.type,
@@ -235,12 +326,15 @@ export default function HistoricoPage() {
                           {status.label}
                         </span>
                       </div>
-                      <p
-                        className="mt-1 text-sm font-medium"
-                        style={{ color: serviceTypeColor(record.type) }}
-                      >
-                        {type.label}
-                      </p>
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
+                        <p
+                          className="text-sm font-medium"
+                          style={{ color: serviceTypeColor(record.type) }}
+                        >
+                          {type.label}
+                        </p>
+                        <SubregionalBadge subregional={record.subregional} />
+                      </div>
                       <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-zinc-500">
                         <span className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
@@ -264,19 +358,31 @@ export default function HistoricoPage() {
                         </span>
                       </div>
                     </div>
-                    <div className="flex shrink-0 items-center gap-1">
+                    <div className="flex shrink-0 items-center gap-0.5">
                       <Button
                         type="button"
                         variant="ghost"
-                        size="sm"
-                        className="h-9 gap-1.5 rounded-lg text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
+                        size="icon"
+                        className="rounded-lg text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
+                        aria-label="Editar registro"
+                        title="Editar"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setEditingRecordId(record.id);
+                          openHistoryRecordForEdit(record);
                         }}
                       >
-                        <Pencil className="h-3.5 w-3.5" />
-                        Editar
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700"
+                        aria-label="Excluir registro"
+                        title="Excluir"
+                        onClick={(e) => void handleDeleteRecord(record, e)}
+                      >
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                       <button
                         type="button"
@@ -410,64 +516,6 @@ export default function HistoricoPage() {
           </p>
         </div>
       )}
-
-      <ActionCompletionDialog
-        key={editingRecordId ?? "off"}
-        open={editingRecordId != null}
-        onOpenChange={(o) => {
-          if (!o) setEditingRecordId(null);
-        }}
-        title={
-          editingMerged
-            ? `Editar registro — ${editingMerged.title}`
-            : ""
-        }
-        subtitle="Alterações sincronizadas com o Firestore."
-        showMetaFields
-        showDeleteButton
-        onDelete={
-          editingRecordId != null
-            ? async () => {
-                await deleteHistoryRecord(editingRecordId);
-                setEditingRecordId(null);
-              }
-            : undefined
-        }
-        initial={(() => {
-          if (!editingRecordBase) {
-            return {
-              description: "",
-              observations: "",
-              photoDataUrls: [],
-              linksPostagem: [],
-            };
-          }
-          const r = editingRecordBase;
-          const { start, end } = splitHistoryTime(r.time);
-          const baseLinks =
-            "linksPostagem" in r && Array.isArray(r.linksPostagem)
-              ? [...r.linksPostagem]
-              : [];
-          return {
-            title: r.title,
-            date: r.date,
-            timeStart: start,
-            timeEnd: end,
-            location: r.location,
-            responsible: r.responsible,
-            description: r.description,
-            observations: r.observations,
-            photoDataUrls: r.extraPhotoUrls ?? [],
-            linksPostagem: baseLinks,
-          };
-        })()}
-        submitLabel="Salvar"
-        onSubmit={async (payload) => {
-          if (editingRecordId == null || !editingRecordBase) return;
-          await persistHistoryDialog(editingRecordId, payload, editingRecordBase);
-          setEditingRecordId(null);
-        }}
-      />
-    </AppShell>
+    </>
   );
 }

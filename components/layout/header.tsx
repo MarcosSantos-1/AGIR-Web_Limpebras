@@ -38,16 +38,7 @@ export function Header({ title, subtitle }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-3">
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-          <input
-            type="text"
-            placeholder="Buscar..."
-            className="h-10 w-64 rounded-xl border-0 bg-zinc-100 pl-10 pr-4 text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#f318e3]/20"
-          />
-        </div>
-
+      
         {/* Quick Add */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

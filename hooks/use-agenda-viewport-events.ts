@@ -1,6 +1,6 @@
 "use client";
 
-import { agendaFirestoreRangeForViewport } from "@/lib/date/agenda-view-range";
+import { calendarMonthFirestoreRange } from "@/lib/date/agenda-view-range";
 import {
   fetchAgendaEventByNumericId,
   subscribeAgendaEventsInDateRange,
@@ -21,7 +21,7 @@ function sortEv(a: AgendaEvent, b: AgendaEvent): number {
  */
 export function useAgendaViewportEvents(
   selectedDate: Date,
-  viewMode: ViewMode,
+  _viewMode: ViewMode,
   extraIsoDays: Array<string | null | undefined>,
 ): { events: AgendaEvent[]; hydrated: boolean } {
   const extraKey = extraIsoDays
@@ -32,10 +32,10 @@ export function useAgendaViewportEvents(
 
   const bounds = useMemo(
     () =>
-      agendaFirestoreRangeForViewport(selectedDate, viewMode, {
+      calendarMonthFirestoreRange(selectedDate, {
         extraIsoDays,
       }),
-    [anchorMs, viewMode, extraKey],
+    [anchorMs, extraKey],
   );
 
   const [events, setEvents] = useState<AgendaEvent[]>([]);

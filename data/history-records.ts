@@ -1,5 +1,7 @@
 /** Registo de histórico (coleção Firestore `historyRecords`). */
 
+import type { SubregionalId } from "@/lib/constants/subregionais";
+
 export type HistoryRecord = {
   id: number;
   title: string;
@@ -8,12 +10,14 @@ export type HistoryRecord = {
   date: string;
   time: string;
   location: string;
+  subregional?: SubregionalId;
   responsible: string;
   description: string;
   observations: string;
   photos: number;
   linksPostagem?: string[];
   equipe?: string;
+  equipeIntegrantes?: string[];
   panfletosDistribuidos?: number;
   locaisAtendidos?: string;
 };

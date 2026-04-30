@@ -11,12 +11,6 @@ import { motion } from "framer-motion";
 import { MapPin, Clock, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
-const priorityConfig = {
-  high: { label: "Alta", color: "bg-red-100 text-red-700" },
-  medium: { label: "Média", color: "bg-amber-100 text-amber-700" },
-  low: { label: "Normal", color: "bg-emerald-100 text-emerald-700" },
-};
-
 export function ImportantVisits() {
   const { events } = useAgendaEvents();
   const weekStartIso = getCurrentWeekMondayIso();
@@ -47,7 +41,6 @@ export function ImportantVisits() {
           </p>
         )}
         {items.map((visit) => {
-          const priority = priorityConfig[visit.priority];
           return (
             <Link
               key={visit.id}
@@ -62,11 +55,6 @@ export function ImportantVisits() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <h4 className="font-medium text-zinc-900">{visit.title}</h4>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${priority.color}`}
-                    >
-                      {priority.label}
-                    </span>
                   </div>
                   <p className="mt-1 text-sm text-[#9b0ba6]">{visit.typeLabel}</p>
                 </div>

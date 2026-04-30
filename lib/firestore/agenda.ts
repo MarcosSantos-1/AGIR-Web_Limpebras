@@ -137,6 +137,16 @@ export async function updateAgendaEventFields(
   await setDoc(ref, payload, { merge: true });
 }
 
+/** Garante documento completo (ex.: edição a partir do Histórico sem `agendaEvents` ainda). */
+export async function mergeWriteAgendaEvent(event: AgendaEvent): Promise<void> {
+  const db = getFirebaseDb();
+  await setDoc(
+    doc(db, AGENDA_COLLECTION, String(event.id)),
+    scrubUndefined({ ...event } as Record<string, unknown>),
+    { merge: true },
+  );
+}
+
 export async function deleteAgendaEvent(id: number): Promise<void> {
   const db = getFirebaseDb();
   await deleteDoc(doc(db, AGENDA_COLLECTION, String(id)));
