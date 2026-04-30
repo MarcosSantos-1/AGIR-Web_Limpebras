@@ -14,7 +14,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
-  Trash2,
   ArrowLeftRight,
   Pencil,
   FileText,
@@ -22,7 +21,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { formatDateBr } from "@/lib/utils";
 import { ActionCompletionDialog } from "@/components/acao-registro/action-completion-dialog";
-import type { ActionCompletionPayload } from "@/components/acao-registro/action-completion-dialog";
+import type { GaleriaSetDoc } from "@/data/gallery-sets";
+import {
+  subscribeGaleriaSets,
+} from "@/lib/firestore/gallery";
+import { persistGaleriaDialog } from "@/lib/galeria-persist";
 
 const filterOptions = [
   { id: "all", label: "Todas" },
@@ -33,125 +36,19 @@ const filterOptions = [
   { id: "por-equipe", label: "Por Equipe" },
 ];
 
-const photoSets = [
-  {
-    id: 1,
-    title: "Revitalização Praça Central",
-    type: "antes-depois",
-    location: "Praça da República - Centro",
-    date: "2026-04-21",
-    responsible: "Igor Supervisor",
-    photos: [
-      { id: 1, type: "antes", color: "bg-zinc-300" },
-      { id: 2, type: "depois", color: "bg-emerald-200" },
-    ],
-  },
-  {
-    id: 2,
-    title: "Limpeza Ponto Viciado R. Silva Jardim",
-    type: "antes-depois",
-    location: "R. Silva Jardim, 450",
-    date: "2026-04-18",
-    responsible: "Luciana",
-    photos: [
-      { id: 3, type: "antes", color: "bg-red-200" },
-      { id: 4, type: "depois", color: "bg-green-200" },
-    ],
-  },
-  {
-    id: 3,
-    title: "Vistoria Ecoponto Zona Norte",
-    type: "por-acao",
-    location: "R. Industrial, 890",
-    date: "2026-04-20",
-    responsible: "Maria",
-    photos: [
-      { id: 5, type: "vistoria", color: "bg-blue-200" },
-      { id: 6, type: "vistoria", color: "bg-blue-100" },
-      { id: 7, type: "vistoria", color: "bg-blue-200" },
-    ],
-  },
-  {
-    id: 4,
-    title: "Ação Educativa Escola Municipal",
-    type: "por-acao",
-    location: "Escola Mun. Nova Esperança",
-    date: "2026-04-19",
-    responsible: "Maria",
-    photos: [
-      { id: 8, type: "evento", color: "bg-violet-200" },
-      { id: 9, type: "evento", color: "bg-violet-100" },
-      { id: 10, type: "evento", color: "bg-violet-200" },
-      { id: 11, type: "evento", color: "bg-violet-100" },
-    ],
-  },
-  {
-    id: 5,
-    title: "Fiscalização Setor Industrial",
-    type: "por-acao",
-    location: "R. Industrial, 500-800",
-    date: "2026-04-17",
-    responsible: "Igor Supervisor",
-    photos: [
-      { id: 12, type: "fiscalizacao", color: "bg-amber-200" },
-      { id: 13, type: "fiscalizacao", color: "bg-amber-100" },
-    ],
-  },
-  {
-    id: 6,
-    title: "Área Crítica Marginal - Progresso",
-    type: "antes-depois",
-    location: "Av. Marginal, km 5",
-    date: "2026-04-15",
-    responsible: "Igor Supervisor",
-    photos: [
-      { id: 14, type: "antes", color: "bg-red-300" },
-      { id: 15, type: "durante", color: "bg-amber-200" },
-      { id: 16, type: "depois", color: "bg-green-200" },
-    ],
-  },
-];
-
-const GALERIA_EDITS_KEY = "agir_galeria_v1";
-
 export default function GaleriaPage() {
+  const [photoSets, setPhotoSets] = useState<GaleriaSetDoc[]>([]);
+
+  useEffect(() => {
+    return subscribeGaleriaSets(setPhotoSets);
+  }, []);
+
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxSet, setLightboxSet] = useState<typeof photoSets[0] | null>(null);
+  const [lightboxSet, setLightboxSet] = useState<GaleriaSetDoc | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [galeriaEdits, setGaleriaEdits] = useState<
-    Record<number, ActionCompletionPayload>
-  >({});
   const [editingSetId, setEditingSetId] = useState<number | null>(null);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(GALERIA_EDITS_KEY);
-      if (raw) {
-        const p = JSON.parse(raw) as Record<string, ActionCompletionPayload>;
-        setGaleriaEdits(
-          Object.fromEntries(
-            Object.entries(p).map(([k, v]) => [Number(k), v]),
-          ) as Record<number, ActionCompletionPayload>,
-        );
-      }
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  const persistGaleria = (id: number, payload: ActionCompletionPayload) => {
-    setGaleriaEdits((prev) => {
-      const next = { ...prev, [id]: payload };
-      try {
-        localStorage.setItem(GALERIA_EDITS_KEY, JSON.stringify(next));
-      } catch {
-        /* ignore */
-      }
-      return next;
-    });
-  };
 
   const filteredSets = photoSets.filter((set) => {
     const filterMatch = selectedFilter === "all" || set.type === selectedFilter;
@@ -161,7 +58,7 @@ export default function GaleriaPage() {
     return filterMatch && searchMatch;
   });
 
-  const openLightbox = (set: typeof photoSets[0], index: number) => {
+  const openLightbox = (set: GaleriaSetDoc, index: number) => {
     setLightboxSet(set);
     setLightboxIndex(index);
     setLightboxOpen(true);
@@ -242,33 +139,32 @@ export default function GaleriaPage() {
               )}
             </div>
 
-            {galeriaEdits[set.id]?.description && (
+            {set.registroDescription && (
               <p className="mb-2 text-sm font-medium text-zinc-800">
-                {galeriaEdits[set.id].description}
+                {set.registroDescription}
               </p>
             )}
-            {galeriaEdits[set.id]?.observations && (
+            {set.registroObservations && (
               <p className="mb-2 text-sm text-zinc-600">
-                {galeriaEdits[set.id].observations}
+                {set.registroObservations}
               </p>
             )}
-            {galeriaEdits[set.id]?.photoDataUrls &&
-              galeriaEdits[set.id]!.photoDataUrls.length > 0 && (
-                <div className="mb-3 flex flex-wrap gap-2">
-                  {galeriaEdits[set.id]!.photoDataUrls.map((url, i) => (
-                    <div
-                      key={`g-ed-${set.id}-${i}`}
-                      className="h-16 w-16 overflow-hidden rounded-xl border border-zinc-100"
-                    >
-                      <img
-                        src={url}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
+            {set.registroPhotoUrls && set.registroPhotoUrls.length > 0 && (
+              <div className="mb-3 flex flex-wrap gap-2">
+                {set.registroPhotoUrls.map((url, i) => (
+                  <div
+                    key={`g-ed-${set.id}-${i}`}
+                    className="h-16 w-16 overflow-hidden rounded-xl border border-zinc-100"
+                  >
+                    <img
+                      src={url}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Photos Preview */}
             {set.type === "antes-depois" && set.photos.length >= 2 ? (
@@ -443,23 +339,25 @@ export default function GaleriaPage() {
               }`
             : ""
         }
-        subtitle="Envio de fotos adicionais e anotações. Dados salvos neste dispositivo."
+        subtitle="Envio de fotos adicionais e anotações. Dados guardados no Firestore."
         initial={(() => {
           const s = photoSets.find((x) => x.id === editingSetId);
           if (!s) {
             return { description: "", observations: "", photoDataUrls: [] };
           }
-          const p = galeriaEdits[s.id];
           return {
-            description: p?.description ?? "",
-            observations: p?.observations ?? "",
-            photoDataUrls: p?.photoDataUrls ?? [],
+            description: s.registroDescription ?? "",
+            observations: s.registroObservations ?? "",
+            photoDataUrls: s.registroPhotoUrls ?? [],
           };
         })()}
         submitLabel="Salvar álbum"
-        onSubmit={(payload) => {
+        onSubmit={async (payload) => {
           if (editingSetId == null) return;
-          persistGaleria(editingSetId, payload);
+          const s = photoSets.find((x) => x.id === editingSetId);
+          if (!s) return;
+          await persistGaleriaDialog(editingSetId, payload, s);
+          setEditingSetId(null);
         }}
       />
     </AppShell>

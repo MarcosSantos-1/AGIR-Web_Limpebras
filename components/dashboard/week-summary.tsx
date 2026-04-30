@@ -1,12 +1,12 @@
 "use client";
 
 import {
-  DASHBOARD_AGENDA,
   agendaEventUrl,
   agendaHomeUrl,
   getWeekSummaryColumns,
 } from "@/data/agenda-events";
 import { useAgendaEvents } from "@/contexts/agenda-events-context";
+import { formatDashboardWeekRangeLabel, getCurrentWeekMondayIso } from "@/lib/date/week";
 import { motion } from "framer-motion";
 import { CheckCircle2, Clock, AlertCircle, ChevronRight } from "lucide-react";
 import Link from "next/link";
@@ -19,7 +19,9 @@ const statusConfig = {
 
 export function WeekSummary() {
   const { events } = useAgendaEvents();
-  const weekData = getWeekSummaryColumns(DASHBOARD_AGENDA.weekStartIso, events);
+  const weekStartIso = getCurrentWeekMondayIso();
+  const weekLabel = formatDashboardWeekRangeLabel(weekStartIso);
+  const weekData = getWeekSummaryColumns(weekStartIso, events);
 
   return (
     <motion.div
@@ -31,10 +33,10 @@ export function WeekSummary() {
       <div className="mb-5 flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-zinc-900">Resumo da Semana</h3>
-          <p className="text-sm text-zinc-500">{DASHBOARD_AGENDA.weekLabel}</p>
+          <p className="text-sm text-zinc-500">{weekLabel}</p>
         </div>
         <Link
-          href={agendaHomeUrl(DASHBOARD_AGENDA.weekStartIso)}
+          href={agendaHomeUrl(weekStartIso)}
           className="flex items-center gap-1 text-sm font-medium text-[#9b0ba6] hover:underline"
         >
           Ver agenda completa
@@ -45,7 +47,7 @@ export function WeekSummary() {
       <div className="grid grid-cols-5 gap-3">
         {weekData.map((day, dayIndex) => (
           <div
-            key={day.day}
+            key={day.iso}
             className={`rounded-2xl p-4 transition-colors ${
               dayIndex === 0
                 ? "bg-gradient-to-br from-[#f318e3]/5 to-[#6a0eaf]/5 ring-2 ring-[#f318e3]/20"
@@ -91,7 +93,7 @@ export function WeekSummary() {
                     <Link
                       key={`${day.day}-${taskIndex}`}
                       href={agendaEventUrl(task.eventId, {
-                        date: DASHBOARD_AGENDA.weekStartIso,
+                        date: day.iso,
                         view: "list",
                       })}
                       scroll={false}

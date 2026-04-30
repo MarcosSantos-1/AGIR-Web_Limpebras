@@ -1,10 +1,11 @@
 /**
- * Eventos de agenda (mock local). Trocar por leitura Firestore quando a coleção
- * estiver no projeto — manter o mesmo id numérico/document id nas URLs.
+ * Lista de seed legada (dev / fallbacks). Produção usa eventos do Firestore via
+ * `useAgendaEvents()`. `DASHBOARD_AGENDA` permanece como fallback de testes.
  */
 
+import { getCurrentWeekMondayIso } from "@/lib/date/week";
+
 export const DASHBOARD_AGENDA = {
-  /** Segunda da semana exibida no resumo (home) */
   weekStartIso: "2026-04-21",
   weekLabel: "21 - 25 de Abril de 2026",
 } as const;
@@ -185,14 +186,16 @@ export type DashboardActionVisit = {
   typeLabel: string;
   address: string;
   time: string;
+  date: string;
   priority: "high" | "medium" | "low";
 };
 
 /** Home → todas as ações pendentes da semana (Seg–Sex), em ordem cronológica. */
 export function getHomePendingActionVisits(
   events: AgendaEvent[],
+  weekStartIso: string = getCurrentWeekMondayIso(),
 ): DashboardActionVisit[] {
-  const start = new Date(DASHBOARD_AGENDA.weekStartIso + "T12:00:00");
+  const start = new Date(weekStartIso + "T12:00:00");
   const weekDayIsos: string[] = [];
   for (let i = 0; i < 5; i++) {
     const d = new Date(start);
@@ -213,6 +216,7 @@ export function getHomePendingActionVisits(
       typeLabel: typeToShortLabel(e.type),
       address: e.location,
       time: e.time,
+      date: e.date,
       priority: e.priority,
     }));
 }
@@ -240,22 +244,29 @@ type WeekTask = {
   eventId: number;
 };
 
-type WeekColumn = { day: string; date: string; tasks: WeekTask[] };
+export type WeekSummaryColumn = {
+  day: string;
+  /** Dia do mês (número como string) */
+  date: string;
+  /** yyyy-MM-dd para links e comparações */
+  iso: string;
+  tasks: WeekTask[];
+};
 
 function eventToTaskStatus(e: AgendaEvent): WeekTaskStatus {
   if (e.status === "concluido") return "done";
-  if (e.id === 4) return "urgent";
+  if (e.priority === "high") return "urgent";
   return "pending";
 }
 
-/** Colunas Seg–Sex para o card “Resumo da Semana” (a partir do mock). */
+/** Colunas Seg–Sex para o card “Resumo da Semana”. */
 export function getWeekSummaryColumns(
-  weekStartIso: string = DASHBOARD_AGENDA.weekStartIso,
+  weekStartIso: string = getCurrentWeekMondayIso(),
   sourceEvents: AgendaEvent[] = agendaEvents,
-): WeekColumn[] {
+): WeekSummaryColumn[] {
   const start = new Date(weekStartIso + "T12:00:00");
   const dayLabels = ["Seg", "Ter", "Qua", "Qui", "Sex"] as const;
-  const columns: WeekColumn[] = [];
+  const columns: WeekSummaryColumn[] = [];
 
   for (let i = 0; i < 5; i++) {
     const d = new Date(start);
@@ -264,27 +275,17 @@ export function getWeekSummaryColumns(
     const dayEvents = sourceEvents
       .filter((e) => e.date === iso)
       .sort((a, b) => a.time.localeCompare(b.time));
-    let tasks: WeekTask[] = dayEvents.map((e) => ({
+    const tasks: WeekTask[] = dayEvents.map((e) => ({
       title: e.title,
       status: eventToTaskStatus(e),
       time: e.time,
       eventId: e.id,
     }));
 
-    if (tasks.length === 0 && i === 4) {
-      tasks = [
-        {
-          title: "Relatório Semanal",
-          status: "pending",
-          time: "16:00",
-          eventId: 0,
-        },
-      ];
-    }
-
     columns.push({
       day: dayLabels[i],
       date: String(d.getDate()),
+      iso,
       tasks,
     });
   }
@@ -303,10 +304,10 @@ export function agendaEventUrl(
   return `/agenda?${p.toString()}`;
 }
 
-export function agendaHomeUrl(weekStartIso: string = DASHBOARD_AGENDA.weekStartIso) {
+export function agendaHomeUrl(weekStartIso: string = getCurrentWeekMondayIso()) {
   return `/agenda?date=${weekStartIso}&view=week`;
 }
 
-export function agendaListUrl(weekStartIso: string = DASHBOARD_AGENDA.weekStartIso) {
+export function agendaListUrl(weekStartIso: string = getCurrentWeekMondayIso()) {
   return `/agenda?date=${weekStartIso}&view=list`;
 }

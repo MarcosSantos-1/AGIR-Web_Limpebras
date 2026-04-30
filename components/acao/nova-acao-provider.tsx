@@ -46,18 +46,44 @@ import {
   Type,
   Check,
   ChevronsUpDown,
+  Loader2,
 } from "lucide-react";
 import { DatePickerField } from "@/components/forms/date-picker-field";
 import { TimePickerField } from "@/components/forms/time-picker-field";
 import { ActionPhotoDropzone } from "@/components/acao-registro/action-photo-dropzone";
 import { LinksPostagemEditor } from "@/components/acao-registro/post-links";
 import { MAPA_PONTOS_VICIO_FORM } from "@/lib/map-features";
+import { useAuth } from "@/contexts/auth-context";
+import {
+  createAgendaDocument,
+  fetchAgendaEventByNumericId,
+  updateAgendaEventFields,
+} from "@/lib/firestore/agenda";
+import { replaceDataUrlsWithStorage } from "@/lib/storage/upload-helpers";
+import type {
+  AgendaEvent,
+  AgendaEventStatus,
+  AgendaEventType,
+} from "@/data/agenda-events";
+import { format } from "date-fns";
+import { useAgendaEvents } from "@/contexts/agenda-events-context";
+import { AGENDA_TIME_UNSPECIFIED } from "@/lib/agenda/time-display";
 
 export type NovaAcaoTipo = "acao-visita" | "revitalizacao";
 
+export type NovaAcaoUIMode =
+  | { kind: "none" }
+  | { kind: "nova"; tipo: NovaAcaoTipo }
+  | { kind: "edit"; id: number };
+
 type NovaAcaoContextValue = {
+  /** Modo atual (nova ação ou edição de compromisso). */
+  mode: NovaAcaoUIMode;
+  /** só criação — compatível com telas antigas */
   open: NovaAcaoTipo | null;
   openModal: (t: NovaAcaoTipo) => void;
+  /** Abre o mesmo formulário Nova Ação / Revitalização com dados já salvos no Firestore. */
+  openAgendaEventForEdit: (id: number) => void;
   close: () => void;
 };
 
@@ -82,6 +108,72 @@ const TIPOS_SERVICO = [
   { value: "capacitacao", label: "Capacitação / palestra" },
   { value: "outro", label: "Outro" },
 ] as const;
+
+function tipoServicoToAgendaType(v: string): AgendaEventType {
+  const map: Record<string, AgendaEventType> = {
+    "visita-tecnica": "visita-tecnica",
+    reuniao: "reuniao",
+    "acao-ambiental": "acao-ambiental",
+    fiscalizacao: "fiscalizacao",
+    vistoria: "vistoria",
+    panfletagem: "panfletagem",
+    "coleta-seletiva": "acao-ambiental",
+    capacitacao: "reuniao",
+    outro: "acao-ambiental",
+  };
+  return map[v] ?? "acao-ambiental";
+}
+
+/** Primeiro tipo de UI que compacta neste AgendaEvent.type (ambiguidade aceitável ao reabrir). */
+function tipoAgendaPreferenciaSelect(tipo: AgendaEventType): string {
+  const hit = [...TIPOS_SERVICO].find(
+    (t) => tipoServicoToAgendaType(t.value) === tipo,
+  );
+  return hit?.value ?? "acao-ambiental";
+}
+
+function splitPrevistoObservations(raw: string) {
+  const t = raw.trimStart();
+  if (!t.startsWith("Previsto:")) {
+    return { previsto: "", extra: raw.trim() };
+  }
+  const rest = raw.slice(raw.indexOf("Previsto:") + "Previsto:".length);
+  const body = rest.replace(/^\s*\n?/, "");
+  const double = body.indexOf("\n\n");
+  if (double >= 0) {
+    return {
+      previsto: body.slice(0, double).trim(),
+      extra: body.slice(double + 2).trim(),
+    };
+  }
+  return { previsto: body.trim(), extra: "" };
+}
+
+function extractIdFromTituloRev(titulo: string): string {
+  const m = /^Revitalização\s+—\s+(.+)\s*$/.exec(titulo.trim());
+  return m?.[1]?.trim() ?? "";
+}
+
+/** Parse campo observations de revitalização criado pelo formulário. */
+function parseRevitalizacaoObservations(observations: string) {
+  const volM = /^Volume retirado:\s*(.+)$/m.exec(observations);
+  const kgM = /^Resíduos:\s*(.+)$/m.exec(observations);
+  const eqM = /^Equipe:\s*(\d+)\s*pessoa\(s\)$/m.exec(observations);
+  return {
+    volume: volM?.[1]?.replace(/\s*m³\s*$/i, "").trim() ?? "",
+    kg: kgM?.[1]?.replace(/\s*kg\s*$/i, "").trim() ?? "",
+    equipe: eqM?.[1]?.trim() ?? "",
+  };
+}
+
+function extractPontoViciado(observations: string): string {
+  const m = /^Ponto viciado:\s*(.+)$/m.exec(observations ?? "");
+  return m?.[1]?.trim() ?? "";
+}
+
+function parseLinks(text: string): string[] {
+  return text.split(/\n/).map((l) => l.trim()).filter(Boolean);
+}
 
 function fieldGrid() {
   return "grid gap-4 sm:grid-cols-2";
@@ -162,14 +254,16 @@ function SectionBox({
 function AcaoVisitaDialog({
   open,
   onOpenChange,
+  initialEvent,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
+  /** Se definido, modo edição (mesmo formulário que “Nova ação”). */
+  initialEvent: AgendaEvent | null;
 }) {
   const [situacao, setSituacao] = React.useState<"agendar" | "finalizado">(
     "agendar",
   );
-  const [fotosError, setFotosError] = React.useState(false);
   const [camposErro, setCamposErro] = React.useState(false);
   const [acaoData, setAcaoData] = React.useState("");
   const [acaoHorario, setAcaoHorario] = React.useState("");
@@ -181,14 +275,20 @@ function AcaoVisitaDialog({
   const [tipoServico, setTipoServico] = React.useState("");
   const [panfletagemRealizada, setPanfletagemRealizada] = React.useState(false);
   const [unidadesPanfletos, setUnidadesPanfletos] = React.useState("");
+  const [tituloAcao, setTituloAcao] = React.useState("");
+  const [responsavelAcao, setResponsavelAcao] = React.useState("");
+  const [saving, setSaving] = React.useState(false);
+  const [saveError, setSaveError] = React.useState<string | null>(null);
+
+  const { user } = useAuth();
 
   const isTipoPanfletagem = tipoServico === "panfletagem";
   const panfletPodeExibir = tipoServico.length > 0;
 
   React.useEffect(() => {
-    if (open) {
+    if (!open) return;
+    if (!initialEvent) {
       setSituacao("agendar");
-      setFotosError(false);
       setCamposErro(false);
       setAcaoData("");
       setAcaoHorario("");
@@ -200,24 +300,66 @@ function AcaoVisitaDialog({
       setTipoServico("");
       setPanfletagemRealizada(false);
       setUnidadesPanfletos("");
+      setTituloAcao("");
+      setResponsavelAcao("");
+      setSaveError(null);
+      setSaving(false);
+      return;
     }
-  }, [open]);
+    setCamposErro(false);
+    setSaveError(null);
+    setTipoServico(tipoAgendaPreferenciaSelect(initialEvent.type));
+    setTituloAcao(initialEvent.title);
+    setAcaoData(initialEvent.date);
+    const tStart = initialEvent.time?.trim() ?? "";
+    const tEnd = initialEvent.endTime?.trim() ?? "";
+    const unspecified =
+      !tStart ||
+      tStart === AGENDA_TIME_UNSPECIFIED ||
+      !tEnd ||
+      tEnd === AGENDA_TIME_UNSPECIFIED;
+    setAcaoHorario(unspecified ? "" : tStart);
+    setLocalEndereco(initialEvent.location);
+    setResponsavelAcao(
+      initialEvent.responsible === "—" ? "" : initialEvent.responsible,
+    );
+    setSituacao(initialEvent.status === "concluido" ? "finalizado" : "agendar");
+    if (initialEvent.status === "concluido") {
+      setDescricaoFeito(initialEvent.completionDescription ?? "");
+      setObservacoesGerais(initialEvent.observations ?? "");
+      setLinksPostagemText((initialEvent.linksPostagem ?? []).join("\n"));
+      setFotoDataUrls([...(initialEvent.completionPhotoDataUrls ?? [])]);
+    } else {
+      const { previsto, extra } = splitPrevistoObservations(
+        initialEvent.observations ?? "",
+      );
+      setDescricaoFeito(previsto);
+      setObservacoesGerais(extra);
+      setLinksPostagemText("");
+      setFotoDataUrls([]);
+    }
+    const p = initialEvent.panfletosDistribuidos;
+    if (typeof p === "number" && Number.isFinite(p)) {
+      setUnidadesPanfletos(String(p));
+      setPanfletagemRealizada(
+        initialEvent.type === "panfletagem" || p > 0,
+      );
+    } else {
+      setUnidadesPanfletos("");
+      setPanfletagemRealizada(initialEvent.type === "panfletagem");
+    }
+  }, [open, initialEvent?.id]);
 
-  React.useEffect(() => {
-    if (tipoServico === "panfletagem") {
+  /** Troca tipo de serviço e regras de panfletagem sem “apagar” unidades vindas da edição. */
+  function onTipoServicoChange(v: string) {
+    setTipoServico(v);
+    if (v === "panfletagem") {
       setPanfletagemRealizada(true);
     } else {
       setPanfletagemRealizada(false);
       setUnidadesPanfletos("");
     }
-  }, [tipoServico]);
-
-  React.useEffect(() => {
-    if (situacao === "agendar") {
-      setFotosError(false);
-      setFotoDataUrls([]);
-    }
-  }, [situacao]);
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -234,27 +376,107 @@ function AcaoVisitaDialog({
         <ModalHero
           icon={Waypoints}
           title="Ação / Visita"
-          description="Inclua agendamento futuro ou registro de ação já concluída. Com registro concluído, as fotos são obrigatórias."
+          description="Agendamento futuro ou registro de ação concluída. Envio de fotos opcional neste período de testes."
         />
         <form
           className="flex min-h-0 flex-1 flex-col"
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
+            setSaveError(null);
             setCamposErro(false);
-            setFotosError(false);
-            if (!tipoServico) {
+            if (
+              !tipoServico ||
+              !tituloAcao.trim() ||
+              !acaoData.trim() ||
+              !localEndereco.trim()
+            ) {
               setCamposErro(true);
               return;
             }
-            if (!acaoData.trim() || !localEndereco.trim() || !descricaoFeito.trim()) {
-              setCamposErro(true);
-              return;
+            const clockTrim = acaoHorario.trim();
+            const clock =
+              clockTrim !== ""
+                ? clockTrim
+                : AGENDA_TIME_UNSPECIFIED;
+            const tipo = tipoServicoToAgendaType(tipoServico);
+            const status: AgendaEventStatus =
+              situacao === "agendar" ? "pendente" : "concluido";
+            let observations = "";
+            if (situacao === "agendar") {
+              const chunks: string[] = [];
+              if (descricaoFeito.trim())
+                chunks.push(`Previsto:\n${descricaoFeito.trim()}`);
+              if (observacoesGerais.trim()) chunks.push(observacoesGerais.trim());
+              observations = chunks.join("\n\n");
+            } else {
+              observations = observacoesGerais.trim();
             }
-            if (situacao === "finalizado" && fotoDataUrls.length === 0) {
-              setFotosError(true);
-              return;
+            let completionDescription: string | undefined;
+            if (
+              situacao === "finalizado" &&
+              descricaoFeito.trim()
+            ) {
+              completionDescription = descricaoFeito.trim();
             }
-            onOpenChange(false);
+            const patch: Omit<AgendaEvent, "id"> = {
+              title: tituloAcao.trim(),
+              type: tipo,
+              status,
+              responsible:
+                responsavelAcao.trim() || user?.email?.trim() || "—",
+              date: acaoData,
+              time: clock,
+              endTime: clock,
+              location: localEndereco.trim(),
+              priority: situacao === "finalizado" ? "high" : "medium",
+              observations,
+              ...(completionDescription != null &&
+              completionDescription !== ""
+                ? { completionDescription }
+                : {}),
+            };
+            if (situacao === "finalizado") {
+              const ln = parseLinks(linksPostagemText);
+              patch.linksPostagem = ln;
+            } else {
+              patch.linksPostagem = [];
+            }
+            if (isTipoPanfletagem || panfletagemRealizada) {
+              const parsed = Number.parseInt(unidadesPanfletos, 10);
+              if (Number.isFinite(parsed) && parsed >= 0) {
+                patch.panfletosDistribuidos = parsed;
+              }
+            }
+            setSaving(true);
+            try {
+              let targetId: number;
+              if (initialEvent?.id != null) {
+                await updateAgendaEventFields(initialEvent.id, patch);
+                targetId = initialEvent.id;
+              } else {
+                targetId = await createAgendaDocument(patch);
+              }
+              if (
+                situacao === "finalizado" &&
+                fotoDataUrls.length > 0
+              ) {
+                const urls = await replaceDataUrlsWithStorage(
+                  fotoDataUrls,
+                  `agenda/${targetId}/completion`,
+                );
+                if (urls?.length) {
+                  await updateAgendaEventFields(targetId, {
+                    completionPhotoDataUrls: urls,
+                  });
+                }
+              }
+              onOpenChange(false);
+            } catch (err) {
+              console.error(err);
+              setSaveError("Não foi possível salvar. Tente de novo.");
+            } finally {
+              setSaving(false);
+            }
           }}
         >
           <div
@@ -264,10 +486,14 @@ function AcaoVisitaDialog({
             )}
           >
             <div className="space-y-5">
+              {saveError && (
+                <p className="rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-sm font-medium text-red-700">
+                  {saveError}
+                </p>
+              )}
               {camposErro && (
                 <p className="rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-sm font-medium text-red-700">
-                  Preencha tipo de serviço, data, local / endereço e o campo
-                  &quot;O que foi feito&quot; (ou o previsto, se for agendamento).
+                  Preencha tipo de serviço, título, data e local / endereço.
                 </p>
               )}
               <div className="space-y-3">
@@ -279,7 +505,8 @@ function AcaoVisitaDialog({
                     type="button"
                     onClick={() => {
                       setSituacao("agendar");
-                      setFotosError(false);
+                      setLinksPostagemText("");
+                      setFotoDataUrls([]);
                     }}
                     className={cn(
                       "flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition-all",
@@ -332,7 +559,7 @@ function AcaoVisitaDialog({
                         Finalizado
                       </span>
                       <span className="mt-0.5 block text-xs text-zinc-500">
-                        Ação executada — envie fotos para o registro oficial.
+                        Ação concluída — fotos opcionais por enquanto.
                       </span>
                     </span>
                   </button>
@@ -355,7 +582,7 @@ function AcaoVisitaDialog({
                     />
                     <Select
                       value={tipoServico || undefined}
-                      onValueChange={setTipoServico}
+                      onValueChange={onTipoServicoChange}
                       required
                     >
                       <SelectTrigger
@@ -386,6 +613,8 @@ function AcaoVisitaDialog({
                       name="titulo"
                       className="h-11 border-zinc-200"
                       placeholder="Ex.: Orientação no Ecoponto Norte"
+                      value={tituloAcao}
+                      onChange={(e) => setTituloAcao(e.target.value)}
                       required
                     />
                   </div>
@@ -543,6 +772,8 @@ function AcaoVisitaDialog({
                       name="responsavel"
                       className="h-11 border-zinc-200"
                       placeholder="Nome do agente ou equipe"
+                      value={responsavelAcao}
+                      onChange={(e) => setResponsavelAcao(e.target.value)}
                     />
                   </div>
                 </div>
@@ -577,7 +808,6 @@ function AcaoVisitaDialog({
                           : "Resumo do trabalho realizado, etapas e resultados…"
                       }
                       className="min-h-[100px] resize-y border-zinc-200"
-                      required
                     />
                   </div>
                   <div className="space-y-2">
@@ -599,49 +829,37 @@ function AcaoVisitaDialog({
                 </div>
               </SectionBox>
 
-              <LinksPostagemEditor
-                id="acao-links-postagem"
-                name="linksPostagem"
-                value={linksPostagemText}
-                onChange={setLinksPostagemText}
-                hint="Um link por linha. No histórico e na agenda, cada URL aparece como atalho com ícone de abrir em nova página."
-                textareaClassName="bg-white"
-              />
+              {situacao === "finalizado" && (
+                <LinksPostagemEditor
+                  id="acao-links-postagem"
+                  name="linksPostagem"
+                  value={linksPostagemText}
+                  onChange={setLinksPostagemText}
+                  hint="Um link por linha. No histórico e na agenda, cada URL aparece como atalho com ícone de abrir em nova página."
+                  textareaClassName="bg-white"
+                />
+              )}
+
 
               {situacao === "finalizado" && (
-                <div
-                  className={cn(
-                    "rounded-2xl border-2 p-5 sm:p-6",
-                    fotosError
-                      ? "border-red-200 bg-red-50/50"
-                      : "border-amber-200/80 bg-amber-50/40",
-                  )}
-                >
-                  <div className="mb-3 flex items-center gap-2.5 text-sm font-semibold text-amber-950">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100 text-amber-800">
+                <div className="rounded-2xl border-2 border-zinc-200/90 bg-zinc-50/60 p-5 sm:p-6">
+                  <div className="mb-3 flex items-center gap-2.5 text-sm font-semibold text-zinc-800">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-zinc-200/80 text-zinc-700">
                       <ImagePlus className="h-4 w-4" />
                     </span>
-                    Registro fotográfico (obrigatório)
+                    Registro fotográfico (opcional)
                   </div>
-                  <p className="mb-3 text-sm text-amber-900/80">
-                    Para ações finalizadas, anexe ao menos uma imagem comprovando
-                    a realização.
+                  <p className="mb-3 text-sm text-zinc-600">
+                    Pode anexar imagens se quiser; não é obrigatório para salvar
+                    durante os testes.
                   </p>
                   <ActionPhotoDropzone
                     photoDataUrls={fotoDataUrls}
-                    onChange={(urls) => {
-                      setFotoDataUrls(urls);
-                      if (urls.length > 0) setFotosError(false);
-                    }}
+                    onChange={setFotoDataUrls}
                     variant="amber"
                     label="Fotos"
                     hint="Clique ou arraste imagens para esta área"
                   />
-                  {fotosError && (
-                    <p className="mt-2 text-sm font-medium text-red-600">
-                      Adicione pelo menos uma foto para concluir o registro.
-                    </p>
-                  )}
                 </div>
               )}
             </div>
@@ -652,15 +870,26 @@ function AcaoVisitaDialog({
               type="button"
               variant="outline"
               className="h-11 rounded-xl"
+              disabled={saving}
               onClick={() => onOpenChange(false)}
             >
               Cancelar
             </Button>
             <Button
               type="submit"
+              disabled={saving}
               className="h-11 rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] text-white"
             >
-              {situacao === "agendar" ? "Salvar agendamento" : "Salvar registro"}
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" />
+                  Salvando…
+                </>
+              ) : situacao === "agendar" ? (
+                "Salvar agendamento"
+              ) : (
+                "Salvar registro"
+              )}
             </Button>
           </DialogFooter>
         </form>
@@ -672,10 +901,15 @@ function AcaoVisitaDialog({
 function RevitalizacaoDialog({
   open,
   onOpenChange,
+  initialEvent,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
+  initialEvent: AgendaEvent | null;
 }) {
+  const [situacaoRev, setSituacaoRev] = React.useState<
+    "agendar" | "finalizado"
+  >("agendar");
   const [pontoViciadoId, setPontoViciadoId] = React.useState<string>("");
   const [pvComboOpen, setPvComboOpen] = React.useState(false);
   const [pvSearch, setPvSearch] = React.useState("");
@@ -683,9 +917,20 @@ function RevitalizacaoDialog({
   const [linksPostagemText, setLinksPostagemText] = React.useState("");
   const [panfletagemRealizada, setPanfletagemRealizada] = React.useState(false);
   const [unidadesPanfletos, setUnidadesPanfletos] = React.useState("");
+  const [dataRevitalizacao, setDataRevitalizacao] = React.useState(() =>
+    format(new Date(), "yyyy-MM-dd"),
+  );
+  const [volumeRev, setVolumeRev] = React.useState("");
+  const [kgRev, setKgRev] = React.useState("");
+  const [equipeRev, setEquipeRev] = React.useState("");
+  const [saveErrorRev, setSaveErrorRev] = React.useState<string | null>(null);
+  const [savingRev, setSavingRev] = React.useState(false);
+  const [pontoErro, setPontoErro] = React.useState(false);
 
   React.useEffect(() => {
-    if (open) {
+    if (!open) return;
+    if (!initialEvent) {
+      setSituacaoRev("agendar");
       setPontoViciadoId("");
       setPvComboOpen(false);
       setPvSearch("");
@@ -693,8 +938,47 @@ function RevitalizacaoDialog({
       setLinksPostagemText("");
       setPanfletagemRealizada(false);
       setUnidadesPanfletos("");
+      setVolumeRev("");
+      setKgRev("");
+      setEquipeRev("");
+      setDataRevitalizacao(format(new Date(), "yyyy-MM-dd"));
+      setSaveErrorRev(null);
+      setSavingRev(false);
+      setPontoErro(false);
+      return;
     }
-  }, [open]);
+    setSaveErrorRev(null);
+    setSavingRev(false);
+    setPontoErro(false);
+    setDataRevitalizacao(initialEvent.date);
+    setSituacaoRev(
+      initialEvent.status === "concluido" ? "finalizado" : "agendar",
+    );
+    const fromTit = extractIdFromTituloRev(initialEvent.title);
+    const fromObs = extractPontoViciado(initialEvent.observations ?? "");
+    setPontoViciadoId(fromTit || fromObs || "");
+    const parsed = parseRevitalizacaoObservations(
+      initialEvent.observations ?? "",
+    );
+    setVolumeRev(parsed.volume);
+    setKgRev(parsed.kg);
+    setEquipeRev(parsed.equipe);
+    if (initialEvent.status === "concluido") {
+      setRevFotoUrls([...(initialEvent.completionPhotoDataUrls ?? [])]);
+      setLinksPostagemText((initialEvent.linksPostagem ?? []).join("\n"));
+    } else {
+      setRevFotoUrls([]);
+      setLinksPostagemText("");
+    }
+    const p = initialEvent.panfletosDistribuidos;
+    const un = typeof p === "number" ? String(p) : "";
+    setUnidadesPanfletos(un);
+    setPanfletagemRealizada(!!un && Number.parseFloat(un) > 0);
+  }, [open, initialEvent?.id]);
+
+  React.useEffect(() => {
+    if (pontoViciadoId) setPontoErro(false);
+  }, [pontoViciadoId]);
 
   const pontoSelecionado = pontoViciadoId
     ? MAPA_PONTOS_VICIO_FORM.find((f) => f.id === pontoViciadoId)
@@ -727,15 +1011,116 @@ function RevitalizacaoDialog({
         <ModalHero
           icon={RefreshCcw}
           title="Revitalização"
-          description="Quantitativos, tamanho da equipe, panfletagem e registro fotográfico."
+          description="Marque como agendada ou já finalizada; quantificação, links e fotos apenas ao encerrar o trabalho no local."
           accentClassName="from-blue-500/6 via-white to-violet-500/8"
           iconWrapperClassName="bg-gradient-to-br from-blue-500 to-violet-600 shadow-blue-500/20"
         />
         <form
           className="flex min-h-0 flex-1 flex-col"
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
-            onOpenChange(false);
+            setSaveErrorRev(null);
+            setPontoErro(false);
+            if (!pontoViciadoId) {
+              setPontoErro(true);
+              return;
+            }
+            const vol = volumeRev.trim();
+            const kg = kgRev.trim();
+            const eq = equipeRev.trim();
+            const title = `Revitalização — ${pontoViciadoId}`;
+            const observationLines =
+              situacaoRev === "agendar"
+                ? [
+                    `Ponto viciado: ${pontoViciadoId}`,
+                    subprefeitura ? `Subprefeitura: ${subprefeitura}` : "",
+                    `Data da revitalização: ${dataRevitalizacao}`,
+                  ]
+                : [
+                    `Ponto viciado: ${pontoViciadoId}`,
+                    subprefeitura ? `Subprefeitura: ${subprefeitura}` : "",
+                    vol ? `Volume retirado: ${vol} m³` : "",
+                    kg ? `Resíduos: ${kg} kg` : "",
+                    eq ? `Equipe: ${eq} pessoa(s)` : "",
+                    `Data da revitalização: ${dataRevitalizacao}`,
+                  ];
+            const observations = observationLines.filter(Boolean).join("\n");
+
+            const status: AgendaEventStatus =
+              situacaoRev === "agendar" ? "pendente" : "concluido";
+            const timeSlot =
+              situacaoRev === "agendar"
+                ? AGENDA_TIME_UNSPECIFIED
+                : "09:00";
+            const endSlot =
+              situacaoRev === "agendar"
+                ? AGENDA_TIME_UNSPECIFIED
+                : "17:00";
+
+            const links = parseLinks(linksPostagemText);
+            let panfletosDistribuidos: number | undefined;
+            if (
+              situacaoRev === "finalizado" &&
+              panfletagemRealizada &&
+              unidadesPanfletos.trim()
+            ) {
+              const parsed = Number.parseInt(unidadesPanfletos, 10);
+              if (Number.isFinite(parsed) && parsed >= 0) {
+                panfletosDistribuidos = parsed;
+              }
+            }
+
+            const patch: Omit<AgendaEvent, "id"> = {
+              title,
+              type: "revitalizacao",
+              status,
+              responsible: "—",
+              date: dataRevitalizacao,
+              time: timeSlot,
+              endTime: endSlot,
+              location: enderecoPonto || "—",
+              priority: "medium",
+              observations,
+            };
+            if (situacaoRev === "finalizado") {
+              patch.linksPostagem = links;
+              if (eq) patch.equipe = `${eq} pessoa(s)`;
+              if (panfletosDistribuidos !== undefined)
+                patch.panfletosDistribuidos = panfletosDistribuidos;
+            } else {
+              patch.linksPostagem = [];
+            }
+
+            setSavingRev(true);
+            try {
+              let targetId: number;
+              if (initialEvent?.id != null) {
+                await updateAgendaEventFields(initialEvent.id, patch);
+                targetId = initialEvent.id;
+              } else {
+                targetId = await createAgendaDocument(patch);
+              }
+              if (
+                situacaoRev === "finalizado" &&
+                revFotoUrls.length > 0
+              ) {
+                const urls = await replaceDataUrlsWithStorage(
+                  revFotoUrls,
+                  `agenda/${targetId}/completion`,
+                );
+                if (urls?.length) {
+                  await updateAgendaEventFields(targetId, {
+                    completionPhotoDataUrls: urls,
+                  });
+                }
+              }
+              onOpenChange(false);
+            } catch (err) {
+              console.error(err);
+              setSaveErrorRev("Não foi possível salvar. Tente de novo.");
+            } finally {
+              setSavingRev(false);
+            }
           }}
         >
           <div
@@ -745,6 +1130,68 @@ function RevitalizacaoDialog({
             )}
           >
             <div className="space-y-5">
+              {saveErrorRev && (
+                <p className="rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-sm font-medium text-red-700">
+                  {saveErrorRev}
+                </p>
+              )}
+              {pontoErro && (
+                <p className="rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-sm font-medium text-red-700">
+                  Selecione um ponto viciado antes de salvar.
+                </p>
+              )}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium text-zinc-700">
+                  Situação
+                </Label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSituacaoRev("agendar");
+                      setLinksPostagemText("");
+                      setRevFotoUrls([]);
+                    }}
+                    className={cn(
+                      "flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition-all",
+                      situacaoRev === "agendar"
+                        ? "border-blue-400/60 bg-blue-500/5 shadow-md"
+                        : "border-zinc-200 bg-white hover:border-zinc-300",
+                    )}
+                  >
+                    <Calendar className="h-10 w-10 shrink-0 rounded-xl bg-blue-600 p-2 text-white" />
+                    <span>
+                      <span className="block font-semibold text-zinc-900">
+                        Agendado
+                      </span>
+                      <span className="mt-0.5 block text-xs text-zinc-500">
+                        Só local e data; complete os quantitativos ao finalizar no
+                        local.
+                      </span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSituacaoRev("finalizado")}
+                    className={cn(
+                      "flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition-all",
+                      situacaoRev === "finalizado"
+                        ? "border-violet-400/60 bg-violet-500/6 shadow-md"
+                        : "border-zinc-200 bg-white hover:border-zinc-300",
+                    )}
+                  >
+                    <CheckCircle2 className="h-10 w-10 shrink-0 rounded-xl bg-gradient-to-br from-blue-600 to-violet-600 p-2 text-white" />
+                    <span>
+                      <span className="block font-semibold text-zinc-900">
+                        Finalizado
+                      </span>
+                      <span className="mt-0.5 block text-xs text-zinc-500">
+                        Registrar quantificação, fotos opcionais e links de divulgação.
+                      </span>
+                    </span>
+                  </button>
+                </div>
+              </div>
               <input type="hidden" name="pontoViciadoId" value={pontoViciadoId} />
               <input
                 type="hidden"
@@ -852,142 +1299,170 @@ function RevitalizacaoDialog({
                 </div>
               </SectionBox>
 
-              <SectionBox icon={Layers} title="Quantitativos">
-                <div className={cn(fieldGrid(), "gap-4")}>
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="q-volume"
-                      className="text-zinc-600"
-                    >
-                      Volume retirado (m³)
-                    </Label>
-                    <Input
-                      id="q-volume"
-                      name="volumeM3"
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      placeholder="0"
-                      className="h-11 border-zinc-200"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="q-kg"
-                      className="text-zinc-600"
-                    >
-                      Resíduos (kg)
-                    </Label>
-                    <Input
-                      id="q-kg"
-                      name="residuosKg"
-                      type="number"
-                      min={0}
-                      step="0.1"
-                      placeholder="0"
-                      className="h-11 border-zinc-200"
-                    />
-                  </div>
-                </div>
-              </SectionBox>
-
-              <SectionBox icon={Users} title="Equipe">
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="eq-num"
-                    className="text-zinc-600"
-                  >
-                    Número de pessoas
+              <SectionBox icon={Calendar} title="Data da revitalização">
+                <div className="max-w-xs space-y-2">
+                  <Label htmlFor="data-revitalizacao" className="text-zinc-600">
+                    Quando foi ou será realizada
                   </Label>
-                  <Input
-                    id="eq-num"
-                    name="equipeNum"
-                    type="number"
-                    min={1}
-                    placeholder="0"
-                    className="h-11 max-w-xs border-zinc-200"
+                  <DatePickerField
+                    id="data-revitalizacao"
+                    value={dataRevitalizacao}
+                    onChange={setDataRevitalizacao}
+                    required
                   />
                 </div>
               </SectionBox>
 
-              <div className="flex flex-col gap-4 rounded-2xl border border-zinc-100 bg-zinc-50/50 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6">
-                <div className="space-y-2">
-                  <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-zinc-800">
-                    <Megaphone className="h-4 w-4 text-blue-600" />
-                    Panfletagem
+              {situacaoRev === "finalizado" && (
+                <>
+                  <SectionBox icon={Layers} title="Quantitativos">
+                    <div className={cn(fieldGrid(), "gap-4")}>
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="q-volume"
+                          className="text-zinc-600"
+                        >
+                          Volume retirado (m³)
+                        </Label>
+                        <Input
+                          id="q-volume"
+                          name="volumeM3"
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          placeholder="0"
+                          className="h-11 border-zinc-200"
+                          value={volumeRev}
+                          onChange={(e) => setVolumeRev(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="q-kg"
+                          className="text-zinc-600"
+                        >
+                          Resíduos (kg)
+                        </Label>
+                        <Input
+                          id="q-kg"
+                          name="residuosKg"
+                          type="number"
+                          min={0}
+                          step="0.1"
+                          placeholder="0"
+                          className="h-11 border-zinc-200"
+                          value={kgRev}
+                          onChange={(e) => setKgRev(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </SectionBox>
+
+                  <SectionBox icon={Users} title="Equipe">
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="eq-num"
+                        className="text-zinc-600"
+                      >
+                        Número de pessoas
+                      </Label>
+                      <Input
+                        id="eq-num"
+                        name="equipeNum"
+                        type="number"
+                        min={1}
+                        placeholder="0"
+                        className="h-11 max-w-xs border-zinc-200"
+                        value={equipeRev}
+                        onChange={(e) => setEquipeRev(e.target.value)}
+                      />
+                    </div>
+                  </SectionBox>
+
+                  <div className="flex flex-col gap-4 rounded-2xl border border-zinc-100 bg-zinc-50/50 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6">
+                    <div className="space-y-2">
+                      <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-zinc-800">
+                        <Megaphone className="h-4 w-4 text-blue-600" />
+                        Panfletagem
+                      </div>
+                      <Label
+                        htmlFor="panf-q"
+                        className="text-zinc-600"
+                      >
+                        Unidades distribuídas
+                      </Label>
+                      {!panfletagemRealizada ? (
+                        <input
+                          type="hidden"
+                          name="panfletos"
+                          value="0"
+                        />
+                      ) : null}
+                      <Input
+                        id="panf-q"
+                        name={
+                          panfletagemRealizada ? "panfletos" : undefined
+                        }
+                        type="number"
+                        min={0}
+                        placeholder="0"
+                        className="h-11 w-44 border-zinc-200"
+                        value={unidadesPanfletos}
+                        onChange={(e) =>
+                          setUnidadesPanfletos(
+                            panfletagemRealizada ? e.target.value : "",
+                          )
+                        }
+                        disabled={!panfletagemRealizada}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2.5 rounded-xl bg-white px-3 py-2.5 ring-1 ring-zinc-200">
+                      <input
+                        type="hidden"
+                        name="panfletagemFeita"
+                        value={
+                          panfletagemRealizada ? "on" : "off"
+                        }
+                      />
+                      <Checkbox
+                        id="panf-feita"
+                        checked={panfletagemRealizada}
+                        onCheckedChange={(c) => {
+                          const on = c === true;
+                          setPanfletagemRealizada(on);
+                          if (!on) setUnidadesPanfletos("");
+                        }}
+                      />
+                      <Label
+                        htmlFor="panf-feita"
+                        className="cursor-pointer text-sm font-medium leading-tight text-zinc-700"
+                      >
+                        Panfletagem realizada
+                      </Label>
+                    </div>
                   </div>
-                  <Label
-                    htmlFor="panf-q"
-                    className="text-zinc-600"
-                  >
-                    Unidades distribuídas
-                  </Label>
-                  {!panfletagemRealizada ? (
-                    <input
-                      type="hidden"
-                      name="panfletos"
-                      value="0"
-                    />
-                  ) : null}
-                  <Input
-                    id="panf-q"
-                    name={panfletagemRealizada ? "panfletos" : undefined}
-                    type="number"
-                    min={0}
-                    placeholder="0"
-                    className="h-11 w-44 border-zinc-200"
-                    value={unidadesPanfletos}
-                    onChange={(e) =>
-                      setUnidadesPanfletos(
-                        panfletagemRealizada ? e.target.value : "",
-                      )
-                    }
-                    disabled={!panfletagemRealizada}
-                  />
-                </div>
-                <div className="flex items-center gap-2.5 rounded-xl bg-white px-3 py-2.5 ring-1 ring-zinc-200">
-                  <input
-                    type="hidden"
-                    name="panfletagemFeita"
-                    value={panfletagemRealizada ? "on" : "off"}
-                  />
-                  <Checkbox
-                    id="panf-feita"
-                    checked={panfletagemRealizada}
-                    onCheckedChange={(c) => {
-                      const on = c === true;
-                      setPanfletagemRealizada(on);
-                      if (!on) setUnidadesPanfletos("");
-                    }}
-                  />
-                  <Label
-                    htmlFor="panf-feita"
-                    className="cursor-pointer text-sm font-medium leading-tight text-zinc-700"
-                  >
-                    Panfletagem realizada
-                  </Label>
-                </div>
-              </div>
 
-              <LinksPostagemEditor
-                id="rev-links-postagem"
-                name="linksPostagem"
-                value={linksPostagemText}
-                onChange={setLinksPostagemText}
-                hint="Um link por linha. No histórico e na agenda, cada URL aparece como atalho com ícone de abrir em nova página."
-                textareaClassName="bg-white"
-              />
+                  <LinksPostagemEditor
+                    id="rev-links-postagem"
+                    name="linksPostagem"
+                    value={linksPostagemText}
+                    onChange={setLinksPostagemText}
+                    hint="Um link por linha. No histórico e na agenda, cada URL aparece como atalho com ícone de abrir em nova página."
+                    textareaClassName="bg-white"
+                  />
 
-              <ActionPhotoDropzone
-                photoDataUrls={revFotoUrls}
-                onChange={setRevFotoUrls}
-                variant="emphasis"
-                label="Upload de fotos"
-                hint="Clique ou arraste — antes, durante e depois"
-              />
-              <p className="-mt-2 text-xs text-zinc-500 sm:-mt-3">
-                Envie quantas imagens forem necessárias.
-              </p>
+                  <ActionPhotoDropzone
+                    photoDataUrls={revFotoUrls}
+                    onChange={setRevFotoUrls}
+                    variant="emphasis"
+                    label="Fotos (opcional)"
+                    hint="Clique ou arraste — antes, durante e depois"
+                  />
+                  <p className="-mt-2 text-xs text-zinc-500 sm:-mt-3">
+                    Imagens são opcionais neste período de testes.
+                  </p>
+                </>
+              )}
             </div>
           </div>
           <Separator className="shrink-0" />
@@ -996,15 +1471,26 @@ function RevitalizacaoDialog({
               type="button"
               variant="outline"
               className="h-11 rounded-xl"
+              disabled={savingRev}
               onClick={() => onOpenChange(false)}
             >
               Cancelar
             </Button>
             <Button
               type="submit"
+              disabled={savingRev}
               className="h-11 rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] text-white"
             >
-              Salvar revitalização
+              {savingRev ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" />
+                  Salvando…
+                </>
+              ) : situacaoRev === "agendar" ? (
+                "Salvar agendamento"
+              ) : (
+                "Salvar revitalização"
+              )}
             </Button>
           </DialogFooter>
         </form>
@@ -1014,51 +1500,108 @@ function RevitalizacaoDialog({
 }
 
 function NovaAcaoModals({
-  open,
-  onOpenChange,
+  ui,
+  onUiClose,
 }: {
-  open: NovaAcaoTipo | null;
-  onOpenChange: (o: boolean) => void;
+  ui: NovaAcaoUIMode;
+  onUiClose: () => void;
 }) {
-  const handleChange = (next: boolean) => {
-    if (!next) onOpenChange(false);
-  };
+  const { getEvent } = useAgendaEvents();
+  const [editSnap, setEditSnap] = React.useState<
+    AgendaEvent | null | undefined
+  >(undefined);
+
+  React.useEffect(() => {
+    if (ui.kind !== "edit") {
+      setEditSnap(undefined);
+      return;
+    }
+    const cached = getEvent(ui.id);
+    if (cached) {
+      setEditSnap(cached);
+      return;
+    }
+    let cancelled = false;
+    setEditSnap(undefined);
+    void fetchAgendaEventByNumericId(ui.id).then((d) => {
+      if (cancelled) return;
+      if (!d) {
+        setEditSnap(null);
+        onUiClose();
+        return;
+      }
+      setEditSnap(d);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [ui, getEvent, onUiClose]);
+
+  const ready = ui.kind !== "edit" || editSnap !== undefined;
+  const showAcaoVisit =
+    ready &&
+    (ui.kind === "nova"
+      ? ui.tipo === "acao-visita"
+      : !!editSnap && editSnap.type !== "revitalizacao");
+  const showRevitaliza =
+    ready &&
+    (ui.kind === "nova"
+      ? ui.tipo === "revitalizacao"
+      : !!editSnap && editSnap.type === "revitalizacao");
+
+  const initialAcao =
+    ui.kind === "edit" &&
+    editSnap &&
+    editSnap.type !== "revitalizacao"
+      ? editSnap
+      : null;
+  const initialRev =
+    ui.kind === "edit" &&
+    editSnap &&
+    editSnap.type === "revitalizacao"
+      ? editSnap
+      : null;
 
   return (
     <>
       <AcaoVisitaDialog
-        open={open === "acao-visita"}
-        onOpenChange={handleChange}
+        open={showAcaoVisit}
+        onOpenChange={(o) => {
+          if (!o) onUiClose();
+        }}
+        initialEvent={initialAcao}
       />
       <RevitalizacaoDialog
-        open={open === "revitalizacao"}
-        onOpenChange={handleChange}
+        open={showRevitaliza}
+        onOpenChange={(o) => {
+          if (!o) onUiClose();
+        }}
+        initialEvent={initialRev}
       />
     </>
   );
 }
 
 export function NovaAcaoProvider({ children }: { children: React.ReactNode }) {
-  const [open, setOpen] = React.useState<NovaAcaoTipo | null>(null);
+  const [ui, setUi] = React.useState<NovaAcaoUIMode>({ kind: "none" });
+
+  const legacyOpen = ui.kind === "nova" ? ui.tipo : null;
 
   const value = React.useMemo<NovaAcaoContextValue>(
     () => ({
-      open,
-      openModal: (t) => setOpen(t),
-      close: () => setOpen(null),
+      mode: ui,
+      open: legacyOpen,
+      openModal: (t) => setUi({ kind: "nova", tipo: t }),
+      openAgendaEventForEdit: (id: number) => setUi({ kind: "edit", id }),
+      close: () => setUi({ kind: "none" }),
     }),
-    [open],
+    [ui],
   );
 
   return (
     <NovaAcaoContext.Provider value={value}>
       {children}
-      <NovaAcaoModals
-        open={open}
-        onOpenChange={(v) => {
-          if (!v) setOpen(null);
-        }}
-      />
+      <NovaAcaoModals ui={ui} onUiClose={() => setUi({ kind: "none" })} />
     </NovaAcaoContext.Provider>
   );
 }

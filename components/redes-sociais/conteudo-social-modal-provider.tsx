@@ -33,16 +33,47 @@ import {
   SocialMediaDropzone,
   type SocialConteudoMediaItem,
 } from "@/components/redes-sociais/social-media-dropzone";
+import { useSocialPosts } from "@/contexts/social-posts-context";
+import { uploadFileToPath } from "@/lib/storage/upload-helpers";
+import type {
+  SocialContentStatus,
+  SocialContentTipo,
+  SocialPost,
+} from "@/data/social-posts";
 
-export type ConteudoStatusFase = "ideia" | "rascunho" | "agendado" | "publicado";
+export type ConteudoStatusFase = SocialContentStatus;
 
-type ConteudoCtx = { open: () => void; close: () => void; isOpen: boolean };
-const Ctx = React.createContext<ConteudoCtx | null>(null);
+/** Compatibilidade — persistência passou para Firestore via useSocialPosts. */
+export type PersistSocialPostFn = (post: SocialPost) => void;
+
+export function registerSocialConteudoPersist(
+  _: PersistSocialPostFn | null,
+) {}
+
+let allocateNextSocialPostIdFn: () => number = () =>
+  -Math.floor(Date.now() % 1e9);
+
+export function registerAllocateNextSocialPostId(fn: () => number) {
+  allocateNextSocialPostIdFn = fn;
+}
+
+export type ConteudoModalCtxValue = {
+  /** Novo conteúdo — mesmo comportamento da antiga API `open()`. */
+  openCreate: () => void;
+  open: () => void;
+  openEdit: (post: SocialPost) => void;
+  close: () => void;
+  isOpen: boolean;
+};
+
+const Ctx = React.createContext<ConteudoModalCtxValue | null>(null);
 
 export function useConteudoSocialModal() {
   const v = React.useContext(Ctx);
   if (!v) {
-    throw new Error("useConteudoSocialModal deve estar dentro de ConteudoSocialModalProvider");
+    throw new Error(
+      "useConteudoSocialModal deve estar dentro de ConteudoSocialModalProvider",
+    );
   }
   return v;
 }
@@ -74,9 +105,10 @@ const STATUS_OPTIONS: {
   },
 ];
 
-const TIPOS = ["Post", "Reel", "Story"] as const;
+const TIPOS: SocialContentTipo[] = ["Post", "Reel", "Story"];
 
-function ModalHeroHeader() {
+function ModalHeroHeader({ mode }: { mode: "create" | "edit" }) {
+  const edit = mode === "edit";
   return (
     <div className="shrink-0 border-b border-zinc-100/80 bg-gradient-to-br from-fuchsia-500/8 via-white to-violet-500/10 px-6 py-5 sm:px-10 sm:py-6">
       <div className="flex items-start gap-4">
@@ -85,11 +117,12 @@ function ModalHeroHeader() {
         </div>
         <div className="min-w-0 space-y-1.5">
           <DialogTitle className="text-left text-xl font-semibold tracking-tight">
-            Novo conteúdo
+            {edit ? "Editar conteúdo" : "Novo conteúdo"}
           </DialogTitle>
           <DialogDescription className="text-left text-sm text-zinc-600">
-            Redes sociais — defina a fase, o formato e anexe mídias. Campos
-            extras aparecem conforme o status.
+            {edit
+              ? "Atualize a fase, o texto e as mídias. Mudanças serão gravadas onde o app registrar os dados."
+              : "Redes sociais — defina a fase, o formato e anexe mídias. Campos extras aparecem conforme o status."}
           </DialogDescription>
         </div>
       </div>
@@ -97,19 +130,162 @@ function ModalHeroHeader() {
   );
 }
 
-function statusIcon(s: ConteudoStatusFase) {
-  switch (s) {
-    case "ideia":
-      return Lightbulb;
-    case "rascunho":
-      return FileEdit;
+const FASE_ICONS: Record<
+  ConteudoStatusFase,
+  React.ComponentType<{ className?: string }>
+> = {
+  ideia: Lightbulb,
+  rascunho: FileEdit,
+  agendado: CalendarClock,
+  publicado: CheckCircle2,
+};
+
+/** Converte modelo de card ↔ estado do formulário (ISO yyyy-MM-dd). */
+function hydrateFormFromPost(post: SocialPost) {
+  const dateRaw =
+    post.date && post.date !== "—" && /^\d{4}-\d{2}-\d{2}$/.test(post.date)
+      ? post.date
+      : "";
+
+  let dataPauta = "";
+  const horaPauta = "";
+  let dataPublicacao = "";
+  const horaPublicacao = "";
+
+  switch (post.status) {
     case "agendado":
-      return CalendarClock;
+      dataPauta = dateRaw;
+      break;
     case "publicado":
-      return CheckCircle2;
+      dataPublicacao = dateRaw;
+      break;
     default:
-      return Lightbulb;
+      break;
   }
+
+  return {
+    fase: post.status,
+    tema: post.tema,
+    tipo: post.tipo,
+    responsavel: post.responsavel,
+    ideiaTexto: post.ideiaResumo ?? "",
+    legenda: post.legenda ?? "",
+    linkArquivo: post.linkOuArquivo ?? "",
+    linkPost: post.linkPost ?? "",
+    dataPauta,
+    horaPauta,
+    dataPublicacao,
+    horaPublicacao,
+    notas: post.notasProducao ?? "",
+  };
+}
+
+type FormDraft = ReturnType<typeof hydrateFormFromPost>;
+
+export function mergeFormIntoSocialPost(
+  editingPost: SocialPost | null,
+  draft: FormDraft,
+): SocialPost {
+  const { fase, tema, tipo, responsavel, ideiaTexto, legenda } = draft;
+  const arquivoUrl = draft.linkArquivo.trim();
+  const linkPostVal = draft.linkPost.trim();
+
+  let dateOut: string;
+  if (fase === "agendado" && draft.dataPauta) dateOut = draft.dataPauta;
+  else if (fase === "publicado" && draft.dataPublicacao)
+    dateOut = draft.dataPublicacao;
+  else if (fase === "ideia") dateOut = "—";
+  else if (editingPost?.date && editingPost.date !== "—") dateOut = editingPost.date;
+  else dateOut = "—";
+
+  const id = editingPost?.id ?? allocateNextSocialPostIdFn();
+  const prev = editingPost;
+  const fotos = prev?.fotos ?? [];
+
+  const linkOuArquivoVal: string | null =
+    arquivoUrl.length > 0 ? arquivoUrl : null;
+  const linkOuArquivoLabel =
+    fase === "rascunho" && linkOuArquivoVal
+      ? (prev?.linkOuArquivoLabel ?? "Arquivo / link de apoio")
+      : prev?.linkOuArquivoLabel;
+
+  const preserveMetrics =
+    prev?.status === "publicado" && fase === "publicado";
+
+  const partial: Omit<
+    SocialPost,
+    | "visualizacoes"
+    | "curtidas"
+    | "compartilhamentos"
+    | "metricasAtualizadasEm"
+    | "linkPost"
+  > & {
+    visualizacoes?: number;
+    curtidas?: number;
+    compartilhamentos?: number;
+    metricasAtualizadasEm?: string;
+  } = {
+    id,
+    status: fase,
+    date: dateOut,
+    tema,
+    tipo,
+    responsavel,
+    fotos,
+    legenda:
+      fase === "ideia"
+        ? undefined
+        : legenda.trim().length > 0
+          ? legenda
+          : prev?.legenda,
+    ideiaResumo: fase === "ideia"
+      ? (ideiaTexto.trim().length ? ideiaTexto : undefined)
+      : undefined,
+    notasProducao: draft.notas.trim().length ? draft.notas.trim() : undefined,
+    linkOuArquivo: fase === "ideia" ? null : linkOuArquivoVal,
+    linkOuArquivoLabel:
+      fase === "ideia" || !linkOuArquivoVal ? undefined : linkOuArquivoLabel,
+  };
+
+  if (fase === "publicado") {
+    return {
+      ...partial,
+      linkPost: linkPostVal.length > 0 ? linkPostVal : prev?.linkPost,
+      ...(preserveMetrics
+        ? {
+            visualizacoes: prev.visualizacoes,
+            curtidas: prev.curtidas,
+            compartilhamentos: prev.compartilhamentos,
+            metricasAtualizadasEm: prev.metricasAtualizadasEm,
+          }
+        : {}),
+    };
+  }
+
+  return partial;
+}
+
+async function appendUploadedMediaToFotos(
+  postId: number,
+  prevFotos: SocialPost["fotos"],
+  media: SocialConteudoMediaItem[],
+): Promise<SocialPost["fotos"]> {
+  if (media.length === 0) return prevFotos;
+  let maxId = prevFotos.length ? Math.max(...prevFotos.map((f) => f.id)) : 0;
+  const out = [...prevFotos];
+  for (const m of media) {
+    maxId += 1;
+    const safeName = m.file.name.replace(/[^\w.-]/g, "_").slice(0, 80);
+    const path = `social/${postId}/${crypto.randomUUID()}-${safeName}`;
+    const url = await uploadFileToPath(path, m.file);
+    out.push({
+      id: maxId,
+      color: "bg-zinc-200",
+      url,
+      type: m.file.type.startsWith("video/") ? "video" : "image",
+    });
+  }
+  return out;
 }
 
 export function ConteudoSocialModalProvider({
@@ -118,31 +294,64 @@ export function ConteudoSocialModalProvider({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = React.useState(false);
+  const [editingPost, setEditingPost] = React.useState<SocialPost | null>(null);
+
+  const mode: "create" | "edit" = editingPost ? "edit" : "create";
+
+  const close = React.useCallback(() => setOpen(false), []);
+
+  const openCreate = React.useCallback(() => {
+    setEditingPost(null);
+    setOpen(true);
+  }, []);
+
+  const openEdit = React.useCallback((post: SocialPost) => {
+    setEditingPost(post);
+    setOpen(true);
+  }, []);
+
+  const ctx = React.useMemo(
+    (): ConteudoModalCtxValue => ({
+      openCreate,
+      open: openCreate,
+      openEdit,
+      close,
+      isOpen: open,
+    }),
+    [open, openCreate, openEdit, close],
+  );
 
   return (
-    <Ctx.Provider
-      value={{
-        open: () => setOpen(true),
-        close: () => setOpen(false),
-        isOpen: open,
-      }}
-    >
+    <Ctx.Provider value={ctx}>
       {children}
-      <ConteudoFormDialog open={open} onOpenChange={setOpen} />
+      <ConteudoFormDialog
+        open={open}
+        editingPost={editingPost}
+        mode={mode}
+        onOpenChange={(o) => {
+          setOpen(o);
+          if (!o) setEditingPost(null);
+        }}
+      />
     </Ctx.Provider>
   );
 }
 
 function ConteudoFormDialog({
   open,
+  editingPost,
+  mode,
   onOpenChange,
 }: {
   open: boolean;
+  editingPost: SocialPost | null;
+  mode: "create" | "edit";
   onOpenChange: (o: boolean) => void;
 }) {
+  const { persistPost } = useSocialPosts();
   const [fase, setFase] = React.useState<ConteudoStatusFase>("ideia");
   const [tema, setTema] = React.useState("");
-  const [tipo, setTipo] = React.useState<(typeof TIPOS)[number]>("Post");
+  const [tipo, setTipo] = React.useState<SocialContentTipo>("Post");
   const [responsavel, setResponsavel] = React.useState("");
   const [ideiaTexto, setIdeiaTexto] = React.useState("");
   const [legenda, setLegenda] = React.useState("");
@@ -155,12 +364,33 @@ function ConteudoFormDialog({
   const [notas, setNotas] = React.useState("");
   const [media, setMedia] = React.useState<SocialConteudoMediaItem[]>([]);
 
+  /* Sincronizar estado do formulário com props ao abrir — padrão de diálogo controlado. */
+  /* eslint-disable react-hooks/set-state-in-effect */
   React.useEffect(() => {
     if (!open) return;
     setMedia((prev) => {
       for (const m of prev) URL.revokeObjectURL(m.preview);
       return [];
     });
+
+    if (editingPost) {
+      const h = hydrateFormFromPost(editingPost);
+      setFase(h.fase);
+      setTema(h.tema);
+      setTipo(h.tipo);
+      setResponsavel(h.responsavel);
+      setIdeiaTexto(h.ideiaTexto);
+      setLegenda(h.legenda);
+      setLinkArquivo(h.linkArquivo);
+      setLinkPost(h.linkPost);
+      setDataPauta(h.dataPauta);
+      setHoraPauta(h.horaPauta);
+      setDataPublicacao(h.dataPublicacao);
+      setHoraPublicacao(h.horaPublicacao);
+      setNotas(h.notas);
+      return;
+    }
+
     setFase("ideia");
     setTema("");
     setTipo("Post");
@@ -174,14 +404,47 @@ function ConteudoFormDialog({
     setDataPublicacao("");
     setHoraPublicacao("");
     setNotas("");
-  }, [open]);
+  }, [open, editingPost]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const draft = {
+      fase,
+      tema,
+      tipo,
+      responsavel,
+      ideiaTexto,
+      legenda,
+      linkArquivo,
+      linkPost,
+      dataPauta,
+      horaPauta,
+      dataPublicacao,
+      horaPublicacao,
+      notas,
+    };
+
+    let merged = mergeFormIntoSocialPost(editingPost, draft);
+    if (media.length > 0) {
+      try {
+        const fotos = await appendUploadedMediaToFotos(
+          merged.id,
+          merged.fotos,
+          media,
+        );
+        merged = { ...merged, fotos };
+      } finally {
+        for (const m of media) URL.revokeObjectURL(m.preview);
+        setMedia([]);
+      }
+    }
+    await persistPost(merged);
     onOpenChange(false);
   };
 
-  const StatusIcon = statusIcon(fase);
+  const PhaseIcon = FASE_ICONS[fase];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -193,9 +456,11 @@ function ConteudoFormDialog({
         showCloseButton
       >
         <DialogHeader className="sr-only">
-          <DialogTitle>Novo conteúdo — Redes sociais</DialogTitle>
+          <DialogTitle>
+            {mode === "edit" ? "Editar conteúdo — Redes sociais" : "Novo conteúdo — Redes sociais"}
+          </DialogTitle>
         </DialogHeader>
-        <ModalHeroHeader />
+        <ModalHeroHeader mode={mode} />
         <form
           onSubmit={handleSubmit}
           className="flex min-h-0 flex-1 flex-col"
@@ -209,7 +474,7 @@ function ConteudoFormDialog({
             <div className="space-y-5">
               <div className="rounded-2xl border border-zinc-100 bg-zinc-50/60 p-4 sm:p-5">
                 <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-zinc-800">
-                  <StatusIcon className="h-4 w-4 text-[#9b0ba6]" />
+                  <PhaseIcon className="h-4 w-4 text-[#9b0ba6]" />
                   Fase do conteúdo
                 </div>
                 <Label className="sr-only" htmlFor="fase-conteudo">
@@ -254,7 +519,9 @@ function ConteudoFormDialog({
                   <Label>Formato</Label>
                   <Select
                     value={tipo}
-                    onValueChange={(v) => setTipo(v as (typeof TIPOS)[number])}
+                    onValueChange={(v) =>
+                      setTipo(v as SocialContentTipo)
+                    }
                   >
                     <SelectTrigger className="h-11 w-full min-w-0 border-zinc-200 bg-white">
                       <SelectValue />
@@ -324,7 +591,9 @@ function ConteudoFormDialog({
                         type="date"
                         className="h-11 border-zinc-200"
                         value={dataPublicacao}
-                        onChange={(e) => setDataPublicacao(e.target.value)}
+                        onChange={(e) =>
+                          setDataPublicacao(e.target.value)
+                        }
                         required
                       />
                     </div>
@@ -335,7 +604,9 @@ function ConteudoFormDialog({
                         type="time"
                         className="h-11 border-zinc-200"
                         value={horaPublicacao}
-                        onChange={(e) => setHoraPublicacao(e.target.value)}
+                        onChange={(e) =>
+                          setHoraPublicacao(e.target.value)
+                        }
                       />
                     </div>
                     <div className="space-y-2 sm:col-span-2">
@@ -427,7 +698,7 @@ function ConteudoFormDialog({
               type="submit"
               className="h-11 rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] text-white"
             >
-              Salvar conteúdo
+              {mode === "edit" ? "Salvar alterações" : "Salvar conteúdo"}
             </Button>
           </DialogFooter>
         </form>

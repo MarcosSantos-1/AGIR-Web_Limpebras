@@ -14,6 +14,8 @@ export interface SocialPostPhoto {
   id: number;
   type?: string;
   color: string;
+  /** URL no Firebase Storage após upload */
+  url?: string;
 }
 
 export interface SocialPost {

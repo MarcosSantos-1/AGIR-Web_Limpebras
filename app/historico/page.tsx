@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import {
   Search,
-  Filter,
   Calendar,
   MapPin,
   User,
@@ -15,7 +14,6 @@ import {
   XCircle,
   AlertTriangle,
   ChevronDown,
-  ChevronRight,
   FileText,
   Users,
   Pencil,
@@ -31,8 +29,17 @@ import {
 import { serviceTypeColor } from "@/lib/constants/service-type-colors";
 import { formatDateBr } from "@/lib/utils";
 import { ActionCompletionDialog } from "@/components/acao-registro/action-completion-dialog";
-import type { ActionCompletionPayload } from "@/components/acao-registro/action-completion-dialog";
 import { PostLinksDisplay } from "@/components/acao-registro/post-links";
+import type { HistoryRecordDoc } from "@/data/history-records";
+import {
+  deleteHistoryRecord,
+  subscribeHistoryRecords,
+} from "@/lib/firestore/history";
+import {
+  displayHistoryRow,
+  persistHistoryDialog,
+  splitHistoryTime,
+} from "@/lib/history-persist";
 
 const statusConfig = {
   concluido: { label: "Concluído", icon: CheckCircle2, color: "bg-emerald-100 text-emerald-700", iconColor: "text-emerald-500" },
@@ -52,252 +59,22 @@ const typeConfig = {
   panfletagem: { label: "Panfletagem" },
 } as const;
 
-const historyRecords = [
-  {
-    id: 1,
-    title: "Revitalização Praça Central",
-    type: "revitalizacao",
-    status: "concluido",
-    date: "2026-04-21",
-    time: "08:00 - 12:00",
-    location: "Praça da República - Centro",
-    responsible: "Igor Supervisor",
-    description: "Plantio de 50 mudas, poda de árvores existentes, limpeza geral da área",
-    observations: "Ação bem sucedida. Comunidade participou ativamente.",
-    photos: 12,
-    linksPostagem: ["https://www.instagram.com/explore/tags/revitalizacao"],
-  },
-  {
-    id: 2,
-    title: "Vistoria Ecoponto Zona Norte",
-    type: "vistoria",
-    status: "concluido",
-    date: "2026-04-20",
-    time: "14:00 - 16:00",
-    location: "R. Industrial, 890 - Zona Norte",
-    responsible: "Maria",
-    description: "Verificação de condições operacionais e capacidade de armazenamento",
-    observations: "Necessita ampliação. Relatório enviado à coordenação.",
-    photos: 5,
-  },
-  {
-    id: 3,
-    title: "Limpeza Ponto Viciado R. Silva Jardim",
-    type: "limpeza",
-    status: "parcial",
-    date: "2026-04-18",
-    time: "09:00 - 11:30",
-    location: "R. Silva Jardim, 450 - Centro",
-    responsible: "Luciana",
-    description: "Remoção de entulho e resíduos acumulados",
-    observations: "Limpeza realizada mas local é reincidente. Necessita fiscalização intensiva.",
-    photos: 8,
-  },
-  {
-    id: 4,
-    title: "Ação Educativa Escola Municipal",
-    type: "acao-ambiental",
-    status: "concluido",
-    date: "2026-04-19",
-    time: "08:30 - 11:30",
-    location: "Escola Mun. Nova Esperança",
-    responsible: "Maria",
-    description: "Palestra sobre reciclagem e descarte correto para 120 alunos",
-    observations: "Grande engajamento dos alunos. Escola solicitou nova visita.",
-    photos: 15,
-  },
-  {
-    id: 5,
-    title: "Fiscalização Setor Industrial",
-    type: "fiscalizacao",
-    status: "concluido",
-    date: "2026-04-17",
-    time: "09:00 - 12:00",
-    location: "R. Industrial, 500-800",
-    responsible: "Igor Supervisor",
-    description: "Fiscalização após denúncia de descarte irregular",
-    observations: "Identificada empresa responsável. Auto de infração emitido.",
-    photos: 10,
-    linksPostagem: ["https://facebook.com"],
-  },
-  {
-    id: 6,
-    title: "Visita Técnica UBS Centro",
-    type: "visita-tecnica",
-    status: "concluido",
-    date: "2026-04-15",
-    time: "10:00 - 11:00",
-    location: "Av. Principal, 450 - Centro",
-    responsible: "Luciana",
-    description: "Avaliação de condições sanitárias e descarte de resíduos hospitalares",
-    observations: "Tudo em conformidade. Próxima visita agendada para maio.",
-    photos: 4,
-  },
-  {
-    id: 7,
-    title: "Reunião Comunitária - Bairro Jardim",
-    type: "visita-institucional",
-    status: "concluido",
-    date: "2026-04-14",
-    time: "19:00 - 21:00",
-    location: "Centro Comunitário Jardim",
-    responsible: "Igor Supervisor",
-    description: "Apresentação do programa de conscientização ambiental",
-    observations: "Aproximadamente 40 moradores presentes. Boa receptividade.",
-    photos: 6,
-  },
-  {
-    id: 8,
-    title: "Limpeza Área Crítica Marginal",
-    type: "limpeza",
-    status: "cancelado",
-    date: "2026-04-12",
-    time: "08:00 - 12:00",
-    location: "Av. Marginal, km 5",
-    responsible: "Igor Supervisor",
-    description: "Ação de limpeza planejada",
-    observations: "Cancelada devido a condições climáticas adversas. Reagendada.",
-    photos: 0,
-  },
-  {
-    id: 9,
-    title: "Panfletagem — Conscientização descarte correto",
-    type: "panfletagem",
-    status: "concluido",
-    date: "2026-04-16",
-    time: "08:00 - 13:00",
-    location: "Praça da República e entorno — Centro",
-    responsible: "Igor Supervisor",
-    description:
-      "Distribuição de material informativo sobre ecopontos, horários de coleta e coleta seletiva.",
-    observations: "Alto fluxo na feira livre; equipe sugeriu reforço mensal no local.",
-    photos: 18,
-    equipe: "Equipe Comunicação, Maria e 3 voluntários",
-    panfletosDistribuidos: 1200,
-    locaisAtendidos:
-      "Praça da República, feira livre (rua auxiliar), UBS Centro, 6 estabelecimentos do comércio local",
-    linksPostagem: ["https://instagram.com", "https://facebook.com"],
-  },
-];
-
-const HISTORICO_EDITS_KEY = "agir_historico_v1";
-const HISTORICO_DELETED_KEY = "agir_historico_deleted_v1";
-
-function splitHistoryTime(timeStr: string): { start: string; end: string } {
-  const p = timeStr.split(/\s*[-–—]\s*/);
-  if (p.length >= 2) {
-    return { start: p[0]!.trim(), end: p[1]!.trim() };
-  }
-  return { start: timeStr.trim(), end: "" };
-}
-
 export default function HistoricoPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [expandedRecord, setExpandedRecord] = useState<number | null>(null);
-  const [historicoEdits, setHistoricoEdits] = useState<
-    Record<number, ActionCompletionPayload>
-  >({});
-  const [hiddenRecordIds, setHiddenRecordIds] = useState<Set<number>>(
-    new Set(),
-  );
+  const [records, setRecords] = useState<HistoryRecordDoc[]>([]);
   const [editingRecordId, setEditingRecordId] = useState<number | null>(null);
 
   useEffect(() => {
-    try {
-      const rawD = localStorage.getItem(HISTORICO_DELETED_KEY);
-      if (rawD) {
-        const a = JSON.parse(rawD) as number[];
-        setHiddenRecordIds(new Set(a));
-      }
-    } catch {
-      /* ignore */
-    }
-    try {
-      const raw = localStorage.getItem(HISTORICO_EDITS_KEY);
-      if (raw) {
-        const p = JSON.parse(raw) as Record<string, ActionCompletionPayload>;
-        setHistoricoEdits(
-          Object.fromEntries(
-            Object.entries(p).map(([k, v]) => [Number(k), v]),
-          ) as Record<number, ActionCompletionPayload>,
-        );
-      }
-    } catch {
-      /* ignore */
-    }
+    return subscribeHistoryRecords(setRecords);
   }, []);
 
-  const persistHistorico = (id: number, payload: ActionCompletionPayload) => {
-    setHistoricoEdits((prev) => {
-      const next = { ...prev, [id]: payload };
-      try {
-        localStorage.setItem(HISTORICO_EDITS_KEY, JSON.stringify(next));
-      } catch {
-        /* ignore */
-      }
-      return next;
-    });
-  };
-
-  const mergeRecord = (record: (typeof historyRecords)[0]) => {
-    const baseLinks =
-      "linksPostagem" in record && Array.isArray(record.linksPostagem)
-        ? [...record.linksPostagem]
-        : [];
-    const p = historicoEdits[record.id];
-    if (!p) {
-      return { ...record, extraPhotos: [] as string[], linksPostagem: baseLinks };
-    }
-    const timeDisplay =
-      p.timeStart && p.timeEnd
-        ? `${p.timeStart} - ${p.timeEnd}`
-        : p.timeStart || record.time;
-    return {
-      ...record,
-      title: p.title !== undefined && p.title !== "" ? p.title : record.title,
-      date: p.date ?? record.date,
-      time: timeDisplay,
-      location: p.location ?? record.location,
-      responsible: p.responsible ?? record.responsible,
-      description: p.description,
-      observations: p.observations,
-      extraPhotos: p.photoDataUrls ?? [],
-      linksPostagem: p.linksPostagem ?? baseLinks,
-    };
-  };
-
-  const deleteHistoricoRecord = (id: number) => {
-    setHiddenRecordIds((prev) => {
-      const n = new Set(prev);
-      n.add(id);
-      try {
-        localStorage.setItem(HISTORICO_DELETED_KEY, JSON.stringify([...n]));
-      } catch {
-        /* ignore */
-      }
-      return n;
-    });
-    setHistoricoEdits((prev) => {
-      if (!(id in prev)) return prev;
-      const { [id]: _removed, ...rest } = prev;
-      try {
-        localStorage.setItem(HISTORICO_EDITS_KEY, JSON.stringify(rest));
-      } catch {
-        /* ignore */
-      }
-      return rest;
-    });
-    setExpandedRecord((e) => (e === id ? null : e));
-  };
-
-  const visibleRecords = historyRecords.filter(
-    (r) => !hiddenRecordIds.has(r.id),
-  );
+  const visibleRecords = records;
 
   const filteredRecords = visibleRecords.filter((record) => {
-    const row = mergeRecord(record);
+    const row = displayHistoryRow(record);
     const q = searchQuery.toLowerCase();
     const searchMatch =
       row.title.toLowerCase().includes(q) ||
@@ -315,10 +92,10 @@ export default function HistoricoPage() {
 
   const editingRecordBase =
     editingRecordId != null
-      ? historyRecords.find((r) => r.id === editingRecordId)
+      ? records.find((r) => r.id === editingRecordId)
       : undefined;
   const editingMerged = editingRecordBase
-    ? mergeRecord(editingRecordBase)
+    ? displayHistoryRow(editingRecordBase)
     : null;
 
   return (
@@ -403,7 +180,10 @@ export default function HistoricoPage() {
         >
           <p className="text-sm font-medium text-zinc-500">Total de Fotos</p>
           <p className="mt-2 text-3xl font-semibold text-[#9b0ba6]">
-            {visibleRecords.reduce((sum, r) => sum + r.photos, 0)}
+            {visibleRecords.reduce(
+              (sum, r) => sum + r.photos + (r.extraPhotoUrls?.length ?? 0),
+              0,
+            )}
           </p>
         </motion.div>
       </div>
@@ -415,7 +195,7 @@ export default function HistoricoPage() {
 
         <div className="space-y-4">
           {filteredRecords.map((record, index) => {
-            const row = mergeRecord(record);
+            const row = displayHistoryRow(record);
             const status = statusConfig[record.status as keyof typeof statusConfig];
             const type =
               typeConfig[record.type as keyof typeof typeConfig] ?? {
@@ -642,13 +422,13 @@ export default function HistoricoPage() {
             ? `Editar registro — ${editingMerged.title}`
             : ""
         }
-        subtitle="Alterações salvas neste dispositivo (localStorage)."
+        subtitle="Alterações sincronizadas com o Firestore."
         showMetaFields
         showDeleteButton
         onDelete={
           editingRecordId != null
-            ? () => {
-                deleteHistoricoRecord(editingRecordId);
+            ? async () => {
+                await deleteHistoryRecord(editingRecordId);
                 setEditingRecordId(null);
               }
             : undefined
@@ -663,29 +443,29 @@ export default function HistoricoPage() {
             };
           }
           const r = editingRecordBase;
-          const p = historicoEdits[r.id];
           const { start, end } = splitHistoryTime(r.time);
           const baseLinks =
             "linksPostagem" in r && Array.isArray(r.linksPostagem)
               ? [...r.linksPostagem]
               : [];
           return {
-            title: p?.title ?? r.title,
-            date: p?.date ?? r.date,
-            timeStart: p?.timeStart ?? start,
-            timeEnd: p?.timeEnd ?? end,
-            location: p?.location ?? r.location,
-            responsible: p?.responsible ?? r.responsible,
-            description: p?.description ?? r.description,
-            observations: p?.observations ?? r.observations,
-            photoDataUrls: p?.photoDataUrls ?? [],
-            linksPostagem: p ? (p.linksPostagem ?? baseLinks) : baseLinks,
+            title: r.title,
+            date: r.date,
+            timeStart: start,
+            timeEnd: end,
+            location: r.location,
+            responsible: r.responsible,
+            description: r.description,
+            observations: r.observations,
+            photoDataUrls: r.extraPhotoUrls ?? [],
+            linksPostagem: baseLinks,
           };
         })()}
         submitLabel="Salvar"
-        onSubmit={(payload) => {
-          if (editingRecordId == null) return;
-          persistHistorico(editingRecordId, payload);
+        onSubmit={async (payload) => {
+          if (editingRecordId == null || !editingRecordBase) return;
+          await persistHistoryDialog(editingRecordId, payload, editingRecordBase);
+          setEditingRecordId(null);
         }}
       />
     </AppShell>

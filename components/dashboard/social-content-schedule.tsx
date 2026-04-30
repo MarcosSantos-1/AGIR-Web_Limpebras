@@ -1,7 +1,7 @@
 "use client";
 
-import { getDashboardSocialPosts } from "@/data/social-posts";
 import type { SocialContentStatus } from "@/data/social-posts";
+import { useSocialPosts } from "@/contexts/social-posts-context";
 import { formatDateBr } from "@/lib/utils";
 import { motion } from "framer-motion";
 import {
@@ -14,8 +14,6 @@ import {
   Link2,
 } from "lucide-react";
 import Link from "next/link";
-
-const rows = getDashboardSocialPosts();
 
 function statusClass(status: SocialContentStatus) {
   switch (status) {
@@ -48,6 +46,9 @@ function statusLabel(status: SocialContentStatus) {
 }
 
 export function SocialContentSchedule() {
+  const { posts } = useSocialPosts();
+  const rows = posts.slice(0, 4);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}

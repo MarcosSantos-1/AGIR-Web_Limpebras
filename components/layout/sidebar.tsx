@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
 import {
   Calendar,
@@ -14,8 +15,12 @@ import {
 } from "lucide-react";
 import ImageNext from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { useUserProfile } from "@/contexts/user-profile-context";
+import { DEFAULT_PROFILE_GRADIENT } from "@/lib/firestore/user-profile";
+import { initialsFromNome } from "@/lib/user-initials";
+import { useMemo } from "react";
 
 const navigation = [
   { name: "Home", href: "/", icon: Home },
@@ -29,6 +34,32 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { signOut, user } = useAuth();
+  const { profile, hydrated } = useUserProfile();
+
+  const { displayName, displayCargo, avatarInitials, gradientFrom, gradientTo } =
+    useMemo(() => {
+      const emailLocal = user?.email?.split("@")[0] ?? "";
+      const name = profile?.nome?.trim();
+      const cargo = profile?.cargo?.trim();
+      const from = profile?.gradientFrom ?? DEFAULT_PROFILE_GRADIENT.from;
+      const to = profile?.gradientTo ?? DEFAULT_PROFILE_GRADIENT.to;
+      const initials = name
+        ? initialsFromNome(name)
+        : emailLocal.length >= 2
+          ? emailLocal.slice(0, 2).toUpperCase()
+          : emailLocal
+            ? emailLocal[0]!.toUpperCase()
+            : "?";
+      return {
+        displayName: name || emailLocal || "Utilizador",
+        displayCargo: cargo || (hydrated ? "—" : "…"),
+        avatarInitials: initials,
+        gradientFrom: from,
+        gradientTo: to,
+      };
+    }, [profile, user?.email, hydrated]);
 
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-72 flex-col bg-white shadow-xl">
@@ -90,7 +121,14 @@ export function Sidebar() {
           <Settings className="h-5 w-5" />
           <span>Configurações</span>
         </Link>
-        <button className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-zinc-600 transition-colors hover:bg-red-50 hover:text-red-600">
+        <button
+          type="button"
+          onClick={async () => {
+            await signOut();
+            router.replace("/login");
+          }}
+          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-zinc-600 transition-colors hover:bg-red-50 hover:text-red-600"
+        >
           <LogOut className="h-5 w-5" />
           <span>Sair</span>
         </button>
@@ -99,14 +137,19 @@ export function Sidebar() {
       {/* User Info */}
       <div className="border-t border-zinc-100 p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#f318e3] to-[#6a0eaf] text-sm font-semibold text-white">
-            IS
+          <div
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
+            style={{
+              background: `linear-gradient(to bottom right, ${gradientFrom}, ${gradientTo})`,
+            }}
+          >
+            {avatarInitials}
           </div>
           <div className="flex-1 overflow-hidden">
             <p className="truncate text-sm font-medium text-zinc-900">
-              Igor Supervisor
+              {displayName}
             </p>
-            <p className="truncate text-xs text-zinc-500">Supervisor</p>
+            <p className="truncate text-xs text-zinc-500">{displayCargo}</p>
           </div>
         </div>
       </div>

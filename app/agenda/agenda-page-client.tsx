@@ -2,10 +2,15 @@
 
 import { AppShell } from "@/components/layout/app-shell";
 import { useAgendaEvents } from "@/contexts/agenda-events-context";
-import { ActionCompletionDialog } from "@/components/acao-registro/action-completion-dialog";
+import {
+  mergeAgendaHighlightIfNeeded,
+  useAgendaViewportEvents,
+} from "@/hooks/use-agenda-viewport-events";
+import { useNovaAcao } from "@/components/acao/nova-acao-provider";
 import { PostLinksDisplay } from "@/components/acao-registro/post-links";
 import { agendaEventUrl, type AgendaEvent, type AgendaEventStatus } from "@/data/agenda-events";
 import { formatDateBr } from "@/lib/utils";
+import { agendaClockLabel } from "@/lib/agenda/time-display";
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -55,7 +60,8 @@ const statusOptions = [
 
 const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-export function AgendaPageClient() {
+/** Conteúdo da agenda — precisa ficar dentro de `AppShell` (usa `useNovaAcao`). */
+function AgendaPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const highlightId = searchParams.get("event");
@@ -66,11 +72,36 @@ export function AgendaPageClient() {
   const [listDateFilter, setListDateFilter] = useState("");
   const [listSelectedId, setListSelectedId] = useState<number | null>(null);
   const [listStatusPickerOpen, setListStatusPickerOpen] = useState(false);
-  const [completionTarget, setCompletionTarget] = useState<AgendaEvent | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const lastScrolledId = useRef<string | null>(null);
 
-  const { events, getEvent, updateEvent, deleteEvent } = useAgendaEvents();
+  const { getEvent, updateEvent } = useAgendaEvents();
+
+  const { openAgendaEventForEdit } = useNovaAcao();
+
+  const viewportExtraDates = useMemo(
+    () =>
+      [
+        listDateFilter || undefined,
+        searchParams.get("date") || undefined,
+      ] as Array<string | null | undefined>,
+    [listDateFilter, searchParams],
+  );
+
+  const { events: viewportEvents } = useAgendaViewportEvents(
+    selectedDate,
+    viewMode,
+    viewportExtraDates,
+  );
+
+  const [displayEvents, setDisplayEvents] = useState<AgendaEvent[]>([]);
+
+  useEffect(() => {
+    void mergeAgendaHighlightIfNeeded(
+      viewportEvents,
+      highlightId,
+    ).then(setDisplayEvents);
+  }, [viewportEvents, highlightId]);
 
   const scrollToEventCard = useCallback((id: string) => {
     const el = document.getElementById(`agenda-event-${id}`);
@@ -165,7 +196,7 @@ export function AgendaPageClient() {
   });
 
   const listFilteredEvents = useMemo(() => {
-    return events
+    return displayEvents
       .filter(
         (e) => selectedType === "all" || e.type === selectedType
       )
@@ -177,12 +208,12 @@ export function AgendaPageClient() {
         (a, b) =>
           a.date.localeCompare(b.date) || a.time.localeCompare(b.time)
       );
-  }, [events, selectedType, listStatusFilter, listDateFilter]);
+  }, [displayEvents, selectedType, listStatusFilter, listDateFilter]);
 
   const getEventsForDate = useCallback(
     (date: Date) => {
       const dateStr = date.toISOString().split("T")[0];
-      return events
+      return displayEvents
         .filter(
           (e) =>
             e.date === dateStr &&
@@ -190,7 +221,7 @@ export function AgendaPageClient() {
         )
         .sort((a, b) => a.time.localeCompare(b.time));
     },
-    [events, selectedType],
+    [displayEvents, selectedType],
   );
 
   const getTypeConfig = (type: string) => {
@@ -202,7 +233,7 @@ export function AgendaPageClient() {
   };
 
   return (
-    <AppShell title="Agenda" subtitle="Gestão de compromissos e ações">
+    <>
       {/* Header Actions */}
       <div className="mb-6 flex flex-wrap items-center gap-2">
         <Button
@@ -692,7 +723,7 @@ export function AgendaPageClient() {
                         <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-zinc-500">
                           <span className="flex items-center gap-1">
                             <Clock className="h-4 w-4" />
-                            {formatDateBr(event.date)} • {event.time} - {event.endTime}
+                            {formatDateBr(event.date)} • {agendaClockLabel(event)}
                           </span>
                           <span className="flex items-center gap-1">
                             <MapPin className="h-4 w-4" />
@@ -807,8 +838,9 @@ export function AgendaPageClient() {
                                         type="button"
                                         onClick={() => {
                                           if (s.id === "concluido") {
-                                            setCompletionTarget(event);
+                                            openAgendaEventForEdit(event.id);
                                             setListStatusPickerOpen(false);
+                                            setListSelectedId(null);
                                             return;
                                           }
                                           if (s.id === event.status) {
@@ -858,58 +890,15 @@ export function AgendaPageClient() {
             })}
         </div>
       )}
-      <ActionCompletionDialog
-        key={completionTarget?.id ?? "off"}
-        open={!!completionTarget}
-        onOpenChange={(o) => {
-          if (!o) setCompletionTarget(null);
-        }}
-        showMetaFields
-        showDeleteButton
-        onDelete={() => {
-          if (!completionTarget) return;
-          deleteEvent(completionTarget.id);
-          setCompletionTarget(null);
-          setListSelectedId(null);
-        }}
-        title={
-          completionTarget
-            ? completionTarget.status === "concluido"
-              ? `Editar conclusão — ${completionTarget.title}`
-              : `Concluir ação — ${completionTarget.title}`
-            : "Ação"
-        }
-        subtitle="Ajuste dados do compromisso, registro e fotos. Tudo fica salvo neste dispositivo."
-        initial={{
-          title: completionTarget?.title ?? "",
-          date: completionTarget?.date ?? "",
-          timeStart: completionTarget?.time ?? "",
-          timeEnd: completionTarget?.endTime ?? "",
-          location: completionTarget?.location ?? "",
-          responsible: completionTarget?.responsible ?? "",
-          description: completionTarget?.completionDescription ?? "",
-          observations: completionTarget?.observations ?? "",
-          photoDataUrls: completionTarget?.completionPhotoDataUrls ?? [],
-          linksPostagem: completionTarget?.linksPostagem ?? [],
-        }}
-        submitLabel="Salvar registro"
-        onSubmit={(p) => {
-          if (!completionTarget) return;
-          updateEvent(completionTarget.id, {
-            status: "concluido",
-            title: p.title,
-            date: p.date,
-            time: p.timeStart,
-            endTime: p.timeEnd,
-            location: p.location,
-            responsible: p.responsible,
-            completionDescription: p.description,
-            observations: p.observations,
-            completionPhotoDataUrls: p.photoDataUrls,
-            linksPostagem: p.linksPostagem ?? [],
-          });
-        }}
-      />
+    </>
+  );
+}
+
+/** Rota `/agenda` — `AppShell` fornece `NovaAcaoProvider` para edição/conclusão inline. */
+export function AgendaPageClient() {
+  return (
+    <AppShell title="Agenda" subtitle="Gestão de compromissos e ações">
+      <AgendaPageContent />
     </AppShell>
   );
 }

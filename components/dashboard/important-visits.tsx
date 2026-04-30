@@ -2,11 +2,11 @@
 
 import { useAgendaEvents } from "@/contexts/agenda-events-context";
 import {
-  DASHBOARD_AGENDA,
   agendaEventUrl,
   agendaListUrl,
   getHomePendingActionVisits,
 } from "@/data/agenda-events";
+import { getCurrentWeekMondayIso } from "@/lib/date/week";
 import { motion } from "framer-motion";
 import { MapPin, Clock, ArrowRight } from "lucide-react";
 import Link from "next/link";
@@ -19,7 +19,8 @@ const priorityConfig = {
 
 export function ImportantVisits() {
   const { events } = useAgendaEvents();
-  const items = getHomePendingActionVisits(events);
+  const weekStartIso = getCurrentWeekMondayIso();
+  const items = getHomePendingActionVisits(events, weekStartIso);
 
   return (
     <motion.div
@@ -31,7 +32,7 @@ export function ImportantVisits() {
       <div className="mb-5 flex items-center justify-between">
         <h3 className="text-lg font-semibold text-zinc-900">Ações / Visitas</h3>
         <Link
-          href={agendaListUrl(DASHBOARD_AGENDA.weekStartIso)}
+          href={agendaListUrl(weekStartIso)}
           className="flex items-center gap-1 text-sm font-medium text-[#9b0ba6] hover:underline"
         >
           Ver todas
@@ -51,7 +52,7 @@ export function ImportantVisits() {
             <Link
               key={visit.id}
               href={agendaEventUrl(visit.id, {
-                date: DASHBOARD_AGENDA.weekStartIso,
+                date: visit.date,
                 view: "list",
               })}
               scroll={false}

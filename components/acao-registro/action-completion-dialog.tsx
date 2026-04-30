@@ -56,7 +56,7 @@ type Props = {
 };
 
 const defaultDeleteMsg =
-  "Excluir este registro? Esta ação não pode ser desfeita (aplicação local).";
+  "Excluir este registro? Esta ação não pode ser desfeita.";
 
 export function ActionCompletionDialog({
   open,

@@ -2,7 +2,8 @@
 
 import { AppShell } from "@/components/layout/app-shell";
 import { useConteudoSocialModal } from "@/components/redes-sociais/conteudo-social-modal-provider";
-import { socialPosts, type SocialPost } from "@/data/social-posts";
+import { useSocialPosts } from "@/contexts/social-posts-context";
+import type { SocialPost } from "@/data/social-posts";
 import { formatDateBr } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -65,7 +66,8 @@ function RedesSociaisPageBody() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  const { open: openConteudoModal } = useConteudoSocialModal();
+  const { open: openConteudoModal, openEdit } = useConteudoSocialModal();
+  const { posts: postsState } = useSocialPosts();
   const highlightId = searchParams.get("content");
   const lastScrolledId = useRef<string | null>(null);
 
@@ -99,7 +101,7 @@ function RedesSociaisPageBody() {
     router.replace(pathname, { scroll: false });
   }, [searchParams, openConteudoModal, router, pathname]);
 
-  const filtered = socialPosts.filter((p) => {
+  const filtered = postsState.filter((p) => {
     const f = matchesFilter(p, selectedFilter);
     const q = searchQuery.toLowerCase();
     const searchMatch =
@@ -320,6 +322,7 @@ function RedesSociaisPageBody() {
                   variant="outline"
                   size="sm"
                   className="rounded-lg"
+                  onClick={() => openEdit(set)}
                 >
                   <Pencil className="mr-2 h-4 w-4" />
                   Editar

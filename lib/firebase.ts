@@ -1,4 +1,7 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
+import { getAuth, type Auth } from "firebase/auth";
+import { getFirestore, initializeFirestore, type Firestore } from "firebase/firestore";
+import { getStorage, type FirebaseStorage } from "firebase/storage";
 
 const config = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -41,4 +44,41 @@ export function getFirebaseApp(): FirebaseApp {
 
 export function isFirebaseConfigured(): boolean {
   return isConfigComplete();
+}
+
+let authSingleton: Auth | null = null;
+let dbSingleton: Firestore | null = null;
+let storageSingleton: FirebaseStorage | null = null;
+
+export function getFirebaseAuth(): Auth {
+  if (!authSingleton) {
+    authSingleton = getAuth(getFirebaseApp());
+  }
+  return authSingleton;
+}
+
+export function getFirebaseDb(): Firestore {
+  if (!dbSingleton) {
+    const app = getFirebaseApp();
+    /** Long polling reduz erros espúrios no watch stream em dev (React Strict Mode / churn). */
+    if (typeof window !== "undefined") {
+      try {
+        dbSingleton = initializeFirestore(app, {
+          experimentalForceLongPolling: true,
+        });
+      } catch {
+        dbSingleton = getFirestore(app);
+      }
+    } else {
+      dbSingleton = getFirestore(app);
+    }
+  }
+  return dbSingleton;
+}
+
+export function getFirebaseStorage(): FirebaseStorage {
+  if (!storageSingleton) {
+    storageSingleton = getStorage(getFirebaseApp());
+  }
+  return storageSingleton;
 }

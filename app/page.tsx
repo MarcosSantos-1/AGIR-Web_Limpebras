@@ -7,13 +7,14 @@ import { QuickActions } from "@/components/dashboard/quick-actions";
 import { DailyChecklist } from "@/components/dashboard/daily-checklist";
 import { ImportantVisits } from "@/components/dashboard/important-visits";
 import { SocialContentSchedule } from "@/components/dashboard/social-content-schedule";
+import { formatTodayLongPtBr } from "@/lib/date/week";
 // import { StatsCards } from "@/components/dashboard/stats-cards";
 
 export default function DashboardPage() {
   return (
     <AppShell
       title="Home"
-      subtitle="Segunda-feira, 29 de Abril de 2025"
+      subtitle={formatTodayLongPtBr()}
     >
       {/* Stats Cards (comentado; métricas no painel Indicadores) */}
       {/* <StatsCards /> */}
