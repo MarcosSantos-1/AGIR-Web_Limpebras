@@ -31,6 +31,7 @@ export default function RootLayout({
     <html
       lang="pt-BR"
       className={inter.variable}
+      data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
       <body className="font-sans antialiased bg-background" suppressHydrationWarning>

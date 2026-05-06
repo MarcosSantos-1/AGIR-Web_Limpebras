@@ -9,41 +9,14 @@
  * Executar: npm run seed:firestore
  */
 import * as admin from "firebase-admin";
-import { readFileSync } from "node:fs";
 import { agendaEvents } from "../data/agenda-events";
 import { socialPosts } from "../data/social-posts";
 import { HISTORY_SEED } from "../data/history-records";
 import { GALERIA_SEED } from "../data/gallery-sets";
-
-function initAdmin(): void {
-  if (admin.apps.length > 0) return;
-
-  const path = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-  const inline = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-
-  if (path) {
-    const json = JSON.parse(readFileSync(path, "utf8"));
-    admin.initializeApp({
-      credential: admin.credential.cert(json as admin.ServiceAccount),
-    });
-    return;
-  }
-
-  if (inline) {
-    const json = JSON.parse(inline);
-    admin.initializeApp({
-      credential: admin.credential.cert(json as admin.ServiceAccount),
-    });
-    return;
-  }
-
-  throw new Error(
-    "Defina GOOGLE_APPLICATION_CREDENTIALS (ficheiro JSON) ou FIREBASE_SERVICE_ACCOUNT_JSON.",
-  );
-}
+import { getFirebaseAdminApp } from "../lib/firebase-admin";
 
 async function main(): Promise<void> {
-  initAdmin();
+  getFirebaseAdminApp();
   const db = admin.firestore();
 
   for (const e of agendaEvents) {

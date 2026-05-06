@@ -6,7 +6,6 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -67,6 +66,7 @@ import {
 } from "@/lib/firestore/agenda";
 import { replaceHistoryFromCompletedAgendaEvent } from "@/lib/history-persist";
 import { historyRecordDocToAgendaEvent } from "@/lib/history-to-agenda";
+import { revokeBlobPhotoUrls } from "@/lib/storage/photo-url-helpers";
 import { replaceDataUrlsWithStorage } from "@/lib/storage/upload-helpers";
 import type {
   AgendaEvent,
@@ -331,7 +331,10 @@ function AcaoVisitaDialog({
       setDescricaoFeito("");
       setObservacoesGerais("");
       setLinksPostagemText("");
-      setFotoDataUrls([]);
+      setFotoDataUrls((prev) => {
+        revokeBlobPhotoUrls(prev);
+        return [];
+      });
       setTipoServico("");
       setPanfletagemRealizada(false);
       setUnidadesPanfletos("");
@@ -368,7 +371,10 @@ function AcaoVisitaDialog({
       setDescricaoFeito(initialEvent.completionDescription ?? "");
       setObservacoesGerais(initialEvent.observations ?? "");
       setLinksPostagemText((initialEvent.linksPostagem ?? []).join("\n"));
-      setFotoDataUrls([...(initialEvent.completionPhotoDataUrls ?? [])]);
+      setFotoDataUrls((prev) => {
+        revokeBlobPhotoUrls(prev);
+        return [...(initialEvent.completionPhotoDataUrls ?? [])];
+      });
     } else {
       const { previsto, extra } = splitPrevistoObservations(
         initialEvent.observations ?? "",
@@ -377,10 +383,16 @@ function AcaoVisitaDialog({
       setObservacoesGerais(extra);
       if (preferFinalizado) {
         setLinksPostagemText((initialEvent.linksPostagem ?? []).join("\n"));
-        setFotoDataUrls([...(initialEvent.completionPhotoDataUrls ?? [])]);
+        setFotoDataUrls((prev) => {
+          revokeBlobPhotoUrls(prev);
+          return [...(initialEvent.completionPhotoDataUrls ?? [])];
+        });
       } else {
         setLinksPostagemText("");
-        setFotoDataUrls([]);
+        setFotoDataUrls((prev) => {
+          revokeBlobPhotoUrls(prev);
+          return [];
+        });
       }
     }
     const p = initialEvent.panfletosDistribuidos;
@@ -416,9 +428,6 @@ function AcaoVisitaDialog({
         )}
         showCloseButton
       >
-        <DialogHeader className="sr-only">
-          <DialogTitle>Ação / Visita</DialogTitle>
-        </DialogHeader>
         <ModalHero
           icon={Waypoints}
           title="Ação / Visita"
@@ -576,7 +585,10 @@ function AcaoVisitaDialog({
                     onClick={() => {
                       setSituacao("agendar");
                       setLinksPostagemText("");
-                      setFotoDataUrls([]);
+                      setFotoDataUrls((prev) => {
+                        revokeBlobPhotoUrls(prev);
+                        return [];
+                      });
                     }}
                     className={cn(
                       "flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition-all",
@@ -1022,7 +1034,10 @@ function RevitalizacaoDialog({
       setPontoViciadoId("");
       setPvComboOpen(false);
       setPvSearch("");
-      setRevFotoUrls([]);
+      setRevFotoUrls((prev) => {
+        revokeBlobPhotoUrls(prev);
+        return [];
+      });
       setLinksPostagemText("");
       setPanfletagemRealizada(false);
       setUnidadesPanfletos("");
@@ -1054,10 +1069,16 @@ function RevitalizacaoDialog({
     setKgRev(parsed.kg);
     setEquipeRev(parsed.equipe);
     if (initialEvent.status === "concluido" || preferFinalizado) {
-      setRevFotoUrls([...(initialEvent.completionPhotoDataUrls ?? [])]);
+      setRevFotoUrls((prev) => {
+        revokeBlobPhotoUrls(prev);
+        return [...(initialEvent.completionPhotoDataUrls ?? [])];
+      });
       setLinksPostagemText((initialEvent.linksPostagem ?? []).join("\n"));
     } else {
-      setRevFotoUrls([]);
+      setRevFotoUrls((prev) => {
+        revokeBlobPhotoUrls(prev);
+        return [];
+      });
       setLinksPostagemText("");
     }
     const p = initialEvent.panfletosDistribuidos;
@@ -1095,9 +1116,6 @@ function RevitalizacaoDialog({
         )}
         showCloseButton
       >
-        <DialogHeader className="sr-only">
-          <DialogTitle>Revitalização</DialogTitle>
-        </DialogHeader>
         <ModalHero
           icon={RefreshCcw}
           title="Revitalização"
@@ -1256,7 +1274,10 @@ function RevitalizacaoDialog({
                     onClick={() => {
                       setSituacaoRev("agendar");
                       setLinksPostagemText("");
-                      setRevFotoUrls([]);
+                      setRevFotoUrls((prev) => {
+                        revokeBlobPhotoUrls(prev);
+                        return [];
+                      });
                     }}
                     className={cn(
                       "flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition-all",

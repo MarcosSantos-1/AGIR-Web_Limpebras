@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { revokeBlobPhotoUrls } from "@/lib/storage/photo-url-helpers";
 import { cn, parseLinksMultiline } from "@/lib/utils";
 import { useEffect, useId, useState } from "react";
 
@@ -96,7 +97,10 @@ export function ActionCompletionDialog({
     setDescription(initial?.description ?? "");
     setObservations(initial?.observations ?? "");
     setLinksText((initial?.linksPostagem ?? []).join("\n"));
-    setPhotoDataUrls(initial?.photoDataUrls ? [...initial.photoDataUrls] : []);
+    setPhotoDataUrls((prev) => {
+      revokeBlobPhotoUrls(prev);
+      return initial?.photoDataUrls ? [...initial.photoDataUrls] : [];
+    });
   }, [
     open,
     initial?.title,

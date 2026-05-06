@@ -368,6 +368,8 @@ function ConteudoFormDialog({
   const [horaPublicacao, setHoraPublicacao] = React.useState("");
   const [notas, setNotas] = React.useState("");
   const [media, setMedia] = React.useState<SocialConteudoMediaItem[]>([]);
+  const [submitError, setSubmitError] = React.useState<string | null>(null);
+  const [submitting, setSubmitting] = React.useState(false);
 
   /* Sincronizar estado do formulário com props ao abrir — padrão de diálogo controlado. */
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -409,11 +411,16 @@ function ConteudoFormDialog({
     setDataPublicacao("");
     setHoraPublicacao("");
     setNotas("");
+    setSubmitError(null);
+    setSubmitting(false);
   }, [open, editingPost]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
+    setSubmitError(null);
+    setSubmitting(true);
 
     const draft = {
       fase,
@@ -434,22 +441,30 @@ function ConteudoFormDialog({
       notas,
     };
 
-    let merged = mergeFormIntoSocialPost(editingPost, draft);
-    if (media.length > 0) {
-      try {
+    try {
+      let merged = mergeFormIntoSocialPost(editingPost, draft);
+      if (media.length > 0) {
         const fotos = await appendUploadedMediaToFotos(
           merged.id,
           merged.fotos,
           media,
         );
         merged = { ...merged, fotos };
-      } finally {
         for (const m of media) URL.revokeObjectURL(m.preview);
         setMedia([]);
       }
+      await persistPost(merged);
+      onOpenChange(false);
+    } catch (err) {
+      console.error("[redes-sociais submit]", err);
+      const msg =
+        err instanceof Error && err.message
+          ? err.message
+          : "Não foi possível salvar. Tente de novo.";
+      setSubmitError(msg);
+    } finally {
+      setSubmitting(false);
     }
-    await persistPost(merged);
-    onOpenChange(false);
   };
 
   const PhaseIcon = FASE_ICONS[fase];
@@ -480,6 +495,11 @@ function ConteudoFormDialog({
             )}
           >
             <div className="space-y-5">
+              {submitError && (
+                <p className="rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-sm font-medium text-red-700">
+                  {submitError}
+                </p>
+              )}
               <div className="rounded-2xl border border-zinc-100 bg-zinc-50/60 p-4 sm:p-5">
                 <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-zinc-800">
                   <PhaseIcon className="h-4 w-4 text-[#9b0ba6]" />
@@ -698,15 +718,21 @@ function ConteudoFormDialog({
               type="button"
               variant="outline"
               className="h-11 rounded-xl"
+              disabled={submitting}
               onClick={() => onOpenChange(false)}
             >
               Cancelar
             </Button>
             <Button
               type="submit"
+              disabled={submitting}
               className="h-11 rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] text-white"
             >
-              {mode === "edit" ? "Salvar alterações" : "Salvar conteúdo"}
+              {submitting
+                ? "Salvando…"
+                : mode === "edit"
+                  ? "Salvar alterações"
+                  : "Salvar conteúdo"}
             </Button>
           </DialogFooter>
         </form>

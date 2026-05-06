@@ -1,5 +1,8 @@
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import { getFirebaseStorage } from "@/lib/firebase";
+import { getFirebaseAuth } from "@/lib/firebase";
+import {
+  resolvePhotoUrlsForPersist,
+  revokeBlobPhotoUrls,
+} from "@/lib/storage/photo-url-helpers";
 
 /**
  * Converte data URL em Blob (browser).
@@ -30,6 +33,39 @@ function extensionForDataUrl(dataUrl: string): string {
   return "bin";
 }
 
+async function uploadBlobToObjectKey(
+  objectKey: string,
+  blob: Blob,
+  filenameForForm: string,
+): Promise<string> {
+  const auth = getFirebaseAuth();
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("Inicie sessão para enviar ficheiros.");
+  }
+
+  const token = await user.getIdToken(true);
+  const form = new FormData();
+  form.append("key", objectKey);
+  form.append("file", blob, filenameForForm);
+
+  const res = await fetch("/api/storage/upload", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+
+  const data = (await res.json().catch(() => ({}))) as { error?: string; url?: string };
+
+  if (!res.ok) {
+    throw new Error(data.error || `Upload falhou (${res.status}).`);
+  }
+  if (typeof data.url !== "string" || !data.url) {
+    throw new Error("Resposta inválida do servidor.");
+  }
+  return data.url;
+}
+
 export async function uploadDataUrlToPath(
   path: string,
   dataUrl: string,
@@ -38,17 +74,14 @@ export async function uploadDataUrlToPath(
     return dataUrl;
   }
   const blob = dataUrlToBlob(dataUrl);
-  const storage = getFirebaseStorage();
-  const r = ref(storage, path);
-  await uploadBytes(r, blob);
-  return getDownloadURL(r);
+  const ext = extensionForDataUrl(dataUrl);
+  return uploadBlobToObjectKey(path, blob, `upload.${ext}`);
 }
 
 export async function uploadFileToPath(path: string, file: File): Promise<string> {
-  const storage = getFirebaseStorage();
-  const r = ref(storage, path);
-  await uploadBytes(r, file);
-  return getDownloadURL(r);
+  const name =
+    file.name?.replace(/[^\w.-]/g, "_").slice(0, 120) || "upload";
+  return uploadBlobToObjectKey(path, file, name);
 }
 
 /**
@@ -59,8 +92,10 @@ export async function replaceDataUrlsWithStorage(
   pathPrefix: string,
 ): Promise<string[] | undefined> {
   if (!urls?.length) return urls;
+  const normalized = await resolvePhotoUrlsForPersist(urls);
+  revokeBlobPhotoUrls(urls);
   const out: string[] = [];
-  for (const u of urls) {
+  for (const u of normalized) {
     if (u.startsWith("data:")) {
       const ext = extensionForDataUrl(u);
       const path = `${pathPrefix}/${crypto.randomUUID()}.${ext}`;

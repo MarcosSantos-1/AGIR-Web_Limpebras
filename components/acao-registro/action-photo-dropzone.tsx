@@ -1,12 +1,15 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { revokeBlobPhotoUrls } from "@/lib/storage/photo-url-helpers";
 import { ImageIcon, Trash2, Upload } from "lucide-react";
-import { useCallback, useId, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 export const ACTION_PHOTO_MAX = 12;
 export const ACTION_PHOTO_MAX_BYTES = 2 * 1024 * 1024;
 
+/** Mantido para fluxos que ainda preferem data URL (ex.: código legado). */
 export function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
@@ -33,11 +36,25 @@ export function ActionPhotoDropzone({
   label = "Fotos",
   hint = "Clique ou arraste imagens para esta área",
 }: Props) {
-  const inputId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [mounted, setMounted] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const emitUrls = useCallback(
+    (next: string[]) => {
+      const removed = photoDataUrls.filter((u) => !next.includes(u));
+      revokeBlobPhotoUrls(removed);
+      onChange(next);
+    },
+    [photoDataUrls, onChange],
+  );
+
   const onFiles = useCallback(
-    async (files: FileList | null) => {
+    (files: FileList | null) => {
       if (!files?.length) return;
       const next: string[] = [...photoDataUrls];
       for (const file of Array.from(files)) {
@@ -45,19 +62,49 @@ export function ActionPhotoDropzone({
         if (!file.type.startsWith("image/")) continue;
         if (file.size > ACTION_PHOTO_MAX_BYTES) continue;
         try {
-          const dataUrl = await readFileAsDataUrl(file);
-          next.push(dataUrl);
+          next.push(URL.createObjectURL(file));
         } catch {
           /* skip */
         }
       }
-      onChange(next);
+      emitUrls(next);
     },
-    [photoDataUrls, onChange, maxPhotos],
+    [photoDataUrls, emitUrls, maxPhotos],
   );
+
+  const openFilePicker = useCallback(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    try {
+      if (typeof el.showPicker === "function") {
+        void el.showPicker();
+        return;
+      }
+    } catch {
+      /* Safari / restrições — cair para .click() */
+    }
+    el.click();
+  }, []);
 
   const isEmphasis = variant === "emphasis";
   const isAmber = variant === "amber";
+
+  const fileInput = (
+    <input
+      ref={inputRef}
+      type="file"
+      accept="image/*"
+      multiple
+      tabIndex={-1}
+      aria-hidden
+      className="fixed h-px w-px opacity-0"
+      style={{ left: 0, top: 0, clipPath: "inset(50%)" }}
+      onChange={(e) => {
+        void onFiles(e.target.files);
+        e.target.value = "";
+      }}
+    />
+  );
 
   return (
     <div
@@ -96,6 +143,7 @@ export function ActionPhotoDropzone({
         void onFiles(e.dataTransfer.files);
       }}
     >
+      {mounted ? createPortal(fileInput, document.body) : null}
       <div className="mb-2 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-sm font-medium text-zinc-800">
           <Upload
@@ -110,32 +158,23 @@ export function ActionPhotoDropzone({
           </span>
         </div>
       </div>
-      <label
-        htmlFor={inputId}
+      <button
+        type="button"
         className={cn(
-          "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white py-6 text-sm transition",
+          "flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white py-6 text-sm transition",
           dragOver ? "border-[#f318e3]/50 bg-zinc-50" : "hover:border-[#f318e3]/30 hover:bg-zinc-50/80",
         )}
+        onClick={openFilePicker}
       >
-        <input
-          id={inputId}
-          type="file"
-          accept="image/*"
-          multiple
-          className="sr-only"
-          onChange={(e) => {
-            void onFiles(e.target.files);
-            e.target.value = "";
-          }}
-        />
-        <ImageIcon className="h-8 w-8 text-zinc-400" />
+        <ImageIcon className="h-8 w-8 text-zinc-400" aria-hidden />
         <span className="text-zinc-600">{hint}</span>
-      </label>
+        <span className="sr-only">Abrir seletor de ficheiros</span>
+      </button>
       {photoDataUrls.length > 0 && (
         <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
           {photoDataUrls.map((url, i) => (
             <div
-              key={`${i}-${url.slice(0, 24)}`}
+              key={url.startsWith("blob:") ? url : `${i}-${url.slice(-24)}`}
               className="group relative aspect-square overflow-hidden rounded-lg border border-zinc-100"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -148,7 +187,7 @@ export function ActionPhotoDropzone({
                 type="button"
                 className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-md bg-black/50 text-white opacity-0 transition group-hover:opacity-100"
                 onClick={() =>
-                  onChange(photoDataUrls.filter((_, j) => j !== i))
+                  emitUrls(photoDataUrls.filter((_, j) => j !== i))
                 }
                 aria-label="Remover foto"
               >

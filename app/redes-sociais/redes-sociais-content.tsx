@@ -4,7 +4,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { useConteudoSocialModal } from "@/components/redes-sociais/conteudo-social-modal-provider";
 import { useSocialPosts } from "@/contexts/social-posts-context";
 import type { SocialPost } from "@/data/social-posts";
-import { formatDateBr } from "@/lib/utils";
+import { cn, formatDateBr } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -306,12 +306,37 @@ function RedesSociaisPageBody() {
                     Mídias
                   </p>
                   <div className="grid grid-cols-4 gap-2">
-                    {set.fotos.map((photo) => (
-                      <div
-                        key={photo.id}
-                        className={`aspect-square rounded-xl ${photo.color} ring-1 ring-zinc-100`}
-                      />
-                    ))}
+                    {set.fotos.map((photo) => {
+                      const isVideo = photo.type === "video";
+                      return (
+                        <div
+                          key={photo.id}
+                          className={cn(
+                            "relative aspect-square overflow-hidden rounded-xl ring-1 ring-zinc-100",
+                            !photo.url && photo.color,
+                          )}
+                        >
+                          {photo.url && !isVideo && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={photo.url}
+                              alt=""
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                            />
+                          )}
+                          {photo.url && isVideo && (
+                            <video
+                              src={photo.url}
+                              muted
+                              playsInline
+                              preload="metadata"
+                              className="h-full w-full object-cover"
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
