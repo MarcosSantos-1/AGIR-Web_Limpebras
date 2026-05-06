@@ -1,11 +1,16 @@
 /** Subregionais operacionais (Zona Norte SP) — usado nos formulários e no gráfico de indicadores. */
 
 export const SUBREGIONAIS = [
-  { id: "casa-verde", label: "Casa Verde", color: "#84cc16" },
-  { id: "jacana-tremembe", label: "Jaçanã / Tremembé", color: "#1e3a5f" },
-  { id: "vila-maria-guilherme", label: "Vila Maria / Vila Guilherme", color: "#06b6d4" },
-  { id: "santana-tucuruvi", label: "Santana / Tucuruvi", color: "#ca8a04" },
-  { id: "interno", label: "Interno (garagem / reuniões)", color: "#71717a" },
+  { id: "casa-verde", label: "Casa Verde", abbrev: "CV", color: "#84cc16" },
+  { id: "jacana-tremembe", label: "Jaçanã / Tremembé", abbrev: "JT", color: "#1e3a5f" },
+  {
+    id: "vila-maria-guilherme",
+    label: "Vila Maria / Vila Guilherme",
+    abbrev: "MG",
+    color: "#06b6d4",
+  },
+  { id: "santana-tucuruvi", label: "Santana / Tucuruvi", abbrev: "ST", color: "#ca8a04" },
+  { id: "interno", label: "Interno (garagem / reuniões)", abbrev: "INT", color: "#71717a" },
 ] as const;
 
 export type SubregionalId = (typeof SUBREGIONAIS)[number]["id"];
@@ -20,12 +25,14 @@ export function subregionalMeta(id: SubregionalId | undefined) {
   if (!id) {
     return {
       label: "Não informado",
+      abbrev: "—",
       color: "#a3a3a3",
     };
   }
   const hit = SUBREGIONAIS.find((s) => s.id === id);
   return {
     label: hit?.label ?? id,
+    abbrev: hit?.abbrev ?? "?",
     color: hit?.color ?? "#a3a3a3",
   };
 }

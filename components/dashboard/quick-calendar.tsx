@@ -21,7 +21,8 @@ import { ptBR } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-const weekDaysShort = ["D", "S", "T", "Q", "Q", "S", "S"];
+/** Cabeçalhos alinhados a `startOfWeek(..., { weekStartsOn: 1 })` (segunda → domingo). */
+const weekDaysShort = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
 function capitalizeFirst(s: string): string {
   if (!s) return s;

@@ -3,7 +3,13 @@
  * `useAgendaEvents()`. `DASHBOARD_AGENDA` permanece como fallback de testes.
  */
 
-import { getCurrentWeekMondayIso } from "@/lib/date/week";
+import {
+  formatDashboardWeekWindowLabel,
+  getCurrentWeekMondayIso,
+  getHomeWeekSummaryMondayOffset,
+  parseYmdLocal,
+} from "@/lib/date/week";
+import { addDays, format, getISODay } from "date-fns";
 import type { SubregionalId } from "@/lib/constants/subregionais";
 
 export const DASHBOARD_AGENDA = {
@@ -296,6 +302,66 @@ export function getWeekSummaryColumns(
   }
 
   return columns;
+}
+
+const HOME_WEEK_SUMMARY_WEEKDAY_SHORT = [
+  "Seg",
+  "Ter",
+  "Qua",
+  "Qui",
+  "Sex",
+  "Sáb",
+  "Dom",
+] as const;
+
+/** Cinco dias visíveis no Home: seg–sex até quarta; depois inclui fim de semana deslocando o início. */
+export function getHomeWeekSummaryColumns(
+  todayIso: string,
+  sourceEvents: AgendaEvent[] = agendaEvents,
+  weekStartIso: string = getCurrentWeekMondayIso(),
+): WeekSummaryColumn[] {
+  const monday = parseYmdLocal(weekStartIso);
+  const offset = getHomeWeekSummaryMondayOffset(todayIso);
+  const columns: WeekSummaryColumn[] = [];
+
+  for (let i = 0; i < 5; i++) {
+    const d = addDays(monday, offset + i);
+    const iso = format(d, "yyyy-MM-dd");
+    const isoDow = getISODay(d);
+    const day = HOME_WEEK_SUMMARY_WEEKDAY_SHORT[isoDow - 1];
+    const dayEvents = sourceEvents
+      .filter((e) => e.date === iso)
+      .sort((a, b) => a.time.localeCompare(b.time));
+    const tasks: WeekTask[] = dayEvents.map((e) => ({
+      title: e.title,
+      status: eventToTaskStatus(e),
+      time: e.time,
+      eventId: e.id,
+    }));
+
+    columns.push({
+      day,
+      date: String(d.getDate()),
+      iso,
+      tasks,
+    });
+  }
+
+  return columns;
+}
+
+export function getHomeWeekSummaryRangeLabel(
+  todayIso: string,
+  weekStartIso: string = getCurrentWeekMondayIso(),
+): string {
+  const monday = parseYmdLocal(weekStartIso);
+  const offset = getHomeWeekSummaryMondayOffset(todayIso);
+  const first = addDays(monday, offset);
+  const last = addDays(monday, offset + 4);
+  return formatDashboardWeekWindowLabel(
+    format(first, "yyyy-MM-dd"),
+    format(last, "yyyy-MM-dd"),
+  );
 }
 
 export function agendaEventUrl(

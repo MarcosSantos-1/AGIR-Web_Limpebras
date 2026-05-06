@@ -1,4 +1,4 @@
-import { addDays, format, startOfWeek } from "date-fns";
+import { addDays, format, getISODay, startOfWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 const SP_TZ = "America/Sao_Paulo";
@@ -18,9 +18,38 @@ export function getTodayIsoInTimeZone(timeZone = SP_TZ): string {
   return `${y}-${m}-${d}`;
 }
 
-function parseYmdLocal(ymd: string): Date {
+/** Data de calendário local a partir de `yyyy-MM-dd` (sem UTC). */
+export function parseYmdLocal(ymd: string): Date {
   const [y, m, d] = ymd.split("-").map(Number);
   return new Date(y, m - 1, d);
+}
+
+/**
+ * Deslocamento (a partir da segunda da semana corrente) do primeiro dia visível no
+ * “Resumo da Semana” do Home (faixa de 5 colunas).
+ *
+ * Seg–qua: segunda a sexta; qui: qua–dom; sex: qui–seg (seg seguinte); sáb: sáb–qua;
+ * dom: dom–qui.
+ */
+export function getHomeWeekSummaryMondayOffset(todayIso: string): number {
+  const isoDow = getISODay(parseYmdLocal(todayIso));
+  if (isoDow <= 3) return 0;
+  if (isoDow === 4) return 2;
+  if (isoDow === 5) return 3;
+  if (isoDow === 6) return 5;
+  return 6;
+}
+
+/** Rótulo do intervalo exibido no resumo (primeiro–último dia da janela). */
+export function formatDashboardWeekWindowLabel(firstIso: string, lastIso: string): string {
+  const a = parseYmdLocal(firstIso);
+  const b = parseYmdLocal(lastIso);
+  const sameMonthYear =
+    a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear();
+  if (sameMonthYear) {
+    return `${format(a, "d")} – ${format(b, "d 'de' MMMM 'de' yyyy", { locale: ptBR })}`;
+  }
+  return `${format(a, "d 'de' MMMM", { locale: ptBR })} – ${format(b, "d 'de' MMMM 'de' yyyy", { locale: ptBR })}`;
 }
 
 /** Monday (Seg) of the week containing the given calendar day. */

@@ -3,10 +3,11 @@
 import {
   agendaEventUrl,
   agendaHomeUrl,
-  getWeekSummaryColumns,
+  getHomeWeekSummaryColumns,
+  getHomeWeekSummaryRangeLabel,
 } from "@/data/agenda-events";
 import { useAgendaEvents } from "@/contexts/agenda-events-context";
-import { formatDashboardWeekRangeLabel, getCurrentWeekMondayIso } from "@/lib/date/week";
+import { getCurrentWeekMondayIso, getTodayIsoInTimeZone } from "@/lib/date/week";
 import { motion } from "framer-motion";
 import { CheckCircle2, Clock, AlertCircle, ChevronRight } from "lucide-react";
 import Link from "next/link";
@@ -20,8 +21,9 @@ const statusConfig = {
 export function WeekSummary() {
   const { events } = useAgendaEvents();
   const weekStartIso = getCurrentWeekMondayIso();
-  const weekLabel = formatDashboardWeekRangeLabel(weekStartIso);
-  const weekData = getWeekSummaryColumns(weekStartIso, events);
+  const todayIso = getTodayIsoInTimeZone();
+  const weekLabel = getHomeWeekSummaryRangeLabel(todayIso, weekStartIso);
+  const weekData = getHomeWeekSummaryColumns(todayIso, events, weekStartIso);
 
   return (
     <motion.div
@@ -45,20 +47,22 @@ export function WeekSummary() {
       </div>
 
       <div className="grid grid-cols-5 gap-3">
-        {weekData.map((day, dayIndex) => (
-          <div
-            key={day.iso}
-            className={`rounded-2xl p-4 transition-colors ${
-              dayIndex === 0
-                ? "bg-gradient-to-br from-[#f318e3]/5 to-[#6a0eaf]/5 ring-2 ring-[#f318e3]/20"
-                : "bg-zinc-50 hover:bg-zinc-100"
-            }`}
-          >
+        {weekData.map((day) => {
+          const isToday = day.iso === todayIso;
+          return (
+            <div
+              key={day.iso}
+              className={`rounded-2xl p-4 transition-colors ${
+                isToday
+                  ? "bg-gradient-to-br from-[#f318e3]/5 to-[#6a0eaf]/5 ring-2 ring-[#f318e3]/20"
+                  : "bg-zinc-50 hover:bg-zinc-100"
+              }`}
+            >
             <div className="mb-3 text-center">
               <p className="text-xs font-medium uppercase text-zinc-400">{day.day}</p>
               <p
                 className={`mt-1 text-2xl font-semibold ${
-                  dayIndex === 0 ? "text-[#9b0ba6]" : "text-zinc-900"
+                  isToday ? "text-[#9b0ba6]" : "text-zinc-900"
                 }`}
               >
                 {day.date}
@@ -106,8 +110,9 @@ export function WeekSummary() {
                 return <div key={`${day.day}-${taskIndex}`}>{inner}</div>;
               })}
             </div>
-          </div>
-        ))}
+            </div>
+          );
+        })}
       </div>
     </motion.div>
   );

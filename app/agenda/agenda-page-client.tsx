@@ -39,6 +39,7 @@ import {
 import { DatePickerField } from "@/components/forms/date-picker-field";
 import { serviceTypeColor } from "@/lib/constants/service-type-colors";
 import { SubregionalBadge } from "@/components/subregional-badge";
+import { getTodayIsoInTimeZone } from "@/lib/date/week";
 
 const eventTypes = [
   { id: "all", label: "Todos" },
@@ -172,7 +173,7 @@ function AgendaPageContent() {
   };
 
   const weekDates = getWeekDates();
-  const today = new Date().toISOString().split("T")[0];
+  const today = getTodayIsoInTimeZone();
 
   const buildMonthGrid = (view: Date): (Date | null)[][] => {
     const y = view.getFullYear();
@@ -484,6 +485,7 @@ function AgendaPageContent() {
                           <SubregionalBadge
                             subregional={event.subregional}
                             size="compact"
+                            abbreviate
                           />
                         </div>
                         <div className="mt-2 flex items-center gap-1">
@@ -603,6 +605,7 @@ function AgendaPageContent() {
                                 <SubregionalBadge
                                   subregional={event.subregional}
                                   size="compact"
+                                  abbreviate
                                   className="max-w-[6rem]"
                                 />
                               </div>
@@ -751,7 +754,10 @@ function AgendaPageContent() {
                           >
                             {typeConfig.label}
                           </p>
-                          <SubregionalBadge subregional={event.subregional} />
+                          <SubregionalBadge
+                            subregional={event.subregional}
+                            uppercase={false}
+                          />
                         </div>
                         <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-zinc-500">
                           <span className="flex items-center gap-1">
