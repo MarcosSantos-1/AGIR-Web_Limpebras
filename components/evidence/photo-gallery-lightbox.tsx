@@ -1,6 +1,11 @@
 "use client";
 
-import { downloadImageUrl } from "@/lib/download-image";
+import { useAuth } from "@/contexts/auth-context";
+import {
+  downloadImageUrl,
+  extensionFromMediaUrlPath,
+  safeDownloadFilenameBase,
+} from "@/lib/download-image";
 import type { GalleryLightboxPhotoItem } from "@/lib/gallery-albums";
 import { isLikelyVideoUrl } from "@/lib/media-url";
 import { cn } from "@/lib/utils";
@@ -23,11 +28,6 @@ type PhotoGalleryLightboxProps = {
   initialIndex?: number;
 };
 
-function safeFilenamePart(raw: string): string {
-  const t = raw.trim().replace(/\s+/g, "-").slice(0, 48);
-  return t.replace(/[^a-zA-Z0-9-_]+/g, "") || "foto";
-}
-
 export function PhotoGalleryLightbox({
   open,
   onOpenChange,
@@ -35,6 +35,7 @@ export function PhotoGalleryLightbox({
   photos,
   initialIndex = 0,
 }: PhotoGalleryLightboxProps) {
+  const { user } = useAuth();
   const [index, setIndex] = useState(initialIndex);
   const [downloading, setDownloading] = useState(false);
 
@@ -73,15 +74,19 @@ export function PhotoGalleryLightbox({
 
   const handleDownload = useCallback(async () => {
     if (!current?.src) return;
-    const base = safeFilenamePart(title ?? "evidencia");
-    const ext = isLikelyVideoUrl(current.src) ? "mp4" : "jpg";
+    const base = safeDownloadFilenameBase(title ?? "evidencia");
+    const video = isLikelyVideoUrl(current.src);
+    const ext = extensionFromMediaUrlPath(current.src, video);
     setDownloading(true);
     try {
-      await downloadImageUrl(current.src, `${base}-${index + 1}.${ext}`);
+      const token = user ? await user.getIdToken() : null;
+      await downloadImageUrl(current.src, `${base}-${index + 1}.${ext}`, {
+        idToken: token,
+      });
     } finally {
       setDownloading(false);
     }
-  }, [current?.src, index, title]);
+  }, [current?.src, index, title, user]);
 
   return (
     <AnimatePresence>

@@ -1,9 +1,14 @@
 "use client";
 
+import { PhotoGalleryLightbox } from "@/components/evidence/photo-gallery-lightbox";
 import { AppShell } from "@/components/layout/app-shell";
 import { useConteudoSocialModal } from "@/components/redes-sociais/conteudo-social-modal-provider";
 import { useSocialPosts } from "@/contexts/social-posts-context";
 import type { SocialPost } from "@/data/social-posts";
+import {
+  lightboxItemsFromServicePhotos,
+  type GalleryLightboxPhotoItem,
+} from "@/lib/gallery-albums";
 import { cn, formatDateBr } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -25,6 +30,7 @@ import {
   Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { RedesSociaisSkeletonGrid } from "@/components/page-skeletons";
 
 const filterOptions = [
   { id: "all", label: "Todas" },
@@ -67,12 +73,30 @@ function RedesSociaisPageBody() {
   const router = useRouter();
   const pathname = usePathname();
   const { open: openConteudoModal, openEdit } = useConteudoSocialModal();
-  const { posts: postsState } = useSocialPosts();
+  const { posts: postsState, hydrated: postsHydrated } = useSocialPosts();
   const highlightId = searchParams.get("content");
   const lastScrolledId = useRef<string | null>(null);
 
   const [selectedFilter, setSelectedFilter] = useState<FilterId>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [socialLightboxOpen, setSocialLightboxOpen] = useState(false);
+  const [socialLightboxTitle, setSocialLightboxTitle] = useState("");
+  const [socialLightboxItems, setSocialLightboxItems] = useState<
+    GalleryLightboxPhotoItem[]
+  >([]);
+  const [socialLightboxIndex, setSocialLightboxIndex] = useState(0);
+
+  const openSocialMediaLightbox = (
+    title: string,
+    urls: string[],
+    indexInUrls: number,
+  ) => {
+    if (urls.length === 0) return;
+    setSocialLightboxTitle(title);
+    setSocialLightboxItems(lightboxItemsFromServicePhotos(urls, "social"));
+    setSocialLightboxIndex(indexInUrls);
+    setSocialLightboxOpen(true);
+  };
 
   const scrollToCard = useCallback((id: string) => {
     const el = document.getElementById(`social-card-${id}`);
@@ -153,10 +177,16 @@ function RedesSociaisPageBody() {
         ))}
       </div>
 
+      {!postsHydrated ? (
+        <RedesSociaisSkeletonGrid />
+      ) : (
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {filtered.map((set, setIndex) => {
           const st = statusLabel(set.status);
           const isHighlight = highlightId === String(set.id);
+          const mediaUrls = set.fotos
+            .map((f) => f.url)
+            .filter((u): u is string => Boolean(u));
           return (
             <motion.div
               key={set.id}
@@ -306,8 +336,13 @@ function RedesSociaisPageBody() {
                     Mídias
                   </p>
                   <div className="grid grid-cols-4 gap-2">
-                    {set.fotos.map((photo) => {
+                    {set.fotos.map((photo, photoIndex) => {
                       const isVideo = photo.type === "video";
+                      const urlIndexAmongMedia = photo.url
+                        ? set.fotos
+                            .slice(0, photoIndex)
+                            .filter((p) => p.url).length
+                        : 0;
                       return (
                         <div
                           key={photo.id}
@@ -317,22 +352,48 @@ function RedesSociaisPageBody() {
                           )}
                         >
                           {photo.url && !isVideo && (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={photo.url}
-                              alt=""
-                              className="h-full w-full object-cover"
-                              loading="lazy"
-                            />
+                            <button
+                              type="button"
+                              className="relative block h-full w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f318e3]/40"
+                              aria-label="Ver mídia em tamanho maior"
+                              onClick={() =>
+                                openSocialMediaLightbox(
+                                  set.tema,
+                                  mediaUrls,
+                                  urlIndexAmongMedia,
+                                )
+                              }
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={photo.url}
+                                alt=""
+                                className="h-full w-full object-cover"
+                                loading="lazy"
+                              />
+                            </button>
                           )}
                           {photo.url && isVideo && (
-                            <video
-                              src={photo.url}
-                              muted
-                              playsInline
-                              preload="metadata"
-                              className="h-full w-full object-cover"
-                            />
+                            <button
+                              type="button"
+                              className="relative block h-full w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f318e3]/40"
+                              aria-label="Ver vídeo em tamanho maior"
+                              onClick={() =>
+                                openSocialMediaLightbox(
+                                  set.tema,
+                                  mediaUrls,
+                                  urlIndexAmongMedia,
+                                )
+                              }
+                            >
+                              <video
+                                src={photo.url}
+                                muted
+                                playsInline
+                                preload="metadata"
+                                className="h-full w-full object-cover"
+                              />
+                            </button>
                           )}
                         </div>
                       );
@@ -366,8 +427,9 @@ function RedesSociaisPageBody() {
           );
         })}
       </div>
+      )}
 
-      {filtered.length === 0 && (
+      {postsHydrated && filtered.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-3xl bg-white py-16 shadow-lg shadow-zinc-200/50">
           <Filter className="h-12 w-12 text-zinc-300" />
           <p className="mt-4 text-lg font-medium text-zinc-500">
@@ -376,6 +438,14 @@ function RedesSociaisPageBody() {
           <p className="text-sm text-zinc-400">Ajuste filtros ou busca</p>
         </div>
       )}
+
+      <PhotoGalleryLightbox
+        open={socialLightboxOpen}
+        onOpenChange={setSocialLightboxOpen}
+        title={socialLightboxTitle}
+        initialIndex={socialLightboxIndex}
+        photos={socialLightboxItems}
+      />
     </>
   );
 }

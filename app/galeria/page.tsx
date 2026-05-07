@@ -5,8 +5,11 @@ import { PhotoGalleryLightbox } from "@/components/evidence/photo-gallery-lightb
 import { EvidenceMediaThumb } from "@/components/evidence/evidence-media-thumb";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
-import { Search, Filter, Calendar, MapPin, Pencil } from "lucide-react";
+import { Search, Filter, Calendar, MapPin, Pencil, Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/auth-context";
+import { GaleriaAlbumSkeletonGrid } from "@/components/page-skeletons";
+import { downloadMediaUrlsSequentially } from "@/lib/download-image";
 import { formatDateBr } from "@/lib/utils";
 import {
   GALLERY_SERVICE_TYPE_FILTERS,
@@ -73,14 +76,33 @@ export default function GaleriaPage() {
 function GaleriaPageBody() {
   const [historyRecords, setHistoryRecords] = useState<HistoryRecordDoc[]>([]);
   const [agendaEvents, setAgendaEvents] = useState<AgendaEvent[]>([]);
+  const [historyHydrated, setHistoryHydrated] = useState(false);
+  const [agendaHydrated, setAgendaHydrated] = useState(false);
+  const [downloadingAlbumId, setDownloadingAlbumId] = useState<number | null>(
+    null,
+  );
   const { openHistoryRecordForEdit } = useNovaAcao();
+  const { user } = useAuth();
+  const galleryReady = historyHydrated && agendaHydrated;
 
   useEffect(() => {
-    return subscribeHistoryRecords(setHistoryRecords);
+    return subscribeHistoryRecords(
+      (list) => {
+        setHistoryRecords(list);
+        setHistoryHydrated(true);
+      },
+      () => setHistoryHydrated(true),
+    );
   }, []);
 
   useEffect(() => {
-    return subscribeAgendaEvents(setAgendaEvents);
+    return subscribeAgendaEvents(
+      (list) => {
+        setAgendaEvents(list);
+        setAgendaHydrated(true);
+      },
+      () => setAgendaHydrated(true),
+    );
   }, []);
 
   const albums = useMemo(() => {
@@ -116,6 +138,19 @@ function GaleriaPageBody() {
     setLightboxAlbum(album);
     setLightboxIndex(index);
     setLightboxOpen(true);
+  };
+
+  const handleDownloadAllAlbum = async (album: ServiceGalleryAlbum) => {
+    if (album.photoUrls.length === 0) return;
+    setDownloadingAlbumId(album.id);
+    try {
+      const token = user ? await user.getIdToken() : null;
+      await downloadMediaUrlsSequentially(album.photoUrls, album.title, {
+        idToken: token,
+      });
+    } finally {
+      setDownloadingAlbumId(null);
+    }
   };
 
   return (
@@ -161,6 +196,9 @@ function GaleriaPageBody() {
         ))}
       </div>
 
+      {!galleryReady ? (
+        <GaleriaAlbumSkeletonGrid />
+      ) : (
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 pb-8 md:grid-cols-2">
         {filteredAlbums.map((album, setIndex) => {
           const n = album.photoUrls.length;
@@ -172,7 +210,7 @@ function GaleriaPageBody() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: (setIndex % 6) * 0.03 }}
-              className="flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-lg shadow-zinc-200/40 ring-1 ring-zinc-100"
+              className="relative flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-lg shadow-zinc-200/40 ring-1 ring-zinc-100"
             >
               <div className="relative max-h-[min(52vh,420px)] shrink-0 bg-zinc-100">
                 <Button
@@ -269,7 +307,7 @@ function GaleriaPageBody() {
                 ) : null}
               </div>
 
-              <div className="flex flex-1 flex-col space-y-1 px-2.5 py-2">
+              <div className="flex flex-1 flex-col space-y-1 px-2.5 py-2 pr-14">
                 <h3 className="line-clamp-2 pr-8 text-xs font-semibold leading-snug text-zinc-900 sm:text-sm">
                   {album.title}
                 </h3>
@@ -293,12 +331,33 @@ function GaleriaPageBody() {
                   </span>
                 </div>
               </div>
+
+              <Button
+                type="button"
+                variant="secondary"
+                size="icon"
+                className="absolute bottom-2 right-2 z-20 h-9 w-9 rounded-full border-0 bg-black/45 text-white shadow-md backdrop-blur-sm hover:bg-black/60 disabled:pointer-events-none disabled:opacity-60"
+                disabled={downloadingAlbumId === album.id}
+                aria-label="Descarregar todas as fotos deste registo"
+                title="Descarregar todas as fotos"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void handleDownloadAllAlbum(album);
+                }}
+              >
+                {downloadingAlbumId === album.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                ) : (
+                  <Download className="h-4 w-4" aria-hidden />
+                )}
+              </Button>
             </motion.article>
           );
         })}
       </div>
+      )}
 
-      {filteredAlbums.length === 0 && (
+      {galleryReady && filteredAlbums.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-2xl bg-white py-16 shadow-lg shadow-zinc-200/50">
           <Filter className="h-12 w-12 text-zinc-300" />
           <p className="mt-4 text-center text-lg font-medium text-zinc-500">

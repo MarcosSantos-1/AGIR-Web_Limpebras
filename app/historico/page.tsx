@@ -51,7 +51,9 @@ import {
 } from "@/lib/date/agenda-view-range";
 import type { AgendaEvent } from "@/data/agenda-events";
 import { useNovaAcao } from "@/components/acao/nova-acao-provider";
+import { HistoricoTimelineSkeleton } from "@/components/page-skeletons";
 import { PhotoGalleryLightbox } from "@/components/evidence/photo-gallery-lightbox";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   lightboxItemsFromServicePhotos,
   type GalleryLightboxPhotoItem,
@@ -96,6 +98,9 @@ function HistoricoPageBody() {
   const [agendaMonthEvents, setAgendaMonthEvents] = useState<AgendaEvent[]>(
     [],
   );
+  const [historyHydrated, setHistoryHydrated] = useState(false);
+  const [agendaHydrated, setAgendaHydrated] = useState(false);
+  const historicoReady = historyHydrated && agendaHydrated;
   const { openHistoryRecordForEdit } = useNovaAcao();
   const [photoLightboxOpen, setPhotoLightboxOpen] = useState(false);
   const [photoLightboxTitle, setPhotoLightboxTitle] = useState("");
@@ -125,10 +130,19 @@ function HistoricoPageBody() {
   }, [monthYm]);
 
   useEffect(() => {
+    setHistoryHydrated(false);
+    setAgendaHydrated(false);
+  }, [bounds.startIso, bounds.endIso]);
+
+  useEffect(() => {
     return subscribeHistoryRecordsInDateRange(
       bounds.startIso,
       bounds.endIso,
-      setRecords,
+      (list) => {
+        setRecords(list);
+        setHistoryHydrated(true);
+      },
+      () => setHistoryHydrated(true),
     );
   }, [bounds.startIso, bounds.endIso]);
 
@@ -136,7 +150,11 @@ function HistoricoPageBody() {
     return subscribeAgendaEventsInDateRange(
       bounds.startIso,
       bounds.endIso,
-      setAgendaMonthEvents,
+      (list) => {
+        setAgendaMonthEvents(list);
+        setAgendaHydrated(true);
+      },
+      () => setAgendaHydrated(true),
     );
   }, [bounds.startIso, bounds.endIso]);
 
@@ -293,16 +311,23 @@ function HistoricoPageBody() {
       </div>
       */}
 
-      <p className="mb-8 text-sm text-zinc-600">
-        <span className="font-semibold tabular-nums text-zinc-900">
-          {visibleRecords.length}
-        </span>{" "}
-        {visibleRecords.length === 1
-          ? "registro neste mês"
-          : "registros neste mês"}
-      </p>
+      {!historicoReady ? (
+        <Skeleton className="mb-8 h-5 w-56 rounded-md" />
+      ) : (
+        <p className="mb-8 text-sm text-zinc-600">
+          <span className="font-semibold tabular-nums text-zinc-900">
+            {visibleRecords.length}
+          </span>{" "}
+          {visibleRecords.length === 1
+            ? "registro neste mês"
+            : "registros neste mês"}
+        </p>
+      )}
 
       {/* Timeline */}
+      {!historicoReady ? (
+        <HistoricoTimelineSkeleton rows={5} />
+      ) : (
       <div className="relative">
         {/* Timeline Line */}
         <div className="absolute left-6 top-0 h-full w-0.5 bg-zinc-200" />
@@ -517,14 +542,16 @@ function HistoricoPageBody() {
                       )}
 
                       <div className="mt-4 flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] px-4 py-2 text-sm font-medium text-white"
-                          onClick={(ev) => ev.stopPropagation()}
-                        >
-                          <FileText className="h-4 w-4" />
-                          Gerar Relatório
-                        </button>
+                        {record.type === "revitalizacao" ? (
+                          <button
+                            type="button"
+                            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] px-4 py-2 text-sm font-medium text-white"
+                            onClick={(ev) => ev.stopPropagation()}
+                          >
+                            <FileText className="h-4 w-4" />
+                            Gerar Relatório
+                          </button>
+                        ) : null}
                         {row.extraPhotos.length > 0 ? (
                           <button
                             type="button"
@@ -552,8 +579,9 @@ function HistoricoPageBody() {
           })}
         </div>
       </div>
+      )}
 
-      {filteredRecords.length === 0 && (
+      {historicoReady && filteredRecords.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-2xl bg-white py-16 shadow-lg shadow-zinc-200/50">
           <FileText className="h-12 w-12 text-zinc-300" />
           <p className="mt-4 text-lg font-medium text-zinc-500">

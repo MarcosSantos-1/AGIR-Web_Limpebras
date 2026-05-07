@@ -1,6 +1,7 @@
 "use client";
 
 import { AppShell } from "@/components/layout/app-shell";
+import { IndicadoresPageSkeleton } from "@/components/page-skeletons";
 import { useAgendaEvents } from "@/contexts/agenda-events-context";
 import { useSocialPosts } from "@/contexts/social-posts-context";
 import { motion } from "framer-motion";
@@ -127,6 +128,7 @@ function ComingSoonOverlay({ label = "Em breve" }: { label?: string }) {
 export default function IndicadoresPage() {
   const { events, hydrated } = useAgendaEvents();
   const { posts: socialPosts, hydrated: socialHydrated } = useSocialPosts();
+  const dataReady = hydrated && socialHydrated;
 
   const ymNow = currentYearMonth();
   const ymPrev = previousYearMonth(ymNow);
@@ -271,6 +273,10 @@ export default function IndicadoresPage() {
 
   return (
     <AppShell title="Indicadores" subtitle="Visão rápida de performance">
+      {!dataReady ? (
+        <IndicadoresPageSkeleton />
+      ) : (
+      <>
       {/* Main Stats */}
       <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
         {stats.map((stat, index) => (
@@ -655,6 +661,8 @@ export default function IndicadoresPage() {
           <ComingSoonOverlay />
         </motion.div>
       </div>
+      </>
+      )}
     </AppShell>
   );
 }
