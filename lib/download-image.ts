@@ -60,8 +60,8 @@ function blobToFileDownload(blob: Blob, filename: string): void {
 }
 
 /**
- * Descarrega média como ficheiro. Com sessão válida, usa `/api/media/download` (R2 sem CORS no browser).
- * Sem proxy ou em falha, tenta fetch directo; em último caso abre o URL num separador.
+ * Descarrega média como ficheiro. Com sessão válida, usa `/api/media/download` (POST, com fallback GET).
+ * Sem proxy ou em falha com token, não abre o URL num separador para evitar comportamento enganador em produção.
  */
 export async function downloadImageUrl(
   url: string,
@@ -70,19 +70,46 @@ export async function downloadImageUrl(
 ): Promise<void> {
   const token = options?.idToken;
   if (token) {
-    try {
-      const params = new URLSearchParams({ url, filename });
-      const res = await fetch(`/api/media/download?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const blob = await res.blob();
-        blobToFileDownload(blob, filename);
-        return;
+    const tries: Array<() => Promise<Response>> = [
+      () =>
+        fetch("/api/media/download", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ url, filename }),
+        }),
+      () =>
+        fetch(
+          `/api/media/download?${new URLSearchParams({ url, filename }).toString()}`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        ),
+    ];
+
+    let lastStatus = 0;
+    for (const run of tries) {
+      try {
+        const res = await run();
+        lastStatus = res.status;
+        if (res.ok) {
+          const blob = await res.blob();
+          blobToFileDownload(blob, filename);
+          return;
+        }
+      } catch {
+        /* tentar seguinte */
       }
-    } catch {
-      /* tentar vias seguintes */
     }
+
+    if (lastStatus > 0 && typeof window !== "undefined") {
+      console.warn(
+        "[download] proxy falhou (HTTP",
+        lastStatus,
+        "). Confirme no servidor: FIREBASE_SERVICE_ACCOUNT_JSON, R2_PUBLIC_BASE_URL (origin igual ao URL do ficheiro; pode listar várias bases separadas por vírgula).",
+      );
+    }
+    return;
   }
 
   try {

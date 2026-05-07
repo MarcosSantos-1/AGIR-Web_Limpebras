@@ -29,3 +29,20 @@ export function isAllowedPublicR2Url(
 
   return true;
 }
+
+/** Vários hosts/prefixos: `https://pub-xxx.r2.dev, https://cdn.exemplo.gov.br` */
+export function parsePublicStorageBaseUrls(raw: string): string[] {
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+export function isAllowedAgainstAnyPublicBase(
+  fullUrlRaw: string,
+  basesCsv: string,
+): boolean {
+  const bases = parsePublicStorageBaseUrls(basesCsv);
+  if (bases.length === 0) return false;
+  return bases.some((base) => isAllowedPublicR2Url(fullUrlRaw, base));
+}
