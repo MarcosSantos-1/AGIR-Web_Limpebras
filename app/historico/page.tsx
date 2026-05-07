@@ -50,6 +50,11 @@ import {
 } from "@/lib/date/agenda-view-range";
 import type { AgendaEvent } from "@/data/agenda-events";
 import { useNovaAcao } from "@/components/acao/nova-acao-provider";
+import { PhotoGalleryLightbox } from "@/components/evidence/photo-gallery-lightbox";
+import {
+  lightboxItemsFromServicePhotos,
+  type GalleryLightboxPhotoItem,
+} from "@/lib/gallery-albums";
 
 const statusConfig = {
   concluido: { label: "Concluído", icon: CheckCircle2, color: "bg-emerald-100 text-emerald-700", iconColor: "text-emerald-500" },
@@ -91,6 +96,25 @@ function HistoricoPageBody() {
     [],
   );
   const { openHistoryRecordForEdit } = useNovaAcao();
+  const [photoLightboxOpen, setPhotoLightboxOpen] = useState(false);
+  const [photoLightboxTitle, setPhotoLightboxTitle] = useState("");
+  const [photoLightboxItems, setPhotoLightboxItems] = useState<
+    GalleryLightboxPhotoItem[]
+  >([]);
+  const [photoLightboxIndex, setPhotoLightboxIndex] = useState(0);
+
+  const openEvidenceLightbox = (
+    title: string,
+    urls: string[],
+    serviceType: string,
+    index: number,
+  ) => {
+    if (urls.length === 0) return;
+    setPhotoLightboxTitle(title);
+    setPhotoLightboxItems(lightboxItemsFromServicePhotos(urls, serviceType));
+    setPhotoLightboxIndex(index);
+    setPhotoLightboxOpen(true);
+  };
 
   const bounds = useMemo(() => {
     const anchor =
@@ -458,43 +482,67 @@ function HistoricoPageBody() {
                       {(record.photos > 0 || row.extraPhotos.length > 0) && (
                         <div className="mt-4">
                           <p className="text-xs font-medium uppercase text-zinc-400">Evidências</p>
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            {[...Array(Math.min(record.photos, 4))].map((_, i) => (
-                              <div
-                                key={i}
-                                className="h-16 w-16 rounded-lg bg-zinc-200"
-                              />
-                            ))}
-                            {record.photos > 4 && (
-                              <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-zinc-100 text-sm font-medium text-zinc-500">
-                                +{record.photos - 4}
-                              </div>
-                            )}
-                            {row.extraPhotos.map((url, i) => (
-                              <div
-                                key={`ex-${i}`}
-                                className="h-16 w-16 overflow-hidden rounded-lg border border-zinc-200"
-                              >
-                                <img
-                                  src={url}
-                                  alt=""
-                                  className="h-full w-full object-cover"
-                                />
-                              </div>
-                            ))}
-                          </div>
+                          {row.extraPhotos.length > 0 ? (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {row.extraPhotos.map((url, i) => (
+                                <button
+                                  key={`ex-${i}`}
+                                  type="button"
+                                  className="h-16 w-16 overflow-hidden rounded-lg border border-zinc-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f318e3]/40"
+                                  onClick={(ev) => {
+                                    ev.stopPropagation();
+                                    openEvidenceLightbox(
+                                      row.title,
+                                      row.extraPhotos,
+                                      record.type,
+                                      i,
+                                    );
+                                  }}
+                                >
+                                  <img
+                                    src={url}
+                                    alt=""
+                                    className="h-full w-full object-cover"
+                                  />
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="mt-2 text-sm text-zinc-500">
+                              Registadas {record.photos} foto(s) no resumo, sem ficheiros
+                              anexados.
+                            </p>
+                          )}
                         </div>
                       )}
 
-                      <div className="mt-4 flex gap-2">
-                        <button className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] px-4 py-2 text-sm font-medium text-white">
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] px-4 py-2 text-sm font-medium text-white"
+                          onClick={(ev) => ev.stopPropagation()}
+                        >
                           <FileText className="h-4 w-4" />
                           Gerar Relatório
                         </button>
-                        <button className="flex items-center gap-2 rounded-xl bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-200">
-                          <Image className="h-4 w-4" />
-                          Ver Fotos
-                        </button>
+                        {row.extraPhotos.length > 0 ? (
+                          <button
+                            type="button"
+                            className="flex items-center gap-2 rounded-xl bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-200"
+                            onClick={(ev) => {
+                              ev.stopPropagation();
+                              openEvidenceLightbox(
+                                row.title,
+                                row.extraPhotos,
+                                record.type,
+                                0,
+                              );
+                            }}
+                          >
+                            <Image className="h-4 w-4" />
+                            Ver Fotos
+                          </button>
+                        ) : null}
                       </div>
                     </motion.div>
                   )}
@@ -516,6 +564,14 @@ function HistoricoPageBody() {
           </p>
         </div>
       )}
+
+      <PhotoGalleryLightbox
+        open={photoLightboxOpen}
+        onOpenChange={setPhotoLightboxOpen}
+        title={photoLightboxTitle}
+        initialIndex={photoLightboxIndex}
+        photos={photoLightboxItems}
+      />
     </>
   );
 }

@@ -54,6 +54,8 @@ type Props = {
   showDeleteButton?: boolean;
   onDelete?: () => void;
   deleteConfirmMessage?: string;
+  photoOrderHint?: string;
+  photoHighlightAntesDepois?: boolean;
 };
 
 const defaultDeleteMsg =
@@ -72,6 +74,8 @@ export function ActionCompletionDialog({
   showDeleteButton = false,
   onDelete,
   deleteConfirmMessage = defaultDeleteMsg,
+  photoOrderHint,
+  photoHighlightAntesDepois = false,
 }: Props) {
   const baseId = useId();
   const [metaTitle, setMetaTitle] = useState("");
@@ -286,6 +290,8 @@ export function ActionCompletionDialog({
             variant={isGallery ? "emphasis" : "default"}
             label={isGallery ? "Fotos (enfatizado)" : "Fotos"}
             hint="Clique para enviar ou solte imagens nesta área"
+            orderHint={photoOrderHint}
+            highlightAntesDepoisPair={photoHighlightAntesDepois}
           />
         </div>
 

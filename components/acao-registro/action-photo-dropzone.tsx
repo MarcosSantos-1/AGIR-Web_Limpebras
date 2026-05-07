@@ -2,12 +2,14 @@
 
 import { cn } from "@/lib/utils";
 import { revokeBlobPhotoUrls } from "@/lib/storage/photo-url-helpers";
-import { ImageIcon, Trash2, Upload } from "lucide-react";
+import { GripVertical, ImageIcon, Trash2, Upload } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 export const ACTION_PHOTO_MAX = 12;
 export const ACTION_PHOTO_MAX_BYTES = 2 * 1024 * 1024;
+
+const REORDER_MIME = "application/x-agir-photo-reorder";
 
 /** Mantido para fluxos que ainda preferem data URL (ex.: código legado). */
 export function readFileAsDataUrl(file: File): Promise<string> {
@@ -26,6 +28,10 @@ type Props = {
   variant?: "default" | "emphasis" | "amber";
   label?: string;
   hint?: string;
+  /** Texto curto sobre ordem (ex.: arrastar + Antes/Depois nas duas primeiras). */
+  orderHint?: string;
+  /** Mostra rótulo Antes/Depois nas duas primeiras miniaturas (revitalização). */
+  highlightAntesDepoisPair?: boolean;
 };
 
 export function ActionPhotoDropzone({
@@ -35,6 +41,8 @@ export function ActionPhotoDropzone({
   variant = "default",
   label = "Fotos",
   hint = "Clique ou arraste imagens para esta área",
+  orderHint,
+  highlightAntesDepoisPair = false,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [mounted, setMounted] = useState(false);
@@ -51,6 +59,25 @@ export function ActionPhotoDropzone({
       onChange(next);
     },
     [photoDataUrls, onChange],
+  );
+
+  const reorderPhotos = useCallback(
+    (from: number, to: number) => {
+      if (
+        from === to ||
+        from < 0 ||
+        to < 0 ||
+        from >= photoDataUrls.length ||
+        to >= photoDataUrls.length
+      ) {
+        return;
+      }
+      const next = [...photoDataUrls];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item!);
+      emitUrls(next);
+    },
+    [photoDataUrls, emitUrls],
   );
 
   const onFiles = useCallback(
@@ -120,11 +147,20 @@ export function ActionPhotoDropzone({
             : "ring-2 ring-[#f318e3]/35"),
       )}
       onDragEnter={(e) => {
+        if (e.dataTransfer.types.includes(REORDER_MIME)) {
+          e.preventDefault();
+          return;
+        }
         e.preventDefault();
         e.stopPropagation();
         setDragOver(true);
       }}
       onDragOver={(e) => {
+        if (e.dataTransfer.types.includes(REORDER_MIME)) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+          return;
+        }
         e.preventDefault();
         e.stopPropagation();
         setDragOver(true);
@@ -140,6 +176,10 @@ export function ActionPhotoDropzone({
         e.preventDefault();
         e.stopPropagation();
         setDragOver(false);
+        const reorderRaw = e.dataTransfer.getData(REORDER_MIME);
+        if (reorderRaw !== "" && (!e.dataTransfer.files || e.dataTransfer.files.length === 0)) {
+          return;
+        }
         void onFiles(e.dataTransfer.files);
       }}
     >
@@ -171,24 +211,68 @@ export function ActionPhotoDropzone({
         <span className="sr-only">Abrir seletor de ficheiros</span>
       </button>
       {photoDataUrls.length > 0 && (
+        <p className="mt-2 text-xs text-zinc-600">
+          {orderHint ??
+            "Arraste as miniaturas para alterar a ordem (a galeria usa esta ordem)."}
+        </p>
+      )}
+      {photoDataUrls.length > 0 && (
         <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
           {photoDataUrls.map((url, i) => (
             <div
-              key={url.startsWith("blob:") ? url : `${i}-${url.slice(-24)}`}
+              key={url.startsWith("blob:") ? `${url}-${i}` : `${i}-${url.slice(-32)}`}
               className="group relative aspect-square overflow-hidden rounded-lg border border-zinc-100"
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                e.dataTransfer.dropEffect = "move";
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const raw = e.dataTransfer.getData(REORDER_MIME);
+                if (raw === "") return;
+                const from = Number(raw);
+                if (Number.isNaN(from)) return;
+                reorderPhotos(from, i);
+              }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={url}
                 alt=""
                 className="h-full w-full object-cover"
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData(REORDER_MIME, String(i));
+                  e.dataTransfer.effectAllowed = "move";
+                }}
+                onDragEnd={(e) => e.dataTransfer.clearData()}
               />
+              {highlightAntesDepoisPair && i === 0 && photoDataUrls.length >= 1 ? (
+                <span className="pointer-events-none absolute left-1 top-1 rounded bg-black/55 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">
+                  Antes
+                </span>
+              ) : null}
+              {highlightAntesDepoisPair && i === 1 ? (
+                <span className="pointer-events-none absolute left-1 top-1 rounded bg-black/55 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">
+                  Depois
+                </span>
+              ) : null}
+              <div
+                className="absolute bottom-1 left-1 flex cursor-grab items-center rounded bg-black/45 px-0.5 text-white opacity-80 active:cursor-grabbing group-hover:opacity-100"
+                title="Arrastar para reordenar"
+              >
+                <GripVertical className="h-3.5 w-3.5" aria-hidden />
+              </div>
               <button
                 type="button"
                 className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-md bg-black/50 text-white opacity-0 transition group-hover:opacity-100"
-                onClick={() =>
-                  emitUrls(photoDataUrls.filter((_, j) => j !== i))
-                }
+                onClick={(ev) => {
+                  ev.stopPropagation();
+                  ev.preventDefault();
+                  emitUrls(photoDataUrls.filter((_, j) => j !== i));
+                }}
                 aria-label="Remover foto"
               >
                 <Trash2 className="h-3.5 w-3.5" />

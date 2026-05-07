@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { ImageIcon, Trash2, Upload, Video } from "lucide-react";
+import { GripVertical, ImageIcon, Trash2, Upload, Video } from "lucide-react";
 import { useCallback, useId, useState } from "react";
 
 export type SocialConteudoMediaItem = {
@@ -14,6 +14,7 @@ export type SocialConteudoMediaItem = {
 const DEFAULT_MAX_ITEMS = 18;
 const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
 const MAX_VIDEO_BYTES = 120 * 1024 * 1024;
+const REORDER_MIME = "application/x-agir-social-reorder";
 
 function nextId() {
   return `m-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -71,6 +72,19 @@ export function SocialMediaDropzone({
     [items, onChange, maxItems, revokeUnused],
   );
 
+  const reorder = useCallback(
+    (fromId: string, toIndex: number) => {
+      const fromIdx = items.findIndex((i) => i.id === fromId);
+      if (fromIdx < 0 || toIndex < 0 || toIndex >= items.length) return;
+      if (fromIdx === toIndex) return;
+      const next = [...items];
+      const [m] = next.splice(fromIdx, 1);
+      next.splice(toIndex, 0, m!);
+      onChange(next);
+    },
+    [items, onChange],
+  );
+
   const removeAt = (id: string) => {
     const prev = items;
     const next = items.filter((i) => i.id !== id);
@@ -86,11 +100,20 @@ export function SocialMediaDropzone({
         dragOver && "ring-2 ring-[#f318e3]/35",
       )}
       onDragEnter={(e) => {
+        if (e.dataTransfer.types.includes(REORDER_MIME)) {
+          e.preventDefault();
+          return;
+        }
         e.preventDefault();
         e.stopPropagation();
         setDragOver(true);
       }}
       onDragOver={(e) => {
+        if (e.dataTransfer.types.includes(REORDER_MIME)) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+          return;
+        }
         e.preventDefault();
         e.stopPropagation();
         setDragOver(true);
@@ -106,6 +129,13 @@ export function SocialMediaDropzone({
         e.preventDefault();
         e.stopPropagation();
         setDragOver(false);
+        const reorderId = e.dataTransfer.getData(REORDER_MIME);
+        if (
+          reorderId !== "" &&
+          (!e.dataTransfer.files || e.dataTransfer.files.length === 0)
+        ) {
+          return;
+        }
         onFiles(e.dataTransfer.files);
       }}
     >
@@ -144,23 +174,50 @@ export function SocialMediaDropzone({
         </div>
         <span className="text-center text-zinc-600">{hint}</span>
       </label>
+      {items.length > 0 ? (
+        <p className="mt-2 text-xs text-zinc-600">
+          Arraste as miniaturas para alterar a ordem de publicação.
+        </p>
+      ) : null}
       {items.length > 0 && (
         <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-          {items.map((m) => (
+          {items.map((m, index) => (
             <li
               key={m.id}
               className="group relative aspect-square overflow-hidden rounded-lg border border-zinc-100 bg-zinc-100"
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                e.dataTransfer.dropEffect = "move";
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const id = e.dataTransfer.getData(REORDER_MIME);
+                if (id === "") return;
+                reorder(id, index);
+              }}
             >
               {m.file.type.startsWith("image/") ? (
                 <img
                   src={m.preview}
                   alt=""
                   className="h-full w-full object-cover"
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData(REORDER_MIME, m.id);
+                    e.dataTransfer.effectAllowed = "move";
+                  }}
                 />
               ) : (
                 <video
                   src={m.preview}
                   className="h-full w-full object-cover"
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData(REORDER_MIME, m.id);
+                    e.dataTransfer.effectAllowed = "move";
+                  }}
                   muted
                   playsInline
                   preload="metadata"
@@ -169,11 +226,17 @@ export function SocialMediaDropzone({
               <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent px-1.5 pb-1 pt-6">
                 <p className="truncate text-[10px] text-white">{m.file.name}</p>
               </div>
+              <div
+                className="absolute bottom-1 left-1 flex cursor-grab items-center rounded bg-black/45 px-0.5 text-white opacity-80 active:cursor-grabbing group-hover:opacity-100"
+                title="Arrastar para reordenar"
+              >
+                <GripVertical className="h-3.5 w-3.5" aria-hidden />
+              </div>
               <Button
                 type="button"
                 variant="secondary"
                 size="icon"
-                className="absolute right-1 top-1 h-7 w-7 rounded-md border-0 bg-black/55 text-white opacity-0 shadow-md transition hover:bg-red-600 hover:text-white group-hover:opacity-100"
+                className="absolute right-1 top-1 z-10 h-7 w-7 rounded-md border-0 bg-black/55 text-white opacity-0 shadow-md transition hover:bg-red-600 hover:text-white group-hover:opacity-100"
                 onClick={() => removeAt(m.id)}
                 aria-label="Remover mídia"
               >

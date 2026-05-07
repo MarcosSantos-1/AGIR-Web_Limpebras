@@ -955,6 +955,7 @@ function AcaoVisitaDialog({
                     variant="amber"
                     label="Fotos"
                     hint="Clique ou arraste imagens para esta área"
+                    orderHint="Arraste as miniaturas para definir a ordem nas evidências e na galeria."
                   />
                 </div>
               )}
@@ -1605,6 +1606,8 @@ function RevitalizacaoDialog({
                     variant="emphasis"
                     label="Fotos (opcional)"
                     hint="Clique ou arraste — antes, durante e depois"
+                    highlightAntesDepoisPair
+                    orderHint="As duas primeiras fotos nesta ordem aparecem como Antes e Depois na galeria. Arraste as miniaturas para reordenar."
                   />
                   <p className="-mt-2 text-xs text-zinc-500 sm:-mt-3">
                     Imagens são opcionais neste período de testes.
