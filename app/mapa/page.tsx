@@ -3,10 +3,9 @@
 import { AppShell } from "@/components/layout/app-shell";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, FormEvent } from "react";
 import {
   Plus,
-  Filter,
   Layers,
   MapPin,
   AlertTriangle,
@@ -14,14 +13,24 @@ import {
   Trash2,
   Home,
   X,
-  ChevronRight,
-  Camera,
   Clock,
   User,
+  Search,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { OperationalMapPoint } from "@/components/map/operational-map";
+import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import type {
+  OperationalMapPoint,
+  OperationalMapFlyTo,
+} from "@/components/map/operational-map";
 import { formatDateBr, cn } from "@/lib/utils";
+import { toast } from "sonner";
 import {
   getMapaPointById,
   MAPA_MARKERS,
@@ -49,38 +58,37 @@ const pointTypes = [
   { id: "nucleo-habitacional", label: "Núcleo habitacional", icon: Home, color: "bg-amber-500", textColor: "text-amber-500" },
 ] as const;
 
-const statusFilters = [
-  { id: "all", label: "Todos" },
-  { id: "ativo", label: "Ativo" },
-  { id: "inativo", label: "Inativo" },
-  { id: "resolvido", label: "Resolvido" },
-  { id: "em-andamento", label: "Em Andamento" },
-  { id: "recorrente", label: "Recorrente" },
-] as const;
+/* Painel "Status" removido temporariamente — filtro usa todos os estados (apenas por tipo de ponto).
+   Repor: estado selectedStatus, statusFilters e predicado (p.status === selectedStatus) no useMemo. */
 
 type MapItem = MapDisplayPoint | MapPolygon;
+
+type GeocodeHit = { lat: number; lng: number; formatted_address: string };
 
 export default function MapaPage() {
   const [selectedTypes, setSelectedTypes] = useState<string[]>(
     pointTypes.map((t) => t.id)
   );
-  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [typesPopoverOpen, setTypesPopoverOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mapBase, setMapBase] = useState<"carto" | "satellite">("carto");
+  const [addressQuery, setAddressQuery] = useState("");
+  const [geocodeLoading, setGeocodeLoading] = useState(false);
+  const [geocodeError, setGeocodeError] = useState<string | null>(null);
+  const [geocodeAlternatives, setGeocodeAlternatives] = useState<GeocodeHit[] | null>(null);
+  const [flyTo, setFlyTo] = useState<OperationalMapFlyTo | null>(null);
+  const [searchPin, setSearchPin] = useState<{ lat: number; lng: number } | null>(null);
+  const flyNonceRef = useRef(0);
 
   const { filteredMarkers, filteredPolygons, visibleCount } = useMemo(() => {
-    const markers = MAPA_MARKERS.filter(
-      (p) => selectedTypes.includes(p.type) && (selectedStatus === "all" || p.status === selectedStatus)
-    );
-    const polygons = MAPA_POLYGONS.filter(
-      (p) => selectedTypes.includes(p.type) && (selectedStatus === "all" || p.status === selectedStatus)
-    );
+    const markers = MAPA_MARKERS.filter((p) => selectedTypes.includes(p.type));
+    const polygons = MAPA_POLYGONS.filter((p) => selectedTypes.includes(p.type));
     return {
       filteredMarkers: markers,
       filteredPolygons: polygons,
       visibleCount: markers.length + polygons.length,
     };
-  }, [selectedTypes, selectedStatus]);
+  }, [selectedTypes]);
 
   const mapLayerPoints: OperationalMapPoint[] = useMemo(
     () =>
@@ -106,84 +114,71 @@ export default function MapaPage() {
     return pointTypes.find((t) => t.id === type) ?? pointTypes[0];
   };
 
+  const applyGeocodeHit = (hit: GeocodeHit) => {
+    flyNonceRef.current += 1;
+    setFlyTo({
+      lat: hit.lat,
+      lng: hit.lng,
+      zoom: 17,
+      nonce: flyNonceRef.current,
+    });
+    setGeocodeAlternatives(null);
+    setGeocodeError(null);
+    setSearchPin({ lat: hit.lat, lng: hit.lng });
+    toast.success(hit.formatted_address);
+  };
+
+  const handleAddressSearch = async (e?: FormEvent) => {
+    e?.preventDefault();
+    const q = addressQuery.trim();
+    if (!q) {
+      setGeocodeError("Indique um endereço.");
+      return;
+    }
+    setGeocodeError(null);
+    setGeocodeAlternatives(null);
+    setSearchPin(null);
+    setGeocodeLoading(true);
+    try {
+      const res = await fetch("/api/geocode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: q }),
+      });
+      const data = (await res.json()) as
+        | { results: GeocodeHit[]; error?: string }
+        | { error: string };
+      if (!res.ok || "error" in data) {
+        const msg =
+          "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Pesquisa indisponível.";
+        setGeocodeError(msg);
+        return;
+      }
+      if (!data.results.length) {
+        setGeocodeError("Nenhum resultado no Brasil. Tente outro termo.");
+        return;
+      }
+      if (data.results.length === 1) {
+        applyGeocodeHit(data.results[0]!);
+        return;
+      }
+      setGeocodeAlternatives(data.results);
+    } catch {
+      setGeocodeError("Falha de rede. Tente novamente.");
+    } finally {
+      setGeocodeLoading(false);
+    }
+  };
+
   return (
     <AppShell title="Mapa Operacional" subtitle="Visualização territorial">
       <div className="flex gap-6">
         <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="w-72 shrink-0 space-y-6"
-        >
-          <div className="rounded-2xl bg-white p-5 shadow-lg shadow-zinc-200/50">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-semibold text-zinc-900">Tipos de Ponto</h3>
-              <Layers className="h-4 w-4 text-zinc-400" />
-            </div>
-            <div className="space-y-2">
-              {pointTypes.map((type) => {
-                const Icon = type.icon;
-                const isSelected = selectedTypes.includes(type.id);
-                return (
-                  <button
-                    key={type.id}
-                    type="button"
-                    onClick={() => toggleType(type.id)}
-                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-all ${
-                      isSelected
-                        ? "bg-zinc-100"
-                        : "opacity-50 hover:opacity-75"
-                    }`}
-                  >
-                    <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${type.color}`}>
-                      <Icon className="h-4 w-4 text-white" />
-                    </div>
-                    <span className="text-sm font-medium text-zinc-700">{type.label}</span>
-                    <div className={`ml-auto h-4 w-4 rounded-full border-2 ${isSelected ? "border-[#f318e3] bg-[#f318e3]" : "border-zinc-300"}`}>
-                      {isSelected && (
-                        <svg className="h-full w-full text-white" viewBox="0 0 24 24">
-                          <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                        </svg>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-white p-5 shadow-lg shadow-zinc-200/50">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-semibold text-zinc-900">Status</h3>
-              <Filter className="h-4 w-4 text-zinc-400" />
-            </div>
-            <div className="space-y-1">
-              {statusFilters.map((status) => (
-                <button
-                  key={status.id}
-                  type="button"
-                  onClick={() => setSelectedStatus(status.id)}
-                  className={`w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-all ${
-                    selectedStatus === status.id
-                      ? "bg-gradient-to-r from-[#f318e3]/10 to-[#6a0eaf]/10 text-[#9b0ba6]"
-                      : "text-zinc-600 hover:bg-zinc-100"
-                  }`}
-                >
-                  {status.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <Button className="w-full rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] py-6 text-white shadow-lg shadow-[#f318e3]/25">
-            <Plus className="mr-2 h-5 w-5" />
-            Adicionar Ponto
-          </Button>
-        </motion.div>
-
-        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          transition={{ delay: 0.1 }}
           className="relative min-h-[520px] flex-1 overflow-hidden rounded-3xl bg-zinc-200 shadow-lg"
         >
           <div className="absolute inset-0 z-0 h-full w-full min-h-[520px]">
@@ -193,21 +188,131 @@ export default function MapaPage() {
               polygons={filteredPolygons}
               selectedId={selectedId}
               onSelectId={(id) => setSelectedId(id)}
+              flyTo={flyTo}
+              searchResultMarker={searchPin}
             />
           </div>
 
-          <div className="pointer-events-none absolute bottom-4 left-4 z-[1000]">
-            <div className="pointer-events-auto rounded-xl bg-white/90 p-3 shadow-md backdrop-blur-sm">
-              <p className="mb-2 text-xs font-semibold text-zinc-500">LEGENDA</p>
-              <div className="flex max-w-sm flex-wrap gap-3">
-                {pointTypes.map((type) => (
-                  <div key={type.id} className="flex items-center gap-1.5">
-                    <span className={`h-3 w-3 rounded-full ${type.color}`} />
-                    <span className="text-xs text-zinc-600">{type.label}</span>
-                  </div>
-                ))}
-              </div>
+          <div className="pointer-events-none absolute left-4 top-4 z-[1000] flex w-[min(100%-2rem,20rem)] max-w-sm flex-col items-start gap-2">
+            <div className="pointer-events-auto w-full space-y-1">
+              <form
+                onSubmit={(e) => void handleAddressSearch(e)}
+                className="flex gap-1.5 rounded-xl border border-zinc-200/80 bg-white/95 p-1 shadow-md backdrop-blur-sm"
+              >
+                <Input
+                  value={addressQuery}
+                  onChange={(e) => setAddressQuery(e.target.value)}
+                  placeholder="Pesquisar endereço (SP, Brasil)…"
+                  aria-label="Pesquisar endereço"
+                  className="h-10 flex-1 border-0 bg-transparent text-sm shadow-none focus-visible:ring-0"
+                  disabled={geocodeLoading}
+                  autoComplete="street-address"
+                />
+                <Button
+                  type="submit"
+                  size="icon"
+                  variant="secondary"
+                  className="h-10 w-10 shrink-0 rounded-lg"
+                  disabled={geocodeLoading}
+                  aria-label="Pesquisar"
+                >
+                  {geocodeLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Search className="h-4 w-4" />
+                  )}
+                </Button>
+              </form>
+              {geocodeError ? (
+                <p className="rounded-lg bg-red-50 px-2 py-1.5 text-xs text-red-700">{geocodeError}</p>
+              ) : null}
+              {geocodeAlternatives && geocodeAlternatives.length > 1 ? (
+                <ul className="max-h-48 overflow-y-auto rounded-lg border border-zinc-200/80 bg-white/98 text-left text-xs shadow-md">
+                  {geocodeAlternatives.map((hit, idx) => (
+                    <li key={`${hit.lat}-${hit.lng}-${idx}`}>
+                      <button
+                        type="button"
+                        className="w-full px-3 py-2 text-left text-zinc-700 hover:bg-zinc-100"
+                        onClick={() => applyGeocodeHit(hit)}
+                      >
+                        {hit.formatted_address}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              <p className="text-left text-[10px] leading-tight text-zinc-400">
+                Localização ©{" "}
+                <a
+                  href="https://www.google.com/maps"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-zinc-600"
+                >
+                  Google
+                </a>
+              </p>
             </div>
+
+            <Popover open={typesPopoverOpen} onOpenChange={setTypesPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="secondary"
+                  className="pointer-events-auto h-11 w-11 shrink-0 rounded-xl border border-zinc-200/80 bg-white/95 shadow-md backdrop-blur-sm hover:bg-white"
+                  aria-label="Camadas — tipos de ponto"
+                  title="Camadas — tipos de ponto"
+                >
+                  <Layers className="h-5 w-5 text-zinc-700" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="start"
+                side="right"
+                sideOffset={8}
+                className="z-[1100] w-72 space-y-4 p-5 shadow-lg shadow-zinc-200/50"
+              >
+                <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+                  <h3 className="font-semibold text-zinc-900">Tipos de Ponto</h3>
+                  <Layers className="h-4 w-4 text-zinc-400" />
+                </div>
+                <div className="space-y-2">
+                  {pointTypes.map((type) => {
+                    const Icon = type.icon;
+                    const isSelected = selectedTypes.includes(type.id);
+                    return (
+                      <button
+                        key={type.id}
+                        type="button"
+                        onClick={() => toggleType(type.id)}
+                        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-all ${
+                          isSelected
+                            ? "bg-zinc-100"
+                            : "opacity-50 hover:opacity-75"
+                        }`}
+                      >
+                        <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${type.color}`}>
+                          <Icon className="h-4 w-4 text-white" />
+                        </div>
+                        <span className="text-sm font-medium text-zinc-700">{type.label}</span>
+                        <div className={`ml-auto h-4 w-4 rounded-full border-2 ${isSelected ? "border-[#f318e3] bg-[#f318e3]" : "border-zinc-300"}`}>
+                          {isSelected && (
+                            <svg className="h-full w-full text-white" viewBox="0 0 24 24">
+                              <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                            </svg>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+                <Button className="w-full rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] py-6 text-white shadow-lg shadow-[#f318e3]/25">
+                  <Plus className="mr-2 h-5 w-5" />
+                  Adicionar Ponto
+                </Button>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="pointer-events-none absolute right-4 top-4 z-[1000] flex flex-col items-end gap-2">
@@ -217,6 +322,7 @@ export default function MapaPage() {
               </span>
               <span className="ml-1 text-sm text-zinc-500">pontos visíveis</span>
             </div>
+
             <div
               className="pointer-events-auto flex items-center overflow-hidden rounded-full border border-zinc-200/80 bg-white/95 p-0.5 shadow-md backdrop-blur-sm"
               role="group"
@@ -250,6 +356,20 @@ export default function MapaPage() {
               >
                 <span role="img" aria-label="Satélite">🛰️</span>
               </button>
+            </div>
+          </div>
+
+          <div className="pointer-events-none absolute bottom-4 left-4 z-[1000]">
+            <div className="pointer-events-auto rounded-xl bg-white/90 p-3 shadow-md backdrop-blur-sm">
+              <p className="mb-2 text-xs font-semibold text-zinc-500">LEGENDA</p>
+              <div className="flex max-w-sm flex-wrap gap-3">
+                {pointTypes.map((type) => (
+                  <div key={type.id} className="flex items-center gap-1.5">
+                    <span className={`h-3 w-3 rounded-full ${type.color}`} />
+                    <span className="text-xs text-zinc-600">{type.label}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </motion.div>
@@ -334,6 +454,7 @@ export default function MapaPage() {
                 </div>
               )}
 
+              {/*
               <div className="mt-4 flex gap-2">
                 <Button className="flex-1 rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] text-white">
                   <Camera className="mr-2 h-4 w-4" />
@@ -344,6 +465,7 @@ export default function MapaPage() {
                   <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
+              */}
             </div>
           </motion.div>
         )}

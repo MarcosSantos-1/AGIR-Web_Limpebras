@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { compressImageFileIfNeeded } from "@/lib/image-compress";
 import { isLikelyVideoUrl } from "@/lib/media-url";
 import { revokeBlobPhotoUrls } from "@/lib/storage/photo-url-helpers";
 import { GripVertical, ImageIcon, Trash2, Upload } from "lucide-react";
@@ -119,7 +120,7 @@ export function ActionPhotoDropzone({
   );
 
   const onFiles = useCallback(
-    (files: FileList | null) => {
+    async (files: FileList | null) => {
       if (!files?.length) return;
       const cap =
         typeof maxPhotos === "number" && Number.isFinite(maxPhotos)
@@ -138,7 +139,10 @@ export function ActionPhotoDropzone({
           continue;
         }
         try {
-          const objectUrl = URL.createObjectURL(file);
+          const fileForObject = isImg
+            ? await compressImageFileIfNeeded(file)
+            : file;
+          const objectUrl = URL.createObjectURL(fileForObject);
           blobVideoRef.current.set(objectUrl, isVid);
           next.push(objectUrl);
         } catch {

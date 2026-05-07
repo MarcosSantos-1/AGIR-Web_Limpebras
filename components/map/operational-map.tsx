@@ -28,6 +28,9 @@ const typeHex: Record<string, string> = {
   "nucleo-habitacional": "#f59e0b",
 };
 
+/** Ícone reciclagem (branco) centrado no círculo — só ecoponto. */
+const ECOPONTO_RECYCLE_SVG = `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width:56%;height:56%" fill="#ffffff" aria-hidden="true"><path d="M12 6V3L8 7l4 4V8c2.76 0 5 2.24 5 5 0 1.64-.8 3.08-2.03 4l1.42 1.44C18.36 16.55 19 14.84 19 13c0-3.87-3.13-7-7-7zm-7.39 9.01L3.37 16.64A9 9 0 0 1 12 5c1.84 0 3.55.55 4.99 1.5L15.5 7.11C14.27 6.22 12.7 5.7 11 5.7c-2.76 0-5.05 2.05-5.39 4.72L4.73 9.27 3.37 10.73zM12 21c-1.84 0-3.55-.55-4.99-1.5l1.5-1.61C9.74 18.78 11.31 19.3 13 19.3c2.76 0 5.05-2.05 5.39-4.72l1.89 1.15 1.35-1.46A9 9 0 0 1 12 21z"/></svg></div>`;
+
 function makeDivIcon(
   type: string,
   selected: boolean,
@@ -39,6 +42,7 @@ function makeDivIcon(
   const border = "4px solid #ffffff";
   const shadow = "0 10px 15px -3px rgba(0,0,0,0.2)";
   const scale = selected ? "scale(1.08)" : "scale(1)";
+  const innerGlyph = type === "ecoponto" ? ECOPONTO_RECYCLE_SVG : "";
 
   const badge =
     recurrent && occurrences > 0
@@ -50,7 +54,10 @@ function makeDivIcon(
   return L.divIcon({
     className: "agir-map-marker",
     html: `<div style="position:relative;width:${size}px;height:${size}px;transform:translate(-50%,-50%) ${scale}">
-      <div style="width:100%;height:100%;border-radius:9999px;background:${fill};border:${border};box-shadow:${shadow}"></div>
+      <div style="position:relative;width:100%;height:100%">
+        <div style="width:100%;height:100%;border-radius:9999px;background:${fill};border:${border};box-shadow:${shadow}"></div>
+        ${innerGlyph}
+      </div>
       ${badge}
     </div>`,
     iconSize: [size, size],
@@ -65,6 +72,14 @@ const esriAttribution =
 
 type BaseLayer = "carto" | "satellite";
 
+export type OperationalMapFlyTo = {
+  lat: number;
+  lng: number;
+  zoom?: number;
+  /** Muda a cada pesquisa para repetir o mesmo sítio. */
+  nonce: number;
+};
+
 type OperationalMapProps = {
   points: OperationalMapPoint[];
   polygons: MapPolygon[];
@@ -72,7 +87,28 @@ type OperationalMapProps = {
   onSelectId: (id: string) => void;
   /** Padrão: CartoDB Positron. */
   baseLayer?: BaseLayer;
+  /** Centro animado (ex.: resultado de geocoding). */
+  flyTo?: OperationalMapFlyTo | null;
+  /** Marcador do último endereço pesquisado (geocoding). */
+  searchResultMarker?: { lat: number; lng: number } | null;
 };
+
+/** Pin de pesquisa (destaque em roxo — não confundir com pontos operacionais). */
+function makeSearchGeocodeIcon() {
+  const w = 36;
+  const h = 44;
+  return L.divIcon({
+    className: "agir-map-search-geocode",
+    html: `<div style="width:${w}px;height:${h}px;filter:drop-shadow(0 4px 6px rgba(0,0,0,0.25))">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 34" width="${w}" height="${h}" aria-hidden="true">
+        <path fill="#f318e3" stroke="#fff" stroke-width="1.5" d="M12 0C7.03 0 3 3.94 3 8.8c0 6.65 9 17.65 9 17.65s9-11 9-17.65C21 3.94 16.97 0 12 0z"/>
+        <circle cx="12" cy="9" r="3.25" fill="#fff"/>
+      </svg>
+    </div>`,
+    iconSize: [w, h],
+    iconAnchor: [w / 2, h],
+  });
+}
 
 function FitBoundsToData({
   points,
@@ -101,12 +137,29 @@ function FitBoundsToData({
   return null;
 }
 
+function FlyToSearchResult({
+  target,
+}: {
+  target: OperationalMapFlyTo | null | undefined;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!target) return;
+    map.flyTo([target.lat, target.lng], target.zoom ?? 16, { duration: 0.85 });
+  }, [map, target?.nonce, target?.lat, target?.lng, target?.zoom]);
+
+  return null;
+}
+
 export function OperationalMap({
   points,
   polygons,
   selectedId,
   onSelectId,
   baseLayer = "carto",
+  flyTo = null,
+  searchResultMarker = null,
 }: OperationalMapProps) {
   return (
     <MapContainer
@@ -115,8 +168,10 @@ export function OperationalMap({
       className="z-0 h-full min-h-[520px] w-full"
       style={{ minHeight: 520 }}
       scrollWheelZoom
+      zoomControl={false}
     >
       <FitBoundsToData points={points} polygons={polygons} />
+      <FlyToSearchResult target={flyTo} />
       {baseLayer === "carto" ? (
         <TileLayer
           attribution={cartoAttribution}
@@ -179,6 +234,16 @@ export function OperationalMap({
           zIndexOffset={selectedId === p.id ? 1000 : 0}
         />
       ))}
+
+      {searchResultMarker ? (
+        <Marker
+          key="geocode-search-pin"
+          position={[searchResultMarker.lat, searchResultMarker.lng]}
+          icon={makeSearchGeocodeIcon()}
+          zIndexOffset={2500}
+          interactive={false}
+        />
+      ) : null}
     </MapContainer>
   );
 }

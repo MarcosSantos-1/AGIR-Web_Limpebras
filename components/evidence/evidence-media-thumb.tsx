@@ -25,6 +25,13 @@ export function EvidenceMediaThumb({ url, className, alt = "" }: Props) {
   }
   return (
     /* eslint-disable-next-line @next/next/no-img-element */
-    <img src={url} alt={alt} className={className} />
+    <img
+      src={url}
+      alt={alt}
+      className={className}
+      loading="lazy"
+      decoding="async"
+      fetchPriority="low"
+    />
   );
 }
