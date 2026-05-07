@@ -89,7 +89,7 @@ const STATUS_OPTIONS: {
   {
     value: "ideia",
     label: "Ideia",
-    hint: "Só planejamento — ainda sem peça",
+    hint: "",
   },
   {
     value: "rascunho",
@@ -229,6 +229,8 @@ export function mergeFormIntoSocialPost(
     metricasAtualizadasEm?: string;
   } = {
     id,
+    createdAtMs: editingPost?.createdAtMs ?? Date.now(),
+    createdByUid: editingPost?.createdByUid,
     status: fase,
     date: dateOut,
     tema,
@@ -443,6 +445,12 @@ function ConteudoFormDialog({
 
     try {
       let merged = mergeFormIntoSocialPost(editingPost, draft);
+      if (user?.uid) {
+        merged = {
+          ...merged,
+          createdByUid: editingPost?.createdByUid ?? user.uid,
+        };
+      }
       if (media.length > 0) {
         const fotos = await appendUploadedMediaToFotos(
           merged.id,

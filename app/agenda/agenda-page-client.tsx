@@ -8,6 +8,7 @@ import {
 } from "@/hooks/use-agenda-viewport-events";
 import { useNovaAcao } from "@/components/acao/nova-acao-provider";
 import { PostLinksDisplay } from "@/components/acao-registro/post-links";
+import { EvidenceMediaThumb } from "@/components/evidence/evidence-media-thumb";
 import { agendaEventUrl, type AgendaEvent, type AgendaEventStatus } from "@/data/agenda-events";
 import { formatDateBr } from "@/lib/utils";
 import { agendaClockLabel } from "@/lib/agenda/time-display";
@@ -833,9 +834,8 @@ function AgendaPageContent() {
                                   key={`p-${event.id}-${i}`}
                                   className="h-16 w-16 overflow-hidden rounded-lg border border-zinc-100"
                                 >
-                                  <img
-                                    src={url}
-                                    alt=""
+                                  <EvidenceMediaThumb
+                                    url={url}
                                     className="h-full w-full object-cover"
                                   />
                                 </div>

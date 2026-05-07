@@ -2,7 +2,10 @@
 
 import { useUserProfile } from "@/contexts/user-profile-context";
 import { useAuth } from "@/contexts/auth-context";
-import { DEFAULT_PROFILE_GRADIENT } from "@/lib/firestore/user-profile";
+import {
+  DEFAULT_PROFILE_GRADIENT,
+  mergeProfileGradient,
+} from "@/lib/firestore/user-profile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -74,6 +77,14 @@ export function ProfileForm({
 
   const previewInitials = useMemo(() => initialsFromNome(nome), [nome]);
 
+  function applyGradientPreset(from: string, to: string) {
+    setGradientFrom(from);
+    setGradientTo(to);
+    if (user?.uid) {
+      void mergeProfileGradient(user.uid, from, to);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -144,8 +155,7 @@ export function ProfileForm({
                     key={g.from + g.to}
                     type="button"
                     onClick={() => {
-                      setGradientFrom(g.from);
-                      setGradientTo(g.to);
+                      applyGradientPreset(g.from, g.to);
                     }}
                     className={`flex h-10 w-10 rounded-xl ring-offset-2 transition ${
                       gradientFrom === g.from && gradientTo === g.to

@@ -3,19 +3,24 @@
 import type { HolidayEntry } from "@/lib/holidays/sao-paulo";
 import { holidaysInMonth } from "@/lib/holidays/sao-paulo";
 import { getTodayIsoInTimeZone } from "@/lib/date/week";
+import type { DailyChecklistDayItem } from "@/lib/checklist-types";
+import { subscribeDailyChecklistAllDays } from "@/lib/firestore/checklist";
+import { useAuth } from "@/contexts/auth-context";
+import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import {
   addMonths,
   eachDayOfInterval,
   endOfMonth,
+  endOfWeek,
   format,
   getMonth,
   getYear,
   isSameMonth,
+  parseISO,
   startOfMonth,
   startOfWeek,
   subMonths,
-  endOfWeek,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -29,11 +34,41 @@ function capitalizeFirst(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-export function QuickCalendar() {
+/** Verde = 100%. Vermelho = houve pelo menos um check mas não está completo. Sem marcador = sem itens ou nenhum feito. */
+function checklistDayMarker(
+  items: readonly DailyChecklistDayItem[],
+): "complete" | "partial" | "none" {
+  const n = items.length;
+  if (n === 0) return "none";
+  let done = 0;
+  for (const it of items) {
+    if (it.done) done += 1;
+  }
+  if (done === n) return "complete";
+  if (done === 0) return "none";
+  return "partial";
+}
+
+export type QuickCalendarProps = {
+  /** yyyy-MM-dd — dia ligado ao checklist (opcional). */
+  selectedDate?: string;
+  onSelectDate?: (isoDate: string) => void;
+};
+
+export function QuickCalendar({
+  selectedDate,
+  onSelectDate,
+}: QuickCalendarProps) {
+  const { user } = useAuth();
+  const uid = user?.uid;
+
   const [monthAnchor, setMonthAnchor] = useState(() =>
     startOfMonth(new Date()),
   );
   const [holidays, setHolidays] = useState<HolidayEntry[]>([]);
+  const [itemsByDay, setItemsByDay] = useState<
+    Map<string, DailyChecklistDayItem[]>
+  >(() => new Map());
 
   const year = getYear(monthAnchor);
   const monthIndex = getMonth(monthAnchor);
@@ -54,6 +89,14 @@ export function QuickCalendar() {
       cancelled = true;
     };
   }, [year]);
+
+  useEffect(() => {
+    if (!uid) {
+      setItemsByDay(new Map());
+      return;
+    }
+    return subscribeDailyChecklistAllDays(uid, setItemsByDay);
+  }, [uid]);
 
   const holidayDates = useMemo(() => new Set(holidays.map((h) => h.date)), [
     holidays,
@@ -77,6 +120,12 @@ export function QuickCalendar() {
   const title = capitalizeFirst(
     format(monthAnchor, "MMMM yyyy", { locale: ptBR }),
   );
+
+  useEffect(() => {
+    if (!selectedDate) return;
+    const d = parseISO(`${selectedDate}T12:00:00`);
+    setMonthAnchor((m) => (isSameMonth(d, m) ? m : startOfMonth(d)));
+  }, [selectedDate]);
 
   return (
     <motion.div
@@ -122,23 +171,58 @@ export function QuickCalendar() {
           const isToday = iso === todaySp;
           const holiday = holidayDates.has(iso);
 
+          const isSelected =
+            selectedDate != null && iso === selectedDate && !isToday;
+
+          const chk = checklistDayMarker(itemsByDay.get(iso) ?? []);
+
+          const checklistLabel =
+            chk === "complete"
+              ? "Checklist concluído (100%). "
+              : chk === "partial"
+                ? "Checklist em andamento. "
+                : "";
+
           return (
             <button
               type="button"
               key={`${iso}-${index}`}
-              aria-label={`Dia ${format(cellDate, "d", { locale: ptBR })}`}
-              className={`relative flex h-8 w-full items-center justify-center rounded-lg text-sm transition-colors ${
+              aria-current={iso === selectedDate ? "date" : undefined}
+              aria-label={`${checklistLabel}Dia ${format(cellDate, "d", { locale: ptBR })}${holiday ? ", feriado" : ""}`}
+              onClick={() => onSelectDate?.(iso)}
+              className={cn(
+                "relative flex h-9 w-full flex-col items-center justify-center rounded-lg text-sm transition-colors",
                 isToday
-                  ? "bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] font-semibold text-white"
-                  : currentMonth
-                    ? "text-zinc-700 hover:bg-zinc-100"
-                    : "text-zinc-300"
-              }`}
-            >
-              {format(cellDate, "d")}
-              {holiday && !isToday && (
-                <span className="absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-[#f318e3]" />
+                  ? "bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] font-semibold text-white ring-2 ring-[#f318e3]/40 ring-offset-1 ring-offset-white"
+                  : isSelected
+                    ? "bg-fuchsia-50 font-semibold text-zinc-900 ring-2 ring-[#9b0ba6]/70"
+                    : currentMonth
+                      ? "text-zinc-700 hover:bg-zinc-100"
+                      : "text-zinc-300",
               )}
+            >
+              <span
+                className={cn(
+                  "leading-none",
+                  holiday && !isToday && "font-bold text-red-600",
+                  holiday && isToday && "font-bold text-white",
+                )}
+              >
+                {format(cellDate, "d")}
+              </span>
+              {chk === "complete" ? (
+                <span
+                  className="absolute bottom-0.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-emerald-500 shadow-sm ring-1 ring-white/80"
+                  title="Checklist 100%"
+                  aria-hidden
+                />
+              ) : chk === "partial" ? (
+                <span
+                  className="absolute bottom-0.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-red-500 shadow-sm ring-1 ring-white/80"
+                  title="Checklist iniciado e incompleto"
+                  aria-hidden
+                />
+              ) : null}
             </button>
           );
         })}

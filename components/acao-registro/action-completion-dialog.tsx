@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  ActionPhotoDropzone,
-  ACTION_PHOTO_MAX,
-} from "@/components/acao-registro/action-photo-dropzone";
+import { ActionPhotoDropzone } from "@/components/acao-registro/action-photo-dropzone";
 import { LinksPostagemEditor } from "@/components/acao-registro/post-links";
 import { DatePickerField } from "@/components/forms/date-picker-field";
 import { TimePickerField } from "@/components/forms/time-picker-field";
@@ -286,10 +283,9 @@ export function ActionCompletionDialog({
           <ActionPhotoDropzone
             photoDataUrls={photoDataUrls}
             onChange={setPhotoDataUrls}
-            maxPhotos={ACTION_PHOTO_MAX}
             variant={isGallery ? "emphasis" : "default"}
             label={isGallery ? "Fotos (enfatizado)" : "Fotos"}
-            hint="Clique para enviar ou solte imagens nesta área"
+            hint="Clique ou arraste imagens ou vídeo para esta área"
             orderHint={photoOrderHint}
             highlightAntesDepoisPair={photoHighlightAntesDepois}
           />

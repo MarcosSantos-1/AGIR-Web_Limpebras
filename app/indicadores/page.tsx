@@ -154,7 +154,7 @@ export default function IndicadoresPage() {
       {
         label: "Posts publicados (mês)",
         value: readySo ? String(pub) : "…",
-        hint: "Feed + Reels + Stories (Firestore)",
+        hint: "Feed + Reels + Stories",
         icon: Share2,
       },
       {
@@ -311,9 +311,6 @@ export default function IndicadoresPage() {
           <h2 className="text-lg font-semibold text-zinc-900">
             Comunicação, redes sociais e panfletagem
           </h2>
-          <p className="text-sm text-zinc-500">
-            Resumo e quadros alimentados pelo Firestore (agenda + redes sociais). Valores podem ser zero.
-          </p>
         </div>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {communicationKpis.map((k, index) => (
@@ -363,7 +360,7 @@ export default function IndicadoresPage() {
                 {socialRows.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="py-10 text-center text-sm text-zinc-500">
-                      Sem conteúdos de redes no Firestore.
+                      Sem conteúdos de redes no Banco de Dados.
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -459,7 +456,7 @@ export default function IndicadoresPage() {
           <div className="mb-6 flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-zinc-900">Ações por Mês</h3>
-              <p className="text-sm text-zinc-500">Concluídas nos últimos 4 meses (Firestore)</p>
+              <p className="text-sm text-zinc-500">Concluídas nos últimos 4 meses</p>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">

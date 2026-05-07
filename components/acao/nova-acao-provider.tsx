@@ -83,6 +83,26 @@ import {
   type SubregionalId,
 } from "@/lib/constants/subregionais";
 
+function RequiredStar() {
+  return (
+    <abbr
+      title="Obrigatório"
+      className="ml-0.5 cursor-help font-semibold text-red-500 no-underline"
+      aria-label="(obrigatório)"
+    >
+      *
+    </abbr>
+  );
+}
+
+/** Evita saltos estranhos do browser com `required` + modais; corrige após validação app. */
+function scrollModalFormToTop(container: HTMLDivElement | null) {
+  if (!container) return;
+  queueMicrotask(() => {
+    container.scrollTo({ top: 0, behavior: "smooth" });
+  });
+}
+
 export type NovaAcaoTipo = "acao-visita" | "revitalizacao";
 
 export type NovaAcaoUIMode =
@@ -314,6 +334,8 @@ function AcaoVisitaDialog({
     [],
   );
 
+  const formScrollRef = React.useRef<HTMLDivElement>(null);
+
   const { user } = useAuth();
   const { profile } = useUserProfile();
 
@@ -431,10 +453,11 @@ function AcaoVisitaDialog({
         <ModalHero
           icon={Waypoints}
           title="Ação / Visita"
-          description="Agendamento futuro ou registro de ação concluída. Envio de fotos opcional neste período de testes."
+          description="Agendamento futuro ou registro de ação concluída."
         />
         <form
           className="flex min-h-0 flex-1 flex-col"
+          noValidate
           onSubmit={async (e) => {
             e.preventDefault();
             setSaveError(null);
@@ -447,6 +470,7 @@ function AcaoVisitaDialog({
               !subregionalAcao
             ) {
               setCamposErro(true);
+              scrollModalFormToTop(formScrollRef.current);
               return;
             }
             const clockTrim = acaoHorario.trim();
@@ -525,10 +549,15 @@ function AcaoVisitaDialog({
                     ...initialEvent,
                     ...patch,
                     id: targetId,
+                    createdByUid:
+                      initialEvent.createdByUid ?? user?.uid,
                   });
                 }
               } else {
-                targetId = await createAgendaDocument(patch);
+                targetId = await createAgendaDocument({
+                  ...patch,
+                  ...(user?.uid ? { createdByUid: user.uid } : {}),
+                });
               }
               if (
                 situacao === "finalizado" &&
@@ -558,6 +587,7 @@ function AcaoVisitaDialog({
           }}
         >
           <div
+            ref={formScrollRef}
             className={cn(
               "agir-dialog-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain",
               "px-6 py-5 sm:px-10 sm:py-6",
@@ -656,6 +686,7 @@ function AcaoVisitaDialog({
                       className="text-zinc-600"
                     >
                       Tipo de serviço
+                      <RequiredStar />
                     </Label>
                     <input
                       type="hidden"
@@ -665,11 +696,15 @@ function AcaoVisitaDialog({
                     <Select
                       value={tipoServico || undefined}
                       onValueChange={onTipoServicoChange}
-                      required
                     >
                       <SelectTrigger
                         id="tipo-servico"
-                        className="h-11 w-full min-w-0 border-zinc-200 bg-white"
+                        className={cn(
+                          "h-11 w-full min-w-0 border-zinc-200 bg-white",
+                          camposErro &&
+                            !tipoServico &&
+                            "border-red-300 ring-1 ring-red-200",
+                        )}
                         size="default"
                       >
                         <SelectValue placeholder="Selecione o tipo" />
@@ -689,15 +724,20 @@ function AcaoVisitaDialog({
                       className="text-zinc-600"
                     >
                       Título / assunto
+                      <RequiredStar />
                     </Label>
                     <Input
                       id="acao-titulo"
                       name="titulo"
-                      className="h-11 border-zinc-200"
+                      className={cn(
+                        "h-11 border-zinc-200",
+                        camposErro &&
+                          !tituloAcao.trim() &&
+                          "border-red-300 ring-1 ring-red-200",
+                      )}
                       placeholder="Ex.: Orientação no Ecoponto Norte"
                       value={tituloAcao}
                       onChange={(e) => setTituloAcao(e.target.value)}
-                      required
                     />
                   </div>
                 </div>
@@ -804,12 +844,13 @@ function AcaoVisitaDialog({
                       className="text-zinc-600"
                     >
                       Data
+                      <RequiredStar />
                     </Label>
                     <DatePickerField
                       id="acao-data"
                       value={acaoData}
                       onChange={setAcaoData}
-                      required
+                      invalid={camposErro && !acaoData.trim()}
                     />
                   </div>
                   <div className="space-y-2">
@@ -831,15 +872,20 @@ function AcaoVisitaDialog({
                       className="text-zinc-600"
                     >
                       Local / endereço
+                      <RequiredStar />
                     </Label>
                     <Input
                       id="acao-local"
                       name="local"
-                      className="h-11 border-zinc-200"
+                      className={cn(
+                        "h-11 border-zinc-200",
+                        camposErro &&
+                          !localEndereco.trim() &&
+                          "border-red-300 ring-1 ring-red-200",
+                      )}
                       placeholder="Rua, número, bairro ou nome do local"
                       value={localEndereco}
                       onChange={(e) => setLocalEndereco(e.target.value)}
-                      required
                     />
                   </div>
                   <div className="space-y-2 sm:col-span-2">
@@ -863,6 +909,7 @@ function AcaoVisitaDialog({
                     value={subregionalAcao}
                     onChange={setSubregionalAcao}
                     error={camposErro && !subregionalAcao}
+                    labelSuffix={<RequiredStar />}
                   />
                 </div>
               </SectionBox>
@@ -943,18 +990,15 @@ function AcaoVisitaDialog({
                     <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-zinc-200/80 text-zinc-700">
                       <ImagePlus className="h-4 w-4" />
                     </span>
-                    Registro fotográfico (opcional)
+                    Registro fotográfico
                   </div>
-                  <p className="mb-3 text-sm text-zinc-600">
-                    Pode anexar imagens se quiser; não é obrigatório para salvar
-                    durante os testes.
-                  </p>
+              
                   <ActionPhotoDropzone
                     photoDataUrls={fotoDataUrls}
                     onChange={setFotoDataUrls}
                     variant="amber"
-                    label="Fotos"
-                    hint="Clique ou arraste imagens para esta área"
+                    label="Imagens ou vídeo"
+                    hint="Clique ou arraste imagens ou vídeo para esta área"
                     orderHint="Arraste as miniaturas para definir a ordem nas evidências e na galeria."
                   />
                 </div>
@@ -1025,6 +1069,7 @@ function RevitalizacaoDialog({
   const [saveErrorRev, setSaveErrorRev] = React.useState<string | null>(null);
   const [savingRev, setSavingRev] = React.useState(false);
   const [pontoErro, setPontoErro] = React.useState(false);
+  const revitalizacaoFormScrollRef = React.useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const { profile } = useUserProfile();
 
@@ -1126,12 +1171,14 @@ function RevitalizacaoDialog({
         />
         <form
           className="flex min-h-0 flex-1 flex-col"
+          noValidate
           onSubmit={async (e) => {
             e.preventDefault();
             setSaveErrorRev(null);
             setPontoErro(false);
             if (!pontoViciadoId) {
               setPontoErro(true);
+              scrollModalFormToTop(revitalizacaoFormScrollRef.current);
               return;
             }
             const vol = volumeRev.trim();
@@ -1216,10 +1263,15 @@ function RevitalizacaoDialog({
                     ...initialEvent,
                     ...patch,
                     id: targetId,
+                    createdByUid:
+                      initialEvent.createdByUid ?? user?.uid,
                   });
                 }
               } else {
-                targetId = await createAgendaDocument(patch);
+                targetId = await createAgendaDocument({
+                  ...patch,
+                  ...(user?.uid ? { createdByUid: user.uid } : {}),
+                });
               }
               if (
                 situacaoRev === "finalizado" &&
@@ -1249,6 +1301,7 @@ function RevitalizacaoDialog({
           }}
         >
           <div
+            ref={revitalizacaoFormScrollRef}
             className={cn(
               "agir-dialog-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain",
               "px-6 py-5 sm:px-10 sm:py-6",
@@ -1329,7 +1382,10 @@ function RevitalizacaoDialog({
               <SectionBox icon={MapPin} title="Ponto viciado (revitalização)">
                 <div className={cn(fieldGrid(), "items-end gap-4")}>
                   <div className="space-y-2 sm:col-span-1">
-                    <Label className="text-zinc-600">Ponto viciado</Label>
+                    <Label className="text-zinc-600">
+                      Ponto viciado
+                      <RequiredStar />
+                    </Label>
                     <Popover
                       open={pvComboOpen}
                       onOpenChange={(o) => {
@@ -1343,7 +1399,11 @@ function RevitalizacaoDialog({
                           role="combobox"
                           variant="outline"
                           aria-expanded={pvComboOpen}
-                          className="h-11 w-full min-w-0 justify-between border-zinc-200 font-normal"
+                          className={cn(
+                            "h-11 w-full min-w-0 justify-between border-zinc-200 font-normal",
+                            pontoErro &&
+                              "border-red-300 ring-1 ring-red-200",
+                          )}
                         >
                           {pontoViciadoId ? (
                             <span className="truncate text-left text-zinc-800">
@@ -1452,12 +1512,12 @@ function RevitalizacaoDialog({
                 <div className="max-w-xs space-y-2">
                   <Label htmlFor="data-revitalizacao" className="text-zinc-600">
                     Quando foi ou será realizada
+                    <RequiredStar />
                   </Label>
                   <DatePickerField
                     id="data-revitalizacao"
                     value={dataRevitalizacao}
                     onChange={setDataRevitalizacao}
-                    required
                   />
                 </div>
               </SectionBox>
@@ -1604,14 +1664,11 @@ function RevitalizacaoDialog({
                     photoDataUrls={revFotoUrls}
                     onChange={setRevFotoUrls}
                     variant="emphasis"
-                    label="Fotos (opcional)"
-                    hint="Clique ou arraste — antes, durante e depois"
+                    label="Fotos ou vídeo (opcional)"
+                    hint="Clique ou arraste imagens ou vídeo — antes, durante e depois"
                     highlightAntesDepoisPair
                     orderHint="As duas primeiras fotos nesta ordem aparecem como Antes e Depois na galeria. Arraste as miniaturas para reordenar."
                   />
-                  <p className="-mt-2 text-xs text-zinc-500 sm:-mt-3">
-                    Imagens são opcionais neste período de testes.
-                  </p>
                 </>
               )}
             </div>

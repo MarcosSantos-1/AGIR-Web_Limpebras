@@ -1,5 +1,6 @@
 "use client";
 
+import { mapFirebaseAuthError } from "@/lib/auth/firebase-auth-errors";
 import { useAuth } from "@/contexts/auth-context";
 import { EMAIL_LINK_STORAGE_KEY } from "@/lib/auth/email-link";
 import { Button } from "@/components/ui/button";
@@ -38,9 +39,7 @@ export default function EmailLinkLoginPage() {
       completeSignInWithEmailLink(stored)
         .then(() => router.replace("/"))
         .catch((err) => {
-          setError(
-            err instanceof Error ? err.message : "Não foi possível entrar.",
-          );
+          setError(mapFirebaseAuthError(err));
           setNeedEmail(true);
         })
         .finally(() => setBusy(false));
@@ -72,9 +71,7 @@ export default function EmailLinkLoginPage() {
       await completeSignInWithEmailLink(email);
       router.replace("/");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Não foi possível entrar.",
-      );
+      setError(mapFirebaseAuthError(err));
     } finally {
       setBusy(false);
     }
@@ -87,9 +84,10 @@ export default function EmailLinkLoginPage() {
           Entrar com link
         </h1>
         <p className="mt-2 text-sm text-zinc-500">
-          A concluir a sessão com o link enviado por e-mail. Na Firebase Console,
-          active “Email link (passwordless)” no fornecedor E-mail e autorize
-          este domínio em Authentication → Settings.
+          Depois de entrar, complete seu cadastro no app e defina uma senha na primeira vez —
+          assim você consegue acessar de novo na página de login depois de sair.
+          Na Firebase Console, ative “Email link (passwordless)” no provedor E-mail e
+          autorize este domínio em Authentication → Settings.
         </p>
 
         {needEmail && (

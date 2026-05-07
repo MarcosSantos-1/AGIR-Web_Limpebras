@@ -53,6 +53,10 @@ export type AgendaEvent = {
   /** Preenchido ao concluir (persistido localmente) */
   completionDescription?: string;
   completionPhotoDataUrls?: string[];
+  /** Firestore: instante de criação do registo (notificações vs conta). */
+  createdAtMs?: number;
+  /** Firebase Auth UID de quem criou o registo (notificações: ocultar para o autor). */
+  createdByUid?: string;
 };
 
 export const agendaEvents: AgendaEvent[] = [

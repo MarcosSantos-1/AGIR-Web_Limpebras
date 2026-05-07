@@ -29,3 +29,12 @@ export function firstNameForResponsible(
 
   return "";
 }
+
+/** Primeiro token de responsável / autor (para UI). */
+export function firstTokenFromPersonLabel(
+  label: string | null | undefined,
+): string {
+  const t = (label ?? "").trim();
+  if (!t || t === "—") return "";
+  return t.split(/\s+/)[0] ?? "";
+}

@@ -2,6 +2,7 @@
 
 import { AppShell } from "@/components/layout/app-shell";
 import { PhotoGalleryLightbox } from "@/components/evidence/photo-gallery-lightbox";
+import { EvidenceMediaThumb } from "@/components/evidence/evidence-media-thumb";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { Search, Filter, Calendar, MapPin, Pencil } from "lucide-react";
@@ -192,12 +193,9 @@ function GaleriaPageBody() {
                     className="relative block w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f318e3]/50"
                     onClick={() => openLightbox(album, 0)}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={album.photoUrls[0]}
-                      alt=""
+                    <EvidenceMediaThumb
+                      url={album.photoUrls[0]}
                       className="aspect-[5/4] max-h-64 w-full object-cover object-center sm:max-h-72"
-                      loading="lazy"
                     />
                   </button>
                 ) : null}
@@ -210,12 +208,9 @@ function GaleriaPageBody() {
                         className="relative w-1/2 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f318e3]/50"
                         onClick={() => openLightbox(album, 0)}
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={album.photoUrls[0]}
-                          alt=""
+                        <EvidenceMediaThumb
+                          url={album.photoUrls[0]}
                           className="aspect-[4/5] max-h-56 w-full object-cover sm:max-h-64"
-                          loading="lazy"
                         />
                         <span className="pointer-events-none absolute left-1.5 top-1.5 rounded-md bg-black/65 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white sm:text-[10px]">
                           Antes
@@ -226,12 +221,9 @@ function GaleriaPageBody() {
                         className="relative w-1/2 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f318e3]/50"
                         onClick={() => openLightbox(album, 1)}
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={album.photoUrls[1]}
-                          alt=""
+                        <EvidenceMediaThumb
+                          url={album.photoUrls[1]}
                           className="aspect-[4/5] max-h-56 w-full object-cover sm:max-h-64"
-                          loading="lazy"
                         />
                         <span className="pointer-events-none absolute left-1.5 top-1.5 rounded-md bg-black/65 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white sm:text-[10px]">
                           Depois
@@ -247,12 +239,9 @@ function GaleriaPageBody() {
                             className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md ring-1 ring-zinc-200/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f318e3]/45 sm:h-14 sm:w-14"
                             onClick={() => openLightbox(album, idx + 2)}
                           >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={url}
-                              alt=""
+                            <EvidenceMediaThumb
+                              url={url}
                               className="h-full w-full object-cover"
-                              loading="lazy"
                             />
                           </button>
                         ))}
@@ -270,12 +259,9 @@ function GaleriaPageBody() {
                         className="relative h-48 max-h-56 w-[82%] shrink-0 snap-center overflow-hidden rounded-lg bg-zinc-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f318e3]/45 sm:h-52 sm:w-[78%]"
                         onClick={() => openLightbox(album, idx)}
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={url}
-                          alt=""
+                        <EvidenceMediaThumb
+                          url={url}
                           className="h-full w-full object-cover"
-                          loading="lazy"
                         />
                       </button>
                     ))}

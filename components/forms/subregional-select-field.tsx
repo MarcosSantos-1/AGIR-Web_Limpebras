@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -21,6 +22,8 @@ type Props = {
   error?: boolean;
   disabled?: boolean;
   className?: string;
+  /** Asterisco / texto após o rótulo (ex. obrigatório). */
+  labelSuffix?: ReactNode;
 };
 
 export function SubregionalSelectField({
@@ -30,17 +33,18 @@ export function SubregionalSelectField({
   error,
   disabled,
   className,
+  labelSuffix,
 }: Props) {
   return (
     <div className={cn("space-y-2 sm:col-span-2", className)}>
       <Label htmlFor={id} className="text-zinc-600">
         Subregional
+        {labelSuffix}
       </Label>
       <Select
         value={value || undefined}
         onValueChange={(v) => onChange(v as SubregionalId)}
         disabled={disabled}
-        required
       >
         <SelectTrigger
           id={id}

@@ -22,6 +22,7 @@ type Props = {
   disabled?: boolean;
   className?: string;
   required?: boolean;
+  invalid?: boolean;
 };
 
 /** Evita deslocamento de fuso ao interpretar yyyy-MM-dd */
@@ -38,6 +39,7 @@ export function DatePickerField({
   disabled,
   className,
   required,
+  invalid,
 }: Props) {
   const selected = parseIsoDate(value);
   const label = selected
@@ -53,8 +55,9 @@ export function DatePickerField({
           variant="outline"
           disabled={disabled}
           className={cn(
-            "h-11 w-full justify-start text-left font-normal",
+            "h-11 w-full justify-start border-zinc-200 text-left font-normal",
             !selected && "text-zinc-500",
+            invalid && "border-red-300 ring-1 ring-red-200",
             className,
           )}
           aria-required={required}

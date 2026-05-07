@@ -67,7 +67,9 @@ export function AgendaEventsProvider({ children }: { children: ReactNode }) {
     async (id: number, patch: Partial<Pick<AgendaEvent, EditableAgendaKeys>>) => {
       let toWrite = { ...patch };
       if (
-        patch.completionPhotoDataUrls?.some((u) => u.startsWith("data:"))
+        patch.completionPhotoDataUrls?.some(
+          (u) => u.startsWith("data:") || u.startsWith("blob:"),
+        )
       ) {
         const urls = await replaceDataUrlsWithStorage(
           patch.completionPhotoDataUrls,

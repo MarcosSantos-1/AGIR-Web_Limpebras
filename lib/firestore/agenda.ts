@@ -117,7 +117,11 @@ export async function createAgendaDocument(
   event: Omit<AgendaEvent, "id">,
 ): Promise<number> {
   const id = await allocateNextAgendaNumericId();
-  const full: AgendaEvent = { ...event, id };
+  const full: AgendaEvent = {
+    ...event,
+    id,
+    createdAtMs: event.createdAtMs ?? Date.now(),
+  };
   const db = getFirebaseDb();
   await setDoc(
     doc(db, AGENDA_COLLECTION, String(id)),

@@ -25,6 +25,8 @@ export type UserProfileDoc = {
   /** E-mail atual do Auth (somente cópia informativa) */
   emailSynced: string | null;
   completedAtMs: number | null;
+  /** Preenchido após o utilizador definir senha (ou conta já tinha senha no Auth). */
+  senhaDefinidaEmMs: number | null;
   accessRole: AccessRole;
 };
 
@@ -49,6 +51,10 @@ function coerceProfile(data: DocumentData): UserProfileDoc {
       typeof data.emailSynced === "string" ? data.emailSynced : null,
     completedAtMs:
       typeof data.completedAtMs === "number" ? data.completedAtMs : null,
+    senhaDefinidaEmMs:
+      typeof data.senhaDefinidaEmMs === "number"
+        ? data.senhaDefinidaEmMs
+        : null,
     accessRole: coerceAccessRole(data.accessRole),
   };
 }
@@ -99,6 +105,32 @@ export async function saveUserProfile(
       emailSynced: email ?? null,
       completedAtMs: Date.now(),
     },
+    { merge: true },
+  );
+}
+
+/** Atualiza só as cores do avatar (merge); dispara o snapshot para o sidebar. */
+export async function mergeProfileGradient(
+  uid: string,
+  gradientFrom: string,
+  gradientTo: string,
+): Promise<void> {
+  const db = getFirebaseDb();
+  const ref = doc(db, "users", uid);
+  await setDoc(
+    ref,
+    { gradientFrom, gradientTo },
+    { merge: true },
+  );
+}
+
+/** Marca que o utilizador já pode entrar com e-mail + senha (evita bloquear após sair da sessão). */
+export async function markPasswordConfigured(uid: string): Promise<void> {
+  const db = getFirebaseDb();
+  const ref = doc(db, "users", uid);
+  await setDoc(
+    ref,
+    { senhaDefinidaEmMs: Date.now() },
     { merge: true },
   );
 }

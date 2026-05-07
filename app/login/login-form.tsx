@@ -1,5 +1,6 @@
 "use client";
 
+import { mapFirebaseAuthError } from "@/lib/auth/firebase-auth-errors";
 import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +35,7 @@ export function LoginForm() {
       await signIn(email, password);
       router.replace(nextPath.startsWith("/") ? nextPath : "/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha no login.");
+      setError(mapFirebaseAuthError(err));
     } finally {
       setBusy(false);
     }
@@ -52,7 +53,7 @@ export function LoginForm() {
       await sendPasswordReset(email);
       setResetMsg("Se existir conta com este e-mail, enviamos o link de redefinição.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível enviar o e-mail.");
+      setError(mapFirebaseAuthError(err));
     } finally {
       setBusy(false);
     }
@@ -65,7 +66,7 @@ export function LoginForm() {
           <p className="text-sm font-medium uppercase tracking-wide text-[#9b0ba6]">AGIR</p>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">Entrar</h1>
           <p className="mt-2 text-sm text-zinc-500">
-            Acesso interno — contas criadas no Firebase Console.
+            Entre com e-mail e senha. Quem entrou pelo convite em link define a senha ao completar o cadastro no app.
           </p>
         </div>
 

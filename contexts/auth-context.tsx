@@ -13,6 +13,8 @@ import {
   isSignInWithEmailLink,
   signOut as firebaseSignOut,
   sendPasswordResetEmail,
+  EmailAuthProvider,
+  linkWithCredential,
   type User,
 } from "firebase/auth";
 import {
@@ -41,6 +43,11 @@ type AuthContextValue = {
   /** Na rota `/login/email-link`, completa o login com a URL actual. */
   completeSignInWithEmailLink: (email: string) => Promise<void>;
   isUrlEmailSignInLink: (url: string) => boolean;
+  /**
+   * Associa uma senha à conta atual (após entrar pelo link mágico).
+   * Se a conta já tiver senha no Auth, não lança (auth/provider-already-linked).
+   */
+  linkPasswordToAccount: (password: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -114,6 +121,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const linkPasswordToAccount = useCallback(async (password: string) => {
+    const auth = getFirebaseAuth();
+    const u = auth.currentUser;
+    const email = u?.email?.trim().toLowerCase();
+    if (!u || !email) {
+      throw new Error("Sessão ou e-mail inválido.");
+    }
+    const credential = EmailAuthProvider.credential(email, password);
+    try {
+      await linkWithCredential(u, credential);
+    } catch (err: unknown) {
+      const code =
+        err && typeof err === "object" && "code" in err
+          ? String((err as { code: string }).code)
+          : "";
+      if (code === "auth/provider-already-linked") {
+        return;
+      }
+      throw err;
+    }
+  }, []);
+
   const value = useMemo(
     () => ({
       user,
@@ -124,6 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sendSignInLink,
       completeSignInWithEmailLink,
       isUrlEmailSignInLink,
+      linkPasswordToAccount,
     }),
     [
       user,
@@ -134,6 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sendSignInLink,
       completeSignInWithEmailLink,
       isUrlEmailSignInLink,
+      linkPasswordToAccount,
     ],
   );
 

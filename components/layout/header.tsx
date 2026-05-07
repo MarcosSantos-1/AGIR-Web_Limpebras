@@ -2,15 +2,8 @@
 
 import { useNovaAcao } from "@/components/acao/nova-acao-provider";
 import { useConteudoSocialModal } from "@/components/redes-sociais/conteudo-social-modal-provider";
-import {
-  Bell,
-  Search,
-  Plus,
-  ChevronDown,
-  Waypoints,
-  RefreshCcw,
-  Sparkles,
-} from "lucide-react";
+import { Plus, ChevronDown, Waypoints, RefreshCcw, Sparkles } from "lucide-react";
+import { NotificationsMenu } from "@/components/layout/notifications-menu";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -94,13 +87,7 @@ export function Header({ title, subtitle }: HeaderProps) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Notifications */}
-        <button className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 transition-colors hover:bg-zinc-200">
-          <Bell className="h-5 w-5 text-zinc-600" />
-          <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] text-[10px] font-semibold text-white">
-            3
-          </span>
-        </button>
+        <NotificationsMenu />
       </div>
     </header>
   );

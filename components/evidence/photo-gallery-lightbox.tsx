@@ -2,6 +2,7 @@
 
 import { downloadImageUrl } from "@/lib/download-image";
 import type { GalleryLightboxPhotoItem } from "@/lib/gallery-albums";
+import { isLikelyVideoUrl } from "@/lib/media-url";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
@@ -73,9 +74,10 @@ export function PhotoGalleryLightbox({
   const handleDownload = useCallback(async () => {
     if (!current?.src) return;
     const base = safeFilenamePart(title ?? "evidencia");
+    const ext = isLikelyVideoUrl(current.src) ? "mp4" : "jpg";
     setDownloading(true);
     try {
-      await downloadImageUrl(current.src, `${base}-${index + 1}.jpg`);
+      await downloadImageUrl(current.src, `${base}-${index + 1}.${ext}`);
     } finally {
       setDownloading(false);
     }
@@ -92,7 +94,9 @@ export function PhotoGalleryLightbox({
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
           role="dialog"
           aria-modal="true"
-          aria-label={title ? `Fotos — ${title}` : "Visualização de fotos"}
+          aria-label={
+            title ? `Evidências — ${title}` : "Visualização de evidências"
+          }
         >
           <div className="absolute right-4 top-4 z-20 flex items-center gap-1">
             <button
@@ -100,7 +104,7 @@ export function PhotoGalleryLightbox({
               onClick={() => void handleDownload()}
               disabled={downloading}
               className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 disabled:opacity-50"
-              aria-label="Descarregar foto atual"
+              aria-label="Descarregar ficheiro atual"
             >
               {downloading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -122,7 +126,7 @@ export function PhotoGalleryLightbox({
             type="button"
             onClick={goPrev}
             className="absolute left-4 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 sm:left-6"
-            aria-label="Foto anterior"
+            aria-label="Item anterior"
           >
             <ChevronLeft className="h-6 w-6" />
           </button>
@@ -130,15 +134,25 @@ export function PhotoGalleryLightbox({
           <div className="flex h-full w-full items-center justify-center p-4 pb-32 sm:px-16 sm:pb-36">
             <div className="relative w-full max-w-4xl">
               <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-zinc-900">
-                <Image
-                  src={current.src}
-                  alt={current.alt ?? ""}
-                  fill
-                  className="object-contain"
-                  sizes="(min-width:1024px) 56rem, 100vw"
-                  unoptimized
-                  priority
-                />
+                {isLikelyVideoUrl(current.src) ? (
+                  <video
+                    key={current.src}
+                    src={current.src}
+                    controls
+                    playsInline
+                    className="absolute inset-0 h-full w-full object-contain"
+                  />
+                ) : (
+                  <Image
+                    src={current.src}
+                    alt={current.alt ?? ""}
+                    fill
+                    className="object-contain"
+                    sizes="(min-width:1024px) 56rem, 100vw"
+                    unoptimized
+                    priority
+                  />
+                )}
                 {current.badge ? (
                   <span className="pointer-events-none absolute left-3 top-3 rounded-md bg-black/65 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-white">
                     {current.badge}
@@ -160,7 +174,7 @@ export function PhotoGalleryLightbox({
             type="button"
             onClick={goNext}
             className="absolute right-4 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 sm:right-6"
-            aria-label="Foto seguinte"
+            aria-label="Item seguinte"
           >
             <ChevronRight className="h-6 w-6" />
           </button>
@@ -182,14 +196,24 @@ export function PhotoGalleryLightbox({
                 )}
                 aria-label={`Miniatura ${idx + 1}`}
               >
-                <Image
-                  src={p.src}
-                  alt=""
-                  width={64}
-                  height={64}
-                  className="h-full w-full object-cover"
-                  unoptimized
-                />
+                {isLikelyVideoUrl(p.src) ? (
+                  <video
+                    src={p.src}
+                    className="h-full w-full object-cover"
+                    muted
+                    playsInline
+                    preload="metadata"
+                  />
+                ) : (
+                  <Image
+                    src={p.src}
+                    alt=""
+                    width={64}
+                    height={64}
+                    className="h-full w-full object-cover"
+                    unoptimized
+                  />
+                )}
                 {p.badge ? (
                   <span className="pointer-events-none absolute left-0 top-0 max-w-[95%] rounded-br bg-black/60 px-1 py-0.5 text-center text-[8px] font-bold uppercase leading-tight text-white sm:text-[9px]">
                     {p.badge}

@@ -1,17 +1,29 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { isLikelyVideoUrl } from "@/lib/media-url";
 import { revokeBlobPhotoUrls } from "@/lib/storage/photo-url-helpers";
 import { GripVertical, ImageIcon, Trash2, Upload } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type MutableRefObject,
+} from "react";
 import { createPortal } from "react-dom";
+import { toast } from "sonner";
 
-export const ACTION_PHOTO_MAX = 12;
-export const ACTION_PHOTO_MAX_BYTES = 2 * 1024 * 1024;
+/** Limite por vídeo no cliente (alinhar com STORAGE_UPLOAD_MAX_BYTES). */
+export const ACTION_VIDEO_MAX_BYTES = 80 * 1024 * 1024;
 
 const REORDER_MIME = "application/x-agir-photo-reorder";
 
-/** Mantido para fluxos que ainda preferem data URL (ex.: código legado). */
+/** Mantido para código legado que referia limite de fotos. */
+export const ACTION_PHOTO_MAX = 12;
+export const ACTION_PHOTO_MAX_BYTES = 2 * 1024 * 1024;
+
+/** Mantém fluxos que ainda preferem data URL (ex.: código legado). */
 export function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
@@ -24,6 +36,7 @@ export function readFileAsDataUrl(file: File): Promise<string> {
 type Props = {
   photoDataUrls: string[];
   onChange: (urls: string[]) => void;
+  /** Se definido, limita quantidade total de ficheiros (imagem + vídeo). */
   maxPhotos?: number;
   variant?: "default" | "emphasis" | "amber";
   label?: string;
@@ -34,17 +47,42 @@ type Props = {
   highlightAntesDepoisPair?: boolean;
 };
 
+/** Blob: URLs não trazem extensão; registo junto ao createObjectURL. */
+function useBlobVideoKinds(
+  photoDataUrls: string[],
+): MutableRefObject<Map<string, boolean>> {
+  const blobVideoRef = useRef<Map<string, boolean>>(new Map());
+  useEffect(() => {
+    const active = new Set(
+      photoDataUrls.filter((u) => u.startsWith("blob:")),
+    );
+    for (const key of blobVideoRef.current.keys()) {
+      if (!active.has(key)) blobVideoRef.current.delete(key);
+    }
+  }, [photoDataUrls]);
+  return blobVideoRef;
+}
+
+function slotIsVideo(url: string, blobVideoRef: Map<string, boolean>): boolean {
+  if (url.startsWith("blob:")) {
+    const v = blobVideoRef.get(url);
+    return v === true;
+  }
+  return isLikelyVideoUrl(url);
+}
+
 export function ActionPhotoDropzone({
   photoDataUrls,
   onChange,
-  maxPhotos = ACTION_PHOTO_MAX,
+  maxPhotos,
   variant = "default",
   label = "Fotos",
-  hint = "Clique ou arraste imagens para esta área",
+  hint = "Clique ou arraste imagens ou vídeo para esta área",
   orderHint,
   highlightAntesDepoisPair = false,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const blobVideoRef = useBlobVideoKinds(photoDataUrls);
   const [mounted, setMounted] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
@@ -83,20 +121,33 @@ export function ActionPhotoDropzone({
   const onFiles = useCallback(
     (files: FileList | null) => {
       if (!files?.length) return;
+      const cap =
+        typeof maxPhotos === "number" && Number.isFinite(maxPhotos)
+          ? maxPhotos
+          : Number.POSITIVE_INFINITY;
       const next: string[] = [...photoDataUrls];
       for (const file of Array.from(files)) {
-        if (next.length >= maxPhotos) break;
-        if (!file.type.startsWith("image/")) continue;
-        if (file.size > ACTION_PHOTO_MAX_BYTES) continue;
+        if (next.length >= cap) break;
+        const isImg = file.type.startsWith("image/");
+        const isVid = file.type.startsWith("video/");
+        if (!isImg && !isVid) continue;
+        if (isVid && file.size > ACTION_VIDEO_MAX_BYTES) {
+          toast.error(
+            `Vídeo demasiado grande (máx. ${Math.round(ACTION_VIDEO_MAX_BYTES / (1024 * 1024))} MB).`,
+          );
+          continue;
+        }
         try {
-          next.push(URL.createObjectURL(file));
+          const objectUrl = URL.createObjectURL(file);
+          blobVideoRef.current.set(objectUrl, isVid);
+          next.push(objectUrl);
         } catch {
           /* skip */
         }
       }
       emitUrls(next);
     },
-    [photoDataUrls, emitUrls, maxPhotos],
+    [photoDataUrls, emitUrls, maxPhotos, blobVideoRef],
   );
 
   const openFilePicker = useCallback(() => {
@@ -120,7 +171,7 @@ export function ActionPhotoDropzone({
     <input
       ref={inputRef}
       type="file"
-      accept="image/*"
+      accept="image/*,video/*"
       multiple
       tabIndex={-1}
       aria-hidden
@@ -177,7 +228,10 @@ export function ActionPhotoDropzone({
         e.stopPropagation();
         setDragOver(false);
         const reorderRaw = e.dataTransfer.getData(REORDER_MIME);
-        if (reorderRaw !== "" && (!e.dataTransfer.files || e.dataTransfer.files.length === 0)) {
+        if (
+          reorderRaw !== "" &&
+          (!e.dataTransfer.files || e.dataTransfer.files.length === 0)
+        ) {
           return;
         }
         void onFiles(e.dataTransfer.files);
@@ -192,17 +246,16 @@ export function ActionPhotoDropzone({
               isEmphasis ? "text-[#9b0ba6]" : "text-zinc-500",
             )}
           />
-          {label}{" "}
-          <span className="text-xs font-normal text-zinc-500">
-            {photoDataUrls.length}/{maxPhotos} · máx. 2 MB
-          </span>
+          {label}
         </div>
       </div>
       <button
         type="button"
         className={cn(
           "flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white py-6 text-sm transition",
-          dragOver ? "border-[#f318e3]/50 bg-zinc-50" : "hover:border-[#f318e3]/30 hover:bg-zinc-50/80",
+          dragOver
+            ? "border-[#f318e3]/50 bg-zinc-50"
+            : "hover:border-[#f318e3]/30 hover:bg-zinc-50/80",
         )}
         onClick={openFilePicker}
       >
@@ -218,67 +271,92 @@ export function ActionPhotoDropzone({
       )}
       {photoDataUrls.length > 0 && (
         <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
-          {photoDataUrls.map((url, i) => (
-            <div
-              key={url.startsWith("blob:") ? `${url}-${i}` : `${i}-${url.slice(-32)}`}
-              className="group relative aspect-square overflow-hidden rounded-lg border border-zinc-100"
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                e.dataTransfer.dropEffect = "move";
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const raw = e.dataTransfer.getData(REORDER_MIME);
-                if (raw === "") return;
-                const from = Number(raw);
-                if (Number.isNaN(from)) return;
-                reorderPhotos(from, i);
-              }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={url}
-                alt=""
-                className="h-full w-full object-cover"
-                draggable
-                onDragStart={(e) => {
-                  e.dataTransfer.setData(REORDER_MIME, String(i));
-                  e.dataTransfer.effectAllowed = "move";
-                }}
-                onDragEnd={(e) => e.dataTransfer.clearData()}
-              />
-              {highlightAntesDepoisPair && i === 0 && photoDataUrls.length >= 1 ? (
-                <span className="pointer-events-none absolute left-1 top-1 rounded bg-black/55 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">
-                  Antes
-                </span>
-              ) : null}
-              {highlightAntesDepoisPair && i === 1 ? (
-                <span className="pointer-events-none absolute left-1 top-1 rounded bg-black/55 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">
-                  Depois
-                </span>
-              ) : null}
+          {photoDataUrls.map((url, i) => {
+            const isVideo = slotIsVideo(url, blobVideoRef.current);
+            return (
               <div
-                className="absolute bottom-1 left-1 flex cursor-grab items-center rounded bg-black/45 px-0.5 text-white opacity-80 active:cursor-grabbing group-hover:opacity-100"
-                title="Arrastar para reordenar"
-              >
-                <GripVertical className="h-3.5 w-3.5" aria-hidden />
-              </div>
-              <button
-                type="button"
-                className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-md bg-black/50 text-white opacity-0 transition group-hover:opacity-100"
-                onClick={(ev) => {
-                  ev.stopPropagation();
-                  ev.preventDefault();
-                  emitUrls(photoDataUrls.filter((_, j) => j !== i));
+                key={
+                  url.startsWith("blob:")
+                    ? `${url}-${i}`
+                    : `${i}-${url.slice(-32)}`
+                }
+                className="group relative aspect-square overflow-hidden rounded-lg border border-zinc-100"
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.dataTransfer.dropEffect = "move";
                 }}
-                aria-label="Remover foto"
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const raw = e.dataTransfer.getData(REORDER_MIME);
+                  if (raw === "") return;
+                  const from = Number(raw);
+                  if (Number.isNaN(from)) return;
+                  reorderPhotos(from, i);
+                }}
               >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          ))}
+                {isVideo ? (
+                  <video
+                    src={url}
+                    className="h-full w-full object-cover"
+                    muted
+                    playsInline
+                    preload="metadata"
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData(REORDER_MIME, String(i));
+                      e.dataTransfer.effectAllowed = "move";
+                    }}
+                    onDragEnd={(e) => e.dataTransfer.clearData()}
+                  />
+                ) : (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={url}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData(REORDER_MIME, String(i));
+                      e.dataTransfer.effectAllowed = "move";
+                    }}
+                    onDragEnd={(e) => e.dataTransfer.clearData()}
+                  />
+                )}
+                {highlightAntesDepoisPair &&
+                i === 0 &&
+                photoDataUrls.length >= 1 ? (
+                  <span className="pointer-events-none absolute left-1 top-1 rounded bg-black/55 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">
+                    Antes
+                  </span>
+                ) : null}
+                {highlightAntesDepoisPair && i === 1 ? (
+                  <span className="pointer-events-none absolute left-1 top-1 rounded bg-black/55 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">
+                    Depois
+                  </span>
+                ) : null}
+                <div
+                  className="absolute bottom-1 left-1 flex cursor-grab items-center rounded bg-black/45 px-0.5 text-white opacity-80 active:cursor-grabbing group-hover:opacity-100"
+                  title="Arrastar para reordenar"
+                >
+                  <GripVertical className="h-3.5 w-3.5" aria-hidden />
+                </div>
+                <button
+                  type="button"
+                  className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-md bg-black/50 text-white opacity-0 transition group-hover:opacity-100"
+                  onClick={(ev) => {
+                    ev.stopPropagation();
+                    ev.preventDefault();
+                    emitUrls(photoDataUrls.filter((_, j) => j !== i));
+                  }}
+                  aria-label={isVideo ? "Remover vídeo" : "Remover foto"}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

@@ -2,16 +2,20 @@
 
 import { useAuth } from "@/contexts/auth-context";
 import {
-  deleteChecklistTask,
-  subscribeDailyChecklist,
-  upsertChecklistTask,
+  addDayChecklistItem,
+  deleteDayChecklistItem,
+  migrateLegacyChecklistToToday,
+  setDayChecklistItemDone,
+  subscribeDailyChecklistDay,
+  updateDayChecklistItemTitle,
 } from "@/lib/firestore/checklist";
-import { collection, getDocs } from "firebase/firestore";
-import { getFirebaseDb } from "@/lib/firebase";
-import type { DailyChecklistTask } from "@/lib/checklist-types";
+import type { DailyChecklistDayItem } from "@/lib/checklist-types";
+import { getTodayIsoInTimeZone } from "@/lib/date/week";
 import { motion } from "framer-motion";
 import { Check, ChevronUp, Circle, Pencil, Plus, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { format, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { useEffect, useRef, useState } from "react";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -31,25 +35,32 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 
-export type { DailyChecklistTask };
+export type { DailyChecklistDayItem };
 
-const defaultTasks: DailyChecklistTask[] = [
-  { id: 1, title: "Verificar pendências do dia", done: true },
-  { id: 2, title: "Atualizar relatório de vistorias", done: true },
-  { id: 3, title: "Responder solicitações urgentes", done: false },
-  { id: 4, title: "Revisar fotos enviadas", done: false },
-  { id: 5, title: "Confirmar agenda de amanhã", done: false },
-];
-
-function nextId(taskList: DailyChecklistTask[]) {
-  if (taskList.length === 0) return 1;
-  return Math.max(...taskList.map((t) => t.id)) + 1;
+function capitalizeFirst(s: string): string {
+  if (!s) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-export function DailyChecklist() {
+function formatChecklistDayHeading(iso: string): string {
+  const d = parseISO(`${iso}T12:00:00`);
+  return capitalizeFirst(
+    format(d, "EEEE, d 'de' MMMM yyyy", { locale: ptBR }),
+  );
+}
+
+type DailyChecklistProps = {
+  selectedDate: string;
+  onGoToday: () => void;
+};
+
+export function DailyChecklist({
+  selectedDate,
+  onGoToday,
+}: DailyChecklistProps) {
   const { user } = useAuth();
   const uid = user?.uid;
-  const [tasks, setTasks] = useState<DailyChecklistTask[]>([]);
+  const [items, setItems] = useState<DailyChecklistDayItem[]>([]);
   const [newTitle, setNewTitle] = useState("");
   const [showAddRow, setShowAddRow] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -58,68 +69,51 @@ export function DailyChecklist() {
   const [editDraft, setEditDraft] = useState("");
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
 
+  const selectedDateRef = useRef(selectedDate);
+  selectedDateRef.current = selectedDate;
+
+  const todayIso = getTodayIsoInTimeZone();
+
+  useEffect(() => {
+    if (!uid) return;
+    void migrateLegacyChecklistToToday(uid, todayIso);
+  }, [uid, todayIso]);
+
+  useEffect(() => {
+    setItems([]);
+  }, [selectedDate]);
+
   useEffect(() => {
     if (!uid) {
-      setTasks([]);
+      setItems([]);
       return;
     }
-    const userId = uid;
-    let cancelled = false;
-
-    async function seedDefaultsIfEmpty() {
-      const db = getFirebaseDb();
-      const colRef = collection(db, `users/${userId}/dailyChecklistItems`);
-      try {
-        const snap = await getDocs(colRef);
-        if (cancelled) return;
-        const key = `agir_checklist_seeded_${userId}`;
-        if (
-          snap.empty &&
-          typeof window !== "undefined" &&
-          !window.localStorage.getItem(key)
-        ) {
-          window.localStorage.setItem(key, "1");
-          for (const t of defaultTasks) {
-            await upsertChecklistTask(userId, t);
-          }
-        }
-      } catch {
-        /* seed best-effort — o listener abaixo ainda fornece estado */
-      }
-    }
-
-    void seedDefaultsIfEmpty();
-
-    const unsub = subscribeDailyChecklist(userId, (list) => {
-      setTasks(list);
+    const viewing = selectedDate;
+    const unsub = subscribeDailyChecklistDay(uid, viewing, (list) => {
+      if (selectedDateRef.current !== viewing) return;
+      setItems(list);
     });
-    return () => {
-      cancelled = true;
-      unsub();
-    };
-  }, [uid]);
+    return () => unsub();
+  }, [uid, selectedDate]);
 
   const toggleTask = async (id: number) => {
     if (!uid) return;
-    const task = tasks.find((t) => t.id === id);
-    if (!task) return;
-    await upsertChecklistTask(uid, { ...task, done: !task.done });
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(selectedDate)) return;
+    const row = items.find((t) => t.id === id);
+    if (!row) return;
+    await setDayChecklistItemDone(uid, selectedDate, id, !row.done);
   };
 
   const addTask = async () => {
     if (!uid) return;
     const t = newTitle.trim();
     if (!t) return;
-    await upsertChecklistTask(uid, {
-      id: nextId(tasks),
-      title: t,
-      done: false,
-    });
+    await addDayChecklistItem(uid, selectedDate, t);
     setNewTitle("");
     setShowAddRow(false);
   };
 
-  const openEdit = (task: DailyChecklistTask) => {
+  const openEdit = (task: DailyChecklistDayItem) => {
     setEditingId(task.id);
     setEditDraft(task.title);
     setEditOpen(true);
@@ -129,9 +123,9 @@ export function DailyChecklist() {
     if (!uid) return;
     const t = editDraft.trim();
     if (!t || editingId == null) return;
-    const task = tasks.find((it) => it.id === editingId);
-    if (!task) return;
-    await upsertChecklistTask(uid, { ...task, title: t });
+    const exists = items.some((it) => it.id === editingId);
+    if (!exists) return;
+    await updateDayChecklistItemTitle(uid, selectedDate, editingId, t);
     setEditOpen(false);
     setEditingId(null);
     setEditDraft("");
@@ -144,18 +138,20 @@ export function DailyChecklist() {
 
   const deleteTaskConfirm = async () => {
     if (!uid || pendingDeleteId == null) return;
-    await deleteChecklistTask(uid, pendingDeleteId);
+    await deleteDayChecklistItem(uid, selectedDate, pendingDeleteId);
     setDeleteOpen(false);
     setPendingDeleteId(null);
   };
 
-  const completedCount = tasks.filter((t) => t.done).length;
-  const total = tasks.length;
+  const completedCount = items.filter((t) => t.done).length;
+  const total = items.length;
   const progress = total === 0 ? 0 : (completedCount / total) * 100;
 
   if (!uid) {
     return null;
   }
+
+  const viewingToday = selectedDate === todayIso;
 
   return (
     <motion.div
@@ -168,8 +164,19 @@ export function DailyChecklist() {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-base font-semibold text-zinc-900">
-              Checklist Diário
+              Checklist diário
             </h3>
+            {!viewingToday ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 rounded-lg px-2.5 text-xs"
+                onClick={onGoToday}
+              >
+                Hoje
+              </Button>
+            ) : null}
             <Button
               type="button"
               variant="outline"
@@ -187,12 +194,15 @@ export function DailyChecklist() {
               {showAddRow ? "Ocultar" : "Nova tarefa"}
             </Button>
           </div>
-          <p className="mt-1 text-xs text-zinc-500">
+          <p className="mt-1 text-xs font-medium text-zinc-600">
+            {formatChecklistDayHeading(selectedDate)}
+          </p>
+          <p className="mt-0.5 text-xs text-zinc-500">
             {total === 0 ? (
-              "Nenhuma tarefa — adicione abaixo"
+              "Nenhuma tarefa neste dia — adicione abaixo"
             ) : (
               <>
-                {completedCount} de {total} concluídos
+                {completedCount} de {total} concluídos neste dia
               </>
             )}
           </p>
@@ -241,7 +251,7 @@ export function DailyChecklist() {
       </div>
 
       <div className="space-y-1">
-        {tasks.map((task) => (
+        {items.map((task) => (
           <div
             key={task.id}
             className="group flex items-center gap-2 rounded-xl p-2 transition-colors hover:bg-zinc-50/80"
@@ -304,7 +314,7 @@ export function DailyChecklist() {
         ))}
       </div>
 
-      {!showAddRow && tasks.length === 0 && (
+      {!showAddRow && items.length === 0 && (
         <p className="mt-2 text-center text-xs text-zinc-400">
           Use{" "}
           <button
@@ -314,7 +324,7 @@ export function DailyChecklist() {
           >
             Nova tarefa
           </button>{" "}
-          para começar.
+          para este dia.
         </p>
       )}
 
@@ -370,7 +380,7 @@ export function DailyChecklist() {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir tarefa?</AlertDialogTitle>
             <AlertDialogDescription>
-              Essa ação não pode ser desfeita. Você poderá criar novamente pelo
+              Remove apenas esta tarefa neste dia. Você poderá criar novamente pelo
               botão Nova tarefa.
             </AlertDialogDescription>
           </AlertDialogHeader>

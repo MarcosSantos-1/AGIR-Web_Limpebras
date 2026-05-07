@@ -1,6 +1,7 @@
 "use client";
 
 import { AppShell } from "@/components/layout/app-shell";
+import { EvidenceMediaThumb } from "@/components/evidence/evidence-media-thumb";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import {
@@ -499,9 +500,8 @@ function HistoricoPageBody() {
                                     );
                                   }}
                                 >
-                                  <img
-                                    src={url}
-                                    alt=""
+                                  <EvidenceMediaThumb
+                                    url={url}
                                     className="h-full w-full object-cover"
                                   />
                                 </button>

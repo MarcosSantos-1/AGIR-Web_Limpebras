@@ -1,5 +1,6 @@
 "use client";
 
+import { mapFirebaseAuthError } from "@/lib/auth/firebase-auth-errors";
 import { useAuth } from "@/contexts/auth-context";
 import { useUserProfile } from "@/contexts/user-profile-context";
 import { Button } from "@/components/ui/button";
@@ -96,16 +97,12 @@ export function EquipaAcessoSection() {
       await sendSignInLink(inviteEmail.trim());
       await logEmailInvite(inviteEmail.trim(), user?.uid ?? "");
       setInviteMsg(
-        "Se o domínio estiver autorizado no Firebase, o convidado recebe o link. Peça para abrir o e-mail neste dispositivo ou no mesmo navegador em que pediu o convite.",
+        "O convidado receberá o link por e-mail. Depois de abrir o link no navegador, ele completa nome, telefone e cargo e define uma senha para poder entrar de novo na página de login.",
       );
       setInviteEmail("");
       void refreshDirectory();
     } catch (err) {
-      setInviteMsg(
-        err instanceof Error
-          ? err.message
-          : "Não foi possível enviar o convite.",
-      );
+      setInviteMsg(mapFirebaseAuthError(err));
     } finally {
       setBusyInvite(false);
     }

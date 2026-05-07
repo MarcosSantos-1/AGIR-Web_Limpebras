@@ -21,7 +21,7 @@ import { EquipaAcessoSection } from "@/components/settings/equipa-acesso-section
 
 /** Suporte pelo WhatsApp Business (texto pré-preenchido). */
 const WHATSAPP_SUPPORT_URL =
-  "https://api.whatsapp.com/send?phone=5511964821876&text=Ol%C3%A1,%20gostaria%20de%20solicitar%20uma%20nova%20senha%20para%20o%20meu%20usu%C3%A1rio.";
+  "https://api.whatsapp.com/send?phone=5511964821876&text=Olá, estou precisando de ajuda com o aplicativo AGIR.";
 
 const settingsSections = [
   {
@@ -274,7 +274,7 @@ export default function ConfiguracoesPage() {
                   Ajuda dentro do app — em breve.
                 </span>{" "}
                 Uma FAQ, tutoriais e links para documentação entram quando
-                organizarmos o conteúdo; não é prioridade agora.
+                organizarmos o conteúdo.
               </p>
             </div>
           )}

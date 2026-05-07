@@ -39,7 +39,7 @@ export function publicUrlForStorageKey(publicBaseUrl: string, key: string): stri
   return `${base}/${path}`;
 }
 
-const MAX_BYTES = 35 * 1024 * 1024;
+const MAX_BYTES = 80 * 1024 * 1024;
 
 /** MIME permitidos para upload (imagens e vídeo). */
 export function isAllowedObjectMime(mime: string): boolean {

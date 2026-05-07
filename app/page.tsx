@@ -7,10 +7,15 @@ import { QuickActions } from "@/components/dashboard/quick-actions";
 import { DailyChecklist } from "@/components/dashboard/daily-checklist";
 import { ImportantVisits } from "@/components/dashboard/important-visits";
 import { SocialContentSchedule } from "@/components/dashboard/social-content-schedule";
-import { formatTodayLongPtBr } from "@/lib/date/week";
+import { formatTodayLongPtBr, getTodayIsoInTimeZone } from "@/lib/date/week";
+import { useState } from "react";
 // import { StatsCards } from "@/components/dashboard/stats-cards";
 
 export default function DashboardPage() {
+  const [checklistDate, setChecklistDate] = useState(() =>
+    getTodayIsoInTimeZone(),
+  );
+
   return (
     <AppShell
       title="Home"
@@ -35,8 +40,14 @@ export default function DashboardPage() {
 
         {/* Right Column */}
         <div className="col-span-4 space-y-6">
-          <QuickCalendar />
-          <DailyChecklist />
+          <QuickCalendar
+            selectedDate={checklistDate}
+            onSelectDate={setChecklistDate}
+          />
+          <DailyChecklist
+            selectedDate={checklistDate}
+            onGoToday={() => setChecklistDate(getTodayIsoInTimeZone())}
+          />
         </div>
       </div>
     </AppShell>

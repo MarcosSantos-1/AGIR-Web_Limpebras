@@ -1,8 +1,5 @@
 import { getFirebaseAuth } from "@/lib/firebase";
-import {
-  resolvePhotoUrlsForPersist,
-  revokeBlobPhotoUrls,
-} from "@/lib/storage/photo-url-helpers";
+import { revokeBlobPhotoUrls } from "@/lib/storage/photo-url-helpers";
 
 /**
  * Converte data URL em Blob (browser).
@@ -22,6 +19,23 @@ export function dataUrlToBlob(dataUrl: string): Blob {
   return new Blob([bytes], { type: mime });
 }
 
+/** Extensão de ficheiro para upload (MIME → ext). */
+export function extensionForMime(mime: string): string {
+  const m = mime.toLowerCase().split(";")[0]?.trim() ?? "";
+  if (m === "image/jpeg") return "jpg";
+  if (m.startsWith("image/")) {
+    const sub = m.slice("image/".length).replace(/[^a-z0-9]/g, "");
+    if (sub === "jpeg") return "jpg";
+    return sub || "img";
+  }
+  if (m === "video/quicktime") return "mov";
+  if (m.startsWith("video/")) {
+    const sub = m.slice("video/".length).replace(/[^a-z0-9]/g, "");
+    return sub || "mp4";
+  }
+  return "bin";
+}
+
 function extensionForDataUrl(dataUrl: string): string {
   const m = /^data:image\/(\w+);/i.exec(dataUrl);
   if (m?.[1]) {
@@ -33,7 +47,7 @@ function extensionForDataUrl(dataUrl: string): string {
   return "bin";
 }
 
-async function uploadBlobToObjectKey(
+export async function uploadBlobToObjectKey(
   objectKey: string,
   blob: Blob,
   filenameForForm: string,
@@ -85,24 +99,34 @@ export async function uploadFileToPath(path: string, file: File): Promise<string
 }
 
 /**
- * Mantém URLs já remotas; faz upload de cada data URL sob pathPrefix/uuid.ext
+ * Mantém URLs remotas (http/https); envia `blob:` como Blob e `data:` via upload existente.
  */
 export async function replaceDataUrlsWithStorage(
   urls: string[] | undefined,
   pathPrefix: string,
 ): Promise<string[] | undefined> {
   if (!urls?.length) return urls;
-  const normalized = await resolvePhotoUrlsForPersist(urls);
-  revokeBlobPhotoUrls(urls);
   const out: string[] = [];
-  for (const u of normalized) {
-    if (u.startsWith("data:")) {
-      const ext = extensionForDataUrl(u);
-      const path = `${pathPrefix}/${crypto.randomUUID()}.${ext}`;
-      out.push(await uploadDataUrlToPath(path, u));
-    } else {
-      out.push(u);
+  try {
+    for (const u of urls) {
+      if (u.startsWith("blob:")) {
+        const res = await fetch(u);
+        const blob = await res.blob();
+        const ext = extensionForMime(blob.type || "application/octet-stream");
+        const path = `${pathPrefix}/${crypto.randomUUID()}.${ext}`;
+        out.push(
+          await uploadBlobToObjectKey(path, blob, `upload.${ext}`),
+        );
+      } else if (u.startsWith("data:")) {
+        const ext = extensionForDataUrl(u);
+        const path = `${pathPrefix}/${crypto.randomUUID()}.${ext}`;
+        out.push(await uploadDataUrlToPath(path, u));
+      } else {
+        out.push(u);
+      }
     }
+  } finally {
+    revokeBlobPhotoUrls(urls);
   }
   return out;
 }
