@@ -52,6 +52,7 @@ export async function uploadBlobToObjectKey(
   blob: Blob,
   filenameForForm: string,
 ): Promise<string> {
+  void filenameForForm;
   const auth = getFirebaseAuth();
   const user = auth.currentUser;
   if (!user) {
@@ -59,25 +60,50 @@ export async function uploadBlobToObjectKey(
   }
 
   const token = await user.getIdToken(true);
-  const form = new FormData();
-  form.append("key", objectKey);
-  form.append("file", blob, filenameForForm);
+  const mime =
+    (blob.type || "application/octet-stream").trim() || "application/octet-stream";
+  const contentLength = blob.size;
 
-  const res = await fetch("/api/storage/upload", {
+  const presignRes = await fetch("/api/storage/presign", {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-    body: form,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      key: objectKey,
+      contentType: mime,
+      contentLength,
+    }),
   });
 
-  const data = (await res.json().catch(() => ({}))) as { error?: string; url?: string };
+  const presignData = (await presignRes.json().catch(() => ({}))) as {
+    error?: string;
+    putUrl?: string;
+    publicUrl?: string;
+  };
 
-  if (!res.ok) {
-    throw new Error(data.error || `Upload falhou (${res.status}).`);
+  if (!presignRes.ok) {
+    throw new Error(presignData.error || `Upload falhou (${presignRes.status}).`);
   }
-  if (typeof data.url !== "string" || !data.url) {
+  if (
+    typeof presignData.putUrl !== "string" ||
+    typeof presignData.publicUrl !== "string"
+  ) {
     throw new Error("Resposta inválida do servidor.");
   }
-  return data.url;
+
+  const putRes = await fetch(presignData.putUrl, {
+    method: "PUT",
+    body: blob,
+    headers: { "Content-Type": mime },
+  });
+
+  if (!putRes.ok) {
+    throw new Error(`Upload falhou (${putRes.status}).`);
+  }
+
+  return presignData.publicUrl;
 }
 
 export async function uploadDataUrlToPath(

@@ -28,6 +28,7 @@ import {
   FileEdit,
   CalendarClock,
   CheckCircle2,
+  Trash2,
 } from "lucide-react";
 import {
   SocialMediaDropzone,
@@ -50,8 +51,10 @@ export type ConteudoStatusFase = SocialContentStatus;
 export type PersistSocialPostFn = (post: SocialPost) => void;
 
 export function registerSocialConteudoPersist(
-  _: PersistSocialPostFn | null,
-) {}
+  fn: PersistSocialPostFn | null,
+) {
+  void fn;
+}
 
 let allocateNextSocialPostIdFn: () => number = () =>
   -Math.floor(Date.now() % 1e9);
@@ -109,6 +112,14 @@ const STATUS_OPTIONS: {
 ];
 
 const TIPOS: SocialContentTipo[] = ["Post", "Reel", "Story"];
+
+const MAX_SOCIAL_MEDIA_TOTAL = 18;
+
+function isExistingSocialPhotoVideo(photo: SocialPost["fotos"][number]): boolean {
+  if (photo.type === "video") return true;
+  const u = photo.url?.toLowerCase() ?? "";
+  return /\.(mp4|webm|mov|m4v)(\?|$)/i.test(u);
+}
 
 function ModalHeroHeader({ mode }: { mode: "create" | "edit" }) {
   const edit = mode === "edit";
@@ -370,6 +381,9 @@ function ConteudoFormDialog({
   const [horaPublicacao, setHoraPublicacao] = React.useState("");
   const [notas, setNotas] = React.useState("");
   const [media, setMedia] = React.useState<SocialConteudoMediaItem[]>([]);
+  const [removedExistingPhotoIds, setRemovedExistingPhotoIds] = React.useState<
+    number[]
+  >([]);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
 
@@ -383,6 +397,7 @@ function ConteudoFormDialog({
     });
 
     if (editingPost) {
+      setRemovedExistingPhotoIds([]);
       const h = hydrateFormFromPost(editingPost);
       setFase(h.fase);
       setTema(h.tema);
@@ -400,6 +415,7 @@ function ConteudoFormDialog({
       return;
     }
 
+    setRemovedExistingPhotoIds([]);
     setFase("ideia");
     setTema("");
     setTipo("Post");
@@ -451,6 +467,9 @@ function ConteudoFormDialog({
           createdByUid: editingPost?.createdByUid ?? user.uid,
         };
       }
+      const removed = new Set(removedExistingPhotoIds);
+      const fotosAfterRemovals = merged.fotos.filter((f) => !removed.has(f.id));
+      merged = { ...merged, fotos: fotosAfterRemovals };
       if (media.length > 0) {
         const fotos = await appendUploadedMediaToFotos(
           merged.id,
@@ -476,6 +495,16 @@ function ConteudoFormDialog({
   };
 
   const PhaseIcon = FASE_ICONS[fase];
+
+  const existingPhotosVisible =
+    mode === "edit"
+      ? (editingPost?.fotos ?? []).filter(
+          (f) => !removedExistingPhotoIds.includes(f.id),
+        )
+      : [];
+
+  const keptExistingCount = existingPhotosVisible.length;
+  const dropzoneMaxNew = Math.max(0, MAX_SOCIAL_MEDIA_TOTAL - keptExistingCount);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -712,10 +741,71 @@ function ConteudoFormDialog({
                 />
               </div>
 
+              {existingPhotosVisible.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Mídias já enviadas</Label>
+                  <p className="text-xs text-zinc-500">
+                    Remova as que não devem permanecer ou adicione novas abaixo.
+                  </p>
+                  <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                    {existingPhotosVisible.map((photo) => {
+                      const isVideo = isExistingSocialPhotoVideo(photo);
+                      return (
+                        <li
+                          key={photo.id}
+                          className={cn(
+                            "group relative aspect-square overflow-hidden rounded-lg border border-zinc-100 bg-zinc-100",
+                            !photo.url && photo.color,
+                          )}
+                        >
+                          {photo.url && !isVideo && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={photo.url}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                          )}
+                          {photo.url && isVideo && (
+                            <video
+                              src={photo.url}
+                              className="h-full w-full object-cover"
+                              muted
+                              playsInline
+                              preload="metadata"
+                            />
+                          )}
+                          {!photo.url && (
+                            <div className="flex h-full w-full items-center justify-center text-[10px] text-zinc-500">
+                              Sem pré-visualização
+                            </div>
+                          )}
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="icon"
+                            className="absolute right-1 top-1 z-10 h-7 w-7 rounded-md border-0 bg-black/55 text-white opacity-0 shadow-md transition hover:bg-red-600 hover:text-white group-hover:opacity-100"
+                            onClick={() =>
+                              setRemovedExistingPhotoIds((prev) =>
+                                prev.includes(photo.id) ? prev : [...prev, photo.id],
+                              )
+                            }
+                            aria-label="Remover mídia guardada"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+
               <SocialMediaDropzone
                 items={media}
                 onChange={setMedia}
-                label="Mídias"
+                maxItems={dropzoneMaxNew}
+                label="Adicionar mídias"
                 hint="Clique ou arraste imagens e vídeos para esta área"
               />
             </div>

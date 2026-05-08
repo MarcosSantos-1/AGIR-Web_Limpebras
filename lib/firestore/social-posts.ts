@@ -29,7 +29,11 @@ export function subscribeSocialPosts(
     col,
     (snap) => {
       const posts = snap.docs
-        .map((d) => d.data() as SocialPost)
+        .map((d) => {
+          const raw = d.data() as Partial<SocialPost>;
+          const fotos = Array.isArray(raw.fotos) ? raw.fotos : [];
+          return { ...raw, fotos } as SocialPost;
+        })
         .sort((a, b) => Number(b.id) - Number(a.id));
       onNext(posts);
     },

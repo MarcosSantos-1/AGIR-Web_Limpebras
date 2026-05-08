@@ -17,6 +17,7 @@ const agendaTypes: AgendaEventType[] = [
   "fiscalizacao",
   "vistoria",
   "panfletagem",
+  "evento",
 ];
 
 function coerceHistoryTypeToAgenda(t: string): AgendaEventType {

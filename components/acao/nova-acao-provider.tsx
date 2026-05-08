@@ -146,10 +146,8 @@ const TIPOS_SERVICO = [
   { value: "visita-tecnica", label: "Visita Técnica" },
   { value: "reuniao", label: "Reunião" },
   { value: "acao-ambiental", label: "Ação Ambiental" },
-  { value: "fiscalizacao", label: "Fiscalização" },
-  { value: "vistoria", label: "Vistoria" },
+  { value: "evento", label: "Evento" },
   { value: "panfletagem", label: "Panfletagem somente" },
-  { value: "coleta-seletiva", label: "Coleta seletiva / orientação" },
   { value: "capacitacao", label: "Capacitação / palestra" },
   { value: "outro", label: "Outro" },
 ] as const;
@@ -159,10 +157,8 @@ function tipoServicoToAgendaType(v: string): AgendaEventType {
     "visita-tecnica": "visita-tecnica",
     reuniao: "reuniao",
     "acao-ambiental": "acao-ambiental",
-    fiscalizacao: "fiscalizacao",
-    vistoria: "vistoria",
+    evento: "evento",
     panfletagem: "panfletagem",
-    "coleta-seletiva": "acao-ambiental",
     capacitacao: "reuniao",
     outro: "acao-ambiental",
   };
@@ -171,6 +167,7 @@ function tipoServicoToAgendaType(v: string): AgendaEventType {
 
 /** Primeiro tipo de UI que compacta neste AgendaEvent.type (ambiguidade aceitável ao reabrir). */
 function tipoAgendaPreferenciaSelect(tipo: AgendaEventType): string {
+  if (tipo === "fiscalizacao" || tipo === "vistoria") return "evento";
   const hit = [...TIPOS_SERVICO].find(
     (t) => tipoServicoToAgendaType(t.value) === tipo,
   );

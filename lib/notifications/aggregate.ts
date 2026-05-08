@@ -43,6 +43,7 @@ function agendaTypeShortLabel(type: AgendaEventType): string {
     fiscalizacao: "Fiscalização",
     vistoria: "Vistoria",
     panfletagem: "Panfletagem",
+    evento: "Evento",
   };
   return map[type] ?? type;
 }

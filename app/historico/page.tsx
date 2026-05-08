@@ -73,6 +73,7 @@ const typeConfig = {
   reuniao: { label: "Reunião" },
   fiscalizacao: { label: "Fiscalização" },
   "acao-ambiental": { label: "Ação Ambiental" },
+  evento: { label: "Evento" },
   limpeza: { label: "Limpeza" },
   panfletagem: { label: "Panfletagem" },
 } as const;

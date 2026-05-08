@@ -9,7 +9,13 @@ import {
 import { useNovaAcao } from "@/components/acao/nova-acao-provider";
 import { PostLinksDisplay } from "@/components/acao-registro/post-links";
 import { EvidenceMediaThumb } from "@/components/evidence/evidence-media-thumb";
-import { agendaEventUrl, type AgendaEvent, type AgendaEventStatus } from "@/data/agenda-events";
+import {
+  agendaEventUrl,
+  type AgendaEvent,
+  type AgendaEventStatus,
+  type AgendaEventType,
+  typeToShortLabel,
+} from "@/data/agenda-events";
 import { formatDateBr } from "@/lib/utils";
 import { agendaClockLabel } from "@/lib/agenda/time-display";
 import { motion } from "framer-motion";
@@ -49,8 +55,7 @@ const eventTypes = [
   { id: "visita-institucional", label: "Visita Institucional" },
   { id: "acao-ambiental", label: "Ação Ambiental" },
   { id: "reuniao", label: "Reunião" },
-  { id: "fiscalizacao", label: "Fiscalização" },
-  { id: "vistoria", label: "Vistoria" },
+  { id: "evento", label: "Evento" },
   { id: "panfletagem", label: "Panfletagem" },
 ];
 
@@ -228,7 +233,9 @@ function AgendaPageContent() {
   );
 
   const getTypeConfig = (type: string) => {
-    return eventTypes.find((t) => t.id === type) || eventTypes[0];
+    const hit = eventTypes.find((t) => t.id === type);
+    if (hit) return hit;
+    return { id: type, label: typeToShortLabel(type as AgendaEventType) };
   };
 
   const getStatusConfig = (status: string) => {

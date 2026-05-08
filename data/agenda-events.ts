@@ -25,7 +25,8 @@ export type AgendaEventType =
   | "reuniao"
   | "fiscalizacao"
   | "vistoria"
-  | "panfletagem";
+  | "panfletagem"
+  | "evento";
 
 export type AgendaEventStatus = "pendente" | "concluido" | "reagendado" | "cancelado";
 
@@ -236,7 +237,7 @@ export function getHomePendingActionVisits(
     }));
 }
 
-function typeToShortLabel(type: AgendaEventType): string {
+export function typeToShortLabel(type: AgendaEventType): string {
   const map: Record<AgendaEventType, string> = {
     revitalizacao: "Revitalização",
     "visita-tecnica": "Visita Técnica",
@@ -246,6 +247,7 @@ function typeToShortLabel(type: AgendaEventType): string {
     fiscalizacao: "Fiscalização",
     vistoria: "Vistoria",
     panfletagem: "Panfletagem",
+    evento: "Evento",
   };
   return map[type] ?? type;
 }
