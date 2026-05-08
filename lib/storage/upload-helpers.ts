@@ -47,12 +47,53 @@ function extensionForDataUrl(dataUrl: string): string {
   return "bin";
 }
 
-export async function uploadBlobToObjectKey(
+/**
+ * Até este tamanho o envio vai pela API Next (`/api/storage/upload`, mesma origem).
+ * Acima disso usa-se URL assinada + PUT direto ao R2 (evita 413 no host), o que
+ * exige CORS configurado no bucket para o domínio da app.
+ */
+const SERVER_PROXY_UPLOAD_MAX_BYTES = 4 * 1024 * 1024;
+
+async function uploadBlobViaNextFormData(
   objectKey: string,
   blob: Blob,
   filenameForForm: string,
 ): Promise<string> {
-  void filenameForForm;
+  const auth = getFirebaseAuth();
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("Inicie sessão para enviar ficheiros.");
+  }
+
+  const token = await user.getIdToken(true);
+  const form = new FormData();
+  form.append("key", objectKey);
+  form.append("file", blob, filenameForForm);
+
+  const res = await fetch("/api/storage/upload", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+
+  const data = (await res.json().catch(() => ({}))) as {
+    error?: string;
+    url?: string;
+  };
+
+  if (!res.ok) {
+    throw new Error(data.error || `Upload falhou (${res.status}).`);
+  }
+  if (typeof data.url !== "string" || !data.url) {
+    throw new Error("Resposta inválida do servidor.");
+  }
+  return data.url;
+}
+
+async function uploadBlobViaPresignedPut(
+  objectKey: string,
+  blob: Blob,
+): Promise<string> {
   const auth = getFirebaseAuth();
   const user = auth.currentUser;
   if (!user) {
@@ -93,17 +134,50 @@ export async function uploadBlobToObjectKey(
     throw new Error("Resposta inválida do servidor.");
   }
 
-  const putRes = await fetch(presignData.putUrl, {
-    method: "PUT",
-    body: blob,
-    headers: { "Content-Type": mime },
-  });
+  let putRes: Response;
+  try {
+    putRes = await fetch(presignData.putUrl, {
+      method: "PUT",
+      body: blob,
+      headers: { "Content-Type": mime },
+    });
+  } catch (err) {
+    const isNetwork =
+      err instanceof TypeError ||
+      (err instanceof Error && err.message.includes("fetch"));
+    if (isNetwork) {
+      throw new Error(
+        "Envio direto ao armazenamento falhou (rede ou CORS). " +
+          "No Cloudflare R2, defina regras CORS no bucket: permitir o domínio desta app, método PUT e cabeçalho Content-Type.",
+      );
+    }
+    throw err;
+  }
 
   if (!putRes.ok) {
     throw new Error(`Upload falhou (${putRes.status}).`);
   }
 
   return presignData.publicUrl;
+}
+
+export async function uploadBlobToObjectKey(
+  objectKey: string,
+  blob: Blob,
+  filenameForForm: string,
+): Promise<string> {
+  if (blob.size <= SERVER_PROXY_UPLOAD_MAX_BYTES) {
+    try {
+      return await uploadBlobViaNextFormData(objectKey, blob, filenameForForm);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "";
+      if (/\(413\)|\b413\b/.test(msg)) {
+        return uploadBlobViaPresignedPut(objectKey, blob);
+      }
+      throw e;
+    }
+  }
+  return uploadBlobViaPresignedPut(objectKey, blob);
 }
 
 export async function uploadDataUrlToPath(
