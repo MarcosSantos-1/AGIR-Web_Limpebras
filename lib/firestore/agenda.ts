@@ -26,6 +26,15 @@ function docToEvent(
   return { ...data, id } as AgendaEvent;
 }
 
+/** Lista toda a coleção (uma única query — exportações / relatórios). */
+export async function fetchAllAgendaEvents(): Promise<AgendaEvent[]> {
+  const db = getFirebaseDb();
+  const snapshot = await getDocs(collection(db, AGENDA_COLLECTION));
+  return snapshot.docs
+    .map((d) => docToEvent(d.id, d.data() as Record<string, unknown>))
+    .sort(sortAgendaDocs);
+}
+
 export function subscribeAgendaEvents(
   onNext: (events: AgendaEvent[]) => void,
   onError?: (e: Error) => void,

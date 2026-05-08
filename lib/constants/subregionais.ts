@@ -48,5 +48,13 @@ const SUBPREFEITURA_TO_ID: Record<string, SubregionalId> = {
 export function subregionalIdFromSubprefeitura(raw: string): SubregionalId | undefined {
   const t = raw.trim();
   if (!t) return undefined;
-  return SUBPREFEITURA_TO_ID[t];
+  const fromLegacy = SUBPREFEITURA_TO_ID[t];
+  if (fromLegacy) return fromLegacy;
+  const byLabel = SUBREGIONAIS.find((s) => s.label === t);
+  if (byLabel) return byLabel.id;
+  const byAbbrev = SUBREGIONAIS.find(
+    (s) => s.abbrev.toUpperCase() === t.toUpperCase(),
+  );
+  if (byAbbrev) return byAbbrev.id;
+  return undefined;
 }

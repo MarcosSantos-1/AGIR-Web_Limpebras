@@ -14,10 +14,20 @@ import {
   Sun,
   MessageCircle,
   Users,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProfileForm } from "@/components/settings/profile-form";
 import { EquipaAcessoSection } from "@/components/settings/equipa-acesso-section";
+import { useAuth } from "@/contexts/auth-context";
+import { toast } from "sonner";
+import { fetchAllAgendaEvents } from "@/lib/firestore/agenda";
+import { fetchAllHistoryRecords } from "@/lib/firestore/history";
+import {
+  buildAgendaHistoryExcelBlob,
+  defaultAgendaHistoricoExcelFilename,
+  triggerBlobDownload,
+} from "@/lib/export/agenda-history-excel";
 
 /** Suporte pelo WhatsApp Business (texto pré-preenchido). */
 const WHATSAPP_SUPPORT_URL =
@@ -58,6 +68,32 @@ const settingsSections = [
 
 export default function ConfiguracoesPage() {
   const [activeSection, setActiveSection] = useState("perfil");
+  const { user } = useAuth();
+  const [exportingExcel, setExportingExcel] = useState(false);
+
+  const handleExportExcel = async () => {
+    if (!user) {
+      toast.error("Inicie sessão para exportar.");
+      return;
+    }
+    setExportingExcel(true);
+    try {
+      const [agenda, historico] = await Promise.all([
+        fetchAllAgendaEvents(),
+        fetchAllHistoryRecords(),
+      ]);
+      const blob = await buildAgendaHistoryExcelBlob({ agenda, historico });
+      triggerBlobDownload(blob, defaultAgendaHistoricoExcelFilename());
+      toast.success(
+        `Ficheiro gerado (${agenda.length} agenda, ${historico.length} histórico).`,
+      );
+    } catch (e) {
+      console.error(e);
+      toast.error("Não foi possível gerar o Excel. Tente de novo.");
+    } finally {
+      setExportingExcel(false);
+    }
+  };
 
   return (
     <AppShell title="Configurações" subtitle="Personalize sua experiência">
@@ -226,23 +262,38 @@ export default function ConfiguracoesPage() {
                     Exportar dados
                   </h3>
                   <p className="mt-2 max-w-lg text-sm text-zinc-600">
-                    Ao conectar o aplicativo ao Firestore, será possível gerar um
-                    arquivo Excel com os registros que estiverem salvos para sua
-                    conta ou equipe — por exemplo rotas, agendas e conteúdos de
-                    redes sociais — para auditoria ou análises externas.
+                    Gere um ficheiro Excel com os compromissos da coleção{" "}
+                    <code className="rounded bg-zinc-100 px-1 text-xs">
+                      agendaEvents
+                    </code>{" "}
+                    e os registos de{" "}
+                    <code className="rounded bg-zinc-100 px-1 text-xs">
+                      historyRecords
+                    </code>
+                    , incluindo colunas com as URLs das fotos (agenda: conclusão;
+                    histórico: evidências).
                   </p>
                   <p className="mt-3 text-sm text-zinc-500">
-                    Por enquanto isso aparece apenas como roadmap: o download será
-                    habilitado depois da persistência no Firebase estar pronta.
+                    É necessário estar autenticado com permissão de leitura no
+                    Firestore. A exportação pode demorar um pouco se houver muitos
+                    documentos.
                   </p>
                 </div>
                 <Button
                   type="button"
                   variant="outline"
-                  className="shrink-0 rounded-xl opacity-75"
-                  disabled
+                  className="shrink-0 rounded-xl"
+                  disabled={!user || exportingExcel}
+                  onClick={() => void handleExportExcel()}
                 >
-                  Baixar Excel
+                  {exportingExcel ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />A
+                      gerar…
+                    </>
+                  ) : (
+                    "Baixar Excel"
+                  )}
                 </Button>
               </div>
             </div>

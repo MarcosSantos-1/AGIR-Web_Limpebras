@@ -8,11 +8,13 @@ import {
   Marker,
   Polygon,
   useMap,
+  useMapEvents,
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { defaultMapView } from "@/lib/constants/map";
 import type { MapPolygon } from "@/lib/map-features";
+import { cn } from "@/lib/utils";
 
 export type OperationalMapPoint = {
   id: string;
@@ -91,6 +93,9 @@ type OperationalMapProps = {
   flyTo?: OperationalMapFlyTo | null;
   /** Marcador do último endereço pesquisado (geocoding). */
   searchResultMarker?: { lat: number; lng: number } | null;
+  /** Modo de clique no mapa para escolher coordenadas (ex.: novo ponto). */
+  placementMode?: boolean;
+  onPlacementClick?: (lat: number, lng: number) => void;
 };
 
 /** Pin de pesquisa (destaque em roxo — não confundir com pontos operacionais). */
@@ -108,6 +113,22 @@ function makeSearchGeocodeIcon() {
     iconSize: [w, h],
     iconAnchor: [w / 2, h],
   });
+}
+
+function MapPlacementClickHandler({
+  active,
+  onPick,
+}: {
+  active: boolean;
+  onPick: (lat: number, lng: number) => void;
+}) {
+  useMapEvents({
+    click(e) {
+      if (!active) return;
+      onPick(e.latlng.lat, e.latlng.lng);
+    },
+  });
+  return null;
 }
 
 function FitBoundsToData({
@@ -160,18 +181,27 @@ export function OperationalMap({
   baseLayer = "carto",
   flyTo = null,
   searchResultMarker = null,
+  placementMode = false,
+  onPlacementClick,
 }: OperationalMapProps) {
   return (
     <MapContainer
       center={defaultMapView.center}
       zoom={defaultMapView.zoom}
-      className="z-0 h-full min-h-[520px] w-full"
+      className={cn(
+        "z-0 h-full min-h-[520px] w-full",
+        placementMode && "cursor-crosshair",
+      )}
       style={{ minHeight: 520 }}
       scrollWheelZoom
       zoomControl={false}
     >
       <FitBoundsToData points={points} polygons={polygons} />
       <FlyToSearchResult target={flyTo} />
+      <MapPlacementClickHandler
+        active={placementMode && !!onPlacementClick}
+        onPick={(lat, lng) => onPlacementClick?.(lat, lng)}
+      />
       {baseLayer === "carto" ? (
         <TileLayer
           attribution={cartoAttribution}
@@ -210,6 +240,7 @@ export function OperationalMap({
               weight: isSel ? 3 : 2,
               fillColor: poly.fillColor,
               fillOpacity: isSel ? 0.4 : 0.22,
+              interactive: !placementMode,
             }}
             eventHandlers={{
               click: () => onSelectId(poly.id),
@@ -232,6 +263,7 @@ export function OperationalMap({
             click: () => onSelectId(p.id),
           }}
           zIndexOffset={selectedId === p.id ? 1000 : 0}
+          interactive={!placementMode}
         />
       ))}
 

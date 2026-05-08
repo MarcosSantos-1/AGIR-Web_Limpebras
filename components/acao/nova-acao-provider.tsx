@@ -54,7 +54,7 @@ import { ActionPhotoDropzone } from "@/components/acao-registro/action-photo-dro
 import { EquipeIntegrantesField } from "@/components/acao/equipe-integrantes-field";
 import { LinksPostagemEditor } from "@/components/acao-registro/post-links";
 import { integrantesFromAgendaEvent } from "@/lib/agenda/equipe-parsing";
-import { MAPA_PONTOS_VICIO_FORM } from "@/lib/map-features";
+import { useCustomPontosViciados } from "@/contexts/custom-pontos-viciados-context";
 import { useAuth } from "@/contexts/auth-context";
 import { useUserProfile } from "@/contexts/user-profile-context";
 import type { HistoryRecordDoc } from "@/data/history-records";
@@ -1050,6 +1050,7 @@ function RevitalizacaoDialog({
   initialEvent: AgendaEvent | null;
   preferFinalizado?: boolean;
 }) {
+  const { pontosVicioFormOptions } = useCustomPontosViciados();
   const [situacaoRev, setSituacaoRev] = React.useState<
     "agendar" | "finalizado"
   >("agendar");
@@ -1138,7 +1139,7 @@ function RevitalizacaoDialog({
   }, [pontoViciadoId]);
 
   const pontoSelecionado = pontoViciadoId
-    ? MAPA_PONTOS_VICIO_FORM.find((f) => f.id === pontoViciadoId)
+    ? pontosVicioFormOptions.find((f) => f.id === pontoViciadoId)
     : undefined;
   const enderecoPonto = pontoSelecionado?.address?.trim() ?? "";
   const subprefeitura = pontoSelecionado?.subprefeitura?.trim() ?? "";
@@ -1146,12 +1147,12 @@ function RevitalizacaoDialog({
   const filteredPv = React.useMemo(() => {
     const q = pvSearch.trim().toLowerCase();
     if (!q) return [];
-    return MAPA_PONTOS_VICIO_FORM.filter(
+    return pontosVicioFormOptions.filter(
       (f) =>
         f.id.toLowerCase().includes(q) ||
         (f.address ?? "").toLowerCase().includes(q),
     );
-  }, [pvSearch]);
+  }, [pvSearch, pontosVicioFormOptions]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

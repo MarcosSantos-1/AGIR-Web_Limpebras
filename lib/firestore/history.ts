@@ -2,6 +2,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDocs,
   onSnapshot,
   query,
   setDoc,
@@ -29,6 +30,15 @@ function sortHistoryDesc(a: HistoryRecordDoc, b: HistoryRecordDoc): number {
 /**
  * Lista toda a coleção (uso legado; evitar onde possível — prefira intervalo mensal).
  */
+/** Lista toda a coleção (uma única query — exportações). */
+export async function fetchAllHistoryRecords(): Promise<HistoryRecordDoc[]> {
+  const db = getFirebaseDb();
+  const snap = await getDocs(collection(db, HISTORY_COLLECTION));
+  return snap.docs
+    .map((d) => docToHistory(d.id, d.data() as Record<string, unknown>))
+    .sort(sortHistoryDesc);
+}
+
 export function subscribeHistoryRecords(
   onNext: (records: HistoryRecordDoc[]) => void,
   onError?: (e: Error) => void,

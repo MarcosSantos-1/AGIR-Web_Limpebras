@@ -24,6 +24,12 @@ type Props = {
   className?: string;
   /** Asterisco / texto após o rótulo (ex. obrigatório). */
   labelSuffix?: ReactNode;
+  /** Excluir opções (ex.: sem &quot;Interno&quot; no mapa). */
+  excludeIds?: SubregionalId[];
+  /** Ocultar o texto de ajuda sob o campo. */
+  hideFooterText?: boolean;
+  /** Mostrar sigla (CV, JT…) em destaque ao lado da cor. */
+  showAbbrevPrefix?: boolean;
 };
 
 export function SubregionalSelectField({
@@ -34,7 +40,13 @@ export function SubregionalSelectField({
   disabled,
   className,
   labelSuffix,
+  excludeIds,
+  hideFooterText,
+  showAbbrevPrefix,
 }: Props) {
+  const excluded = new Set(excludeIds ?? []);
+  const options = SUBREGIONAIS.filter((s) => !excluded.has(s.id));
+
   return (
     <div className={cn("space-y-2 sm:col-span-2", className)}>
       <Label htmlFor={id} className="text-zinc-600">
@@ -57,23 +69,32 @@ export function SubregionalSelectField({
           <SelectValue placeholder="Selecione a subregional" />
         </SelectTrigger>
         <SelectContent>
-          {SUBREGIONAIS.map((s) => (
+          {options.map((s) => (
             <SelectItem key={s.id} value={s.id}>
               <span className="flex items-center gap-2">
                 <span
                   className="h-2.5 w-2.5 shrink-0 rounded-full"
                   style={{ backgroundColor: s.color }}
                 />
-                {s.label}
+                {showAbbrevPrefix ? (
+                  <>
+                    <span className="font-medium text-zinc-800">{s.abbrev}</span>
+                    <span className="text-zinc-600">— {s.label}</span>
+                  </>
+                ) : (
+                  s.label
+                )}
               </span>
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
-      <p className="text-xs text-zinc-500">
-        Usada na distribuição por região nos Indicadores; &quot;Interno&quot; para
-        reuniões e atividades na garagem.
-      </p>
+      {!hideFooterText ? (
+        <p className="text-xs text-zinc-500">
+          Usada na distribuição por região nos Indicadores; &quot;Interno&quot; para
+          reuniões e atividades na garagem.
+        </p>
+      ) : null}
     </div>
   );
 }

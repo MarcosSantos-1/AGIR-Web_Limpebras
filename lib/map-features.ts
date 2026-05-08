@@ -264,3 +264,59 @@ export function getMapaPointById(
   if (m) return m;
   return MAPA_POLYGONS.find((p) => p.id === id) ?? null;
 }
+
+/** Ids de todos os marcadores estáticos (evitar colisão com pontos adicionados). */
+export function allStaticMapMarkerIds(): Set<string> {
+  return new Set(MAPA_MARKERS.map((m) => m.id));
+}
+
+/** Custom primeiro; `base` entra só se o id ainda não existir. */
+export function mergeMapMarkers(
+  custom: MapDisplayPoint[],
+  base: MapDisplayPoint[],
+): MapDisplayPoint[] {
+  const seen = new Set<string>();
+  const out: MapDisplayPoint[] = [];
+  for (const m of [...custom, ...base]) {
+    if (seen.has(m.id)) continue;
+    seen.add(m.id);
+    out.push(m);
+  }
+  return out;
+}
+
+export type PontoVicioFormOption = {
+  id: string;
+  address: string;
+  subprefeitura: string;
+};
+
+/** Para selects de revitalização: pontos adicionados pelo utilizador + catálogo. */
+export function mergePontosVicioFormOptions(
+  customPv: MapDisplayPoint[],
+): PontoVicioFormOption[] {
+  const custom = customPv
+    .filter(
+      (m): m is MapDisplayPoint & { type: "ponto-viciado" } =>
+        m.type === "ponto-viciado",
+    )
+    .map((m) => ({
+      id: m.id,
+      address: m.address,
+      subprefeitura: m.subprefeitura ?? "",
+    }));
+  const ids = new Set(custom.map((c) => c.id));
+  return [
+    ...custom,
+    ...MAPA_PONTOS_VICIO_FORM.filter((f) => !ids.has(f.id)),
+  ];
+}
+
+export function resolveMapaItem(
+  markers: MapDisplayPoint[],
+  polygons: MapPolygon[],
+  id: string | null,
+): MapDisplayPoint | MapPolygon | null {
+  if (!id) return null;
+  return markers.find((p) => p.id === id) ?? polygons.find((p) => p.id === id) ?? null;
+}
