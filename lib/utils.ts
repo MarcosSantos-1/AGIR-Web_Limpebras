@@ -24,3 +24,13 @@ export function parseLinksMultiline(text: string): string[] {
     .map((line) => line.trim())
     .filter((line) => line.length > 0)
 }
+
+/** Rótulo de “última atualização” para métricas de redes sociais (ex.: 11/05/2026 -- 13:50). */
+export function formatSocialMetricsUpdatedAtPt(now = new Date()): string {
+  const d = String(now.getDate()).padStart(2, "0")
+  const mo = String(now.getMonth() + 1).padStart(2, "0")
+  const y = now.getFullYear()
+  const h = String(now.getHours()).padStart(2, "0")
+  const min = String(now.getMinutes()).padStart(2, "0")
+  return `${d}/${mo}/${y} -- ${h}:${min}`
+}

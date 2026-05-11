@@ -21,16 +21,29 @@ import {
   User,
   Link2,
   ExternalLink,
-  Eye,
-  Heart,
-  Share,
   Pencil,
   Download,
   Megaphone,
-  Clock,
+  Loader2,
+  Trash2,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { PublishedMetricsSection } from "@/components/redes-sociais/published-metrics-section";
 import { RedesSociaisSkeletonGrid } from "@/components/page-skeletons";
+import { useAuth } from "@/contexts/auth-context";
+import { collectStorageCandidateUrls } from "@/lib/storage/social-post-storage-urls";
+import { deleteStoredFilesByPublicUrls } from "@/lib/storage/delete-stored-files";
+import { downloadMediaUrlsSequentially } from "@/lib/download-image";
+import { toast } from "sonner";
 
 const filterOptions = [
   { id: "all", label: "Todas" },
@@ -73,7 +86,8 @@ function RedesSociaisPageBody() {
   const router = useRouter();
   const pathname = usePathname();
   const { open: openConteudoModal, openEdit } = useConteudoSocialModal();
-  const { posts: postsState, hydrated: postsHydrated } = useSocialPosts();
+  const { posts: postsState, hydrated: postsHydrated, removePost } =
+    useSocialPosts();
   const highlightId = searchParams.get("content");
   const lastScrolledId = useRef<string | null>(null);
 
@@ -85,6 +99,13 @@ function RedesSociaisPageBody() {
     GalleryLightboxPhotoItem[]
   >([]);
   const [socialLightboxIndex, setSocialLightboxIndex] = useState(0);
+  const [postToDelete, setPostToDelete] = useState<SocialPost | null>(null);
+  const [deletingPost, setDeletingPost] = useState(false);
+  const [downloadingPostId, setDownloadingPostId] = useState<number | null>(
+    null,
+  );
+
+  const { user } = useAuth();
 
   const openSocialMediaLightbox = (
     title: string,
@@ -136,6 +157,48 @@ function RedesSociaisPageBody() {
       (p.ideiaResumo?.toLowerCase().includes(q) ?? false);
     return f && searchMatch;
   });
+
+  const confirmDeletePost = async () => {
+    if (!postToDelete) return;
+    setDeletingPost(true);
+    try {
+      const urls = collectStorageCandidateUrls(postToDelete);
+      await deleteStoredFilesByPublicUrls(urls);
+      await removePost(postToDelete.id);
+      if (highlightId === String(postToDelete.id)) {
+        router.replace(pathname, { scroll: false });
+      }
+      toast.success("Conteúdo excluído.");
+      setPostToDelete(null);
+    } catch (e) {
+      const msg =
+        e instanceof Error ? e.message : "Não foi possível excluir o conteúdo.";
+      toast.error(msg);
+    } finally {
+      setDeletingPost(false);
+    }
+  };
+
+  const handleDownloadMedias = async (post: SocialPost) => {
+    const urls = post.fotos
+      .map((f) => f.url)
+      .filter((u): u is string => Boolean(u));
+    if (urls.length === 0) {
+      toast.error("Este conteúdo não tem mídias para baixar.");
+      return;
+    }
+    setDownloadingPostId(post.id);
+    try {
+      const token = user ? await user.getIdToken() : null;
+      await downloadMediaUrlsSequentially(urls, post.tema, { idToken: token });
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Não foi possível baixar as mídias.",
+      );
+    } finally {
+      setDownloadingPostId(null);
+    }
+  };
 
   return (
     <>
@@ -263,40 +326,7 @@ function RedesSociaisPageBody() {
               )}
 
               {set.status === "publicado" && (
-                <div className="mb-4 space-y-3 rounded-2xl bg-zinc-50/80 p-4">
-                  <p className="text-xs font-semibold uppercase text-zinc-400">
-                    Acompanhamento
-                  </p>
-                  <div className="grid gap-2 sm:grid-cols-3">
-                    {set.visualizacoes != null && (
-                      <div className="flex items-center gap-2 text-sm text-zinc-800">
-                        <Eye className="h-4 w-4 text-blue-500" />
-                        <span>
-                          {set.visualizacoes.toLocaleString("pt-BR")}{" "}
-                          <span className="text-zinc-500">views</span>
-                        </span>
-                      </div>
-                    )}
-                    {set.curtidas != null && (
-                      <div className="flex items-center gap-2 text-sm text-zinc-800">
-                        <Heart className="h-4 w-4 text-red-500" />
-                        {set.curtidas.toLocaleString("pt-BR")}
-                      </div>
-                    )}
-                    {set.compartilhamentos != null && (
-                      <div className="flex items-center gap-2 text-sm text-zinc-800">
-                        <Share className="h-4 w-4 text-amber-600" />
-                        {set.compartilhamentos.toLocaleString("pt-BR")}
-                      </div>
-                    )}
-                  </div>
-                  {set.metricasAtualizadasEm && (
-                    <p className="flex items-center gap-1.5 text-xs text-zinc-500">
-                      <Clock className="h-3.5 w-3.5" />
-                      Métricas atualizadas em {set.metricasAtualizadasEm}
-                    </p>
-                  )}
-                </div>
+                <PublishedMetricsSection post={set} />
               )}
 
               {set.linkPost && (
@@ -417,10 +447,33 @@ function RedesSociaisPageBody() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="rounded-lg"
+                  className="rounded-lg border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                  onClick={() => setPostToDelete(set)}
                 >
-                  <Download className="mr-2 h-4 w-4" />
-                  Baixar mídias
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Excluir
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-lg"
+                  disabled={
+                    downloadingPostId === set.id || mediaUrls.length === 0
+                  }
+                  onClick={() => void handleDownloadMedias(set)}
+                >
+                  {downloadingPostId === set.id ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Baixando…
+                    </>
+                  ) : (
+                    <>
+                      <Download className="mr-2 h-4 w-4" />
+                      Baixar mídias
+                    </>
+                  )}
                 </Button>
               </div>
             </motion.div>
@@ -446,6 +499,43 @@ function RedesSociaisPageBody() {
         initialIndex={socialLightboxIndex}
         photos={socialLightboxItems}
       />
+
+      <AlertDialog
+        open={Boolean(postToDelete)}
+        onOpenChange={(open) => {
+          if (!open && !deletingPost) setPostToDelete(null);
+        }}
+      >
+        <AlertDialogContent className="rounded-2xl sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir este conteúdo?</AlertDialogTitle>
+            <AlertDialogDescription className="text-left text-zinc-600">
+              Tem certeza? O registro será removido e todas as fotos ou vídeos
+              guardados no armazenamento (Cloudflare R2) deste cartão também
+              serão apagados. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel disabled={deletingPost} className="rounded-lg">
+              Cancelar
+            </AlertDialogCancel>
+            <Button
+              type="button"
+              variant="destructive"
+              className="rounded-lg"
+              disabled={deletingPost}
+              onClick={() => void confirmDeletePost()}
+            >
+              {deletingPost ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 h-4 w-4" />
+              )}
+              Excluir
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
