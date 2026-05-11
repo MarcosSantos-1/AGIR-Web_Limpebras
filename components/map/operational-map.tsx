@@ -26,12 +26,28 @@ export type OperationalMapPoint = {
 
 const typeHex: Record<string, string> = {
   "ponto-viciado": "#ef4444",
-  ecoponto: "#10b981",
+  ecoponto: "#6b7280",
   "nucleo-habitacional": "#f59e0b",
+  "servico-acao-ambiental": "#059669",
+  "servico-evento": "#7c3aed",
+  "servico-panfletagem": "#2563eb",
 };
 
-/** Ícone reciclagem (branco) centrado no círculo — só ecoponto. */
-const ECOPONTO_RECYCLE_SVG = `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width:56%;height:56%" fill="#ffffff" aria-hidden="true"><path d="M12 6V3L8 7l4 4V8c2.76 0 5 2.24 5 5 0 1.64-.8 3.08-2.03 4l1.42 1.44C18.36 16.55 19 14.84 19 13c0-3.87-3.13-7-7-7zm-7.39 9.01L3.37 16.64A9 9 0 0 1 12 5c1.84 0 3.55.55 4.99 1.5L15.5 7.11C14.27 6.22 12.7 5.7 11 5.7c-2.76 0-5.05 2.05-5.39 4.72L4.73 9.27 3.37 10.73zM12 21c-1.84 0-3.55-.55-4.99-1.5l1.5-1.61C9.74 18.78 11.31 19.3 13 19.3c2.76 0 5.05-2.05 5.39-4.72l1.89 1.15 1.35-1.46A9 9 0 0 1 12 21z"/></svg></div>`;
+/** Font Awesome 6 (solid), branco — requer `@fortawesome/fontawesome-free/css/all.min.css` no layout. */
+function faGlyphInner(iconClass: string, fontPx: number) {
+  return `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
+  <i class="${iconClass}" style="color:#ffffff;font-size:${fontPx}px;line-height:1" aria-hidden="true"></i>
+</div>`;
+}
+
+const mapTypeToFaClass: Record<string, string> = {
+  ecoponto: "fa-solid fa-recycle",
+  "ponto-viciado": "fa-solid fa-trash-can",
+  "nucleo-habitacional": "fa-solid fa-house-chimney",
+  "servico-acao-ambiental": "fa-solid fa-leaf",
+  "servico-evento": "fa-solid fa-calendar-days",
+  "servico-panfletagem": "fa-solid fa-bullhorn",
+};
 
 function makeDivIcon(
   type: string,
@@ -44,7 +60,9 @@ function makeDivIcon(
   const border = "4px solid #ffffff";
   const shadow = "0 10px 15px -3px rgba(0,0,0,0.2)";
   const scale = selected ? "scale(1.08)" : "scale(1)";
-  const innerGlyph = type === "ecoponto" ? ECOPONTO_RECYCLE_SVG : "";
+  const faClass = mapTypeToFaClass[type];
+  const fontPx = Math.round(size * 0.4);
+  const innerGlyph = faClass ? faGlyphInner(faClass, fontPx) : "";
 
   const badge =
     recurrent && occurrences > 0

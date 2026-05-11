@@ -182,12 +182,22 @@ function resultToFormattedAddress(best: GoogleGeocodeResult): string {
   return best.formatted_address;
 }
 
+/** Chave no servidor: preferir variável sem NEXT_PUBLIC; fallback para a pública (alguns projectos só definem uma). */
+function mapsApiKeyFromEnv(): string {
+  const a = process.env.GOOGLE_MAPS_API_KEY?.trim();
+  if (a) return a;
+  return process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ?? "";
+}
+
 /** Geocoding direto ou reverso ({ address } OU { lat, lng } sem endereço). */
 export async function POST(request: Request) {
-  const key = process.env.GOOGLE_MAPS_API_KEY?.trim();
+  const key = mapsApiKeyFromEnv();
   if (!key) {
     return NextResponse.json(
-      { error: "Geocoding não configurado (GOOGLE_MAPS_API_KEY)." },
+      {
+        error:
+          "Geocoding não configurado. Defina GOOGLE_MAPS_API_KEY (recomendado) ou NEXT_PUBLIC_GOOGLE_MAPS_API_KEY no .env e reinicie o servidor.",
+      },
       { status: 503 },
     );
   }
@@ -235,7 +245,7 @@ export async function POST(request: Request) {
     const msg =
       data.error_message ||
       (data.status === "REQUEST_DENIED"
-        ? "Pedido recusado — verifique a chave e a API Geocoding ativa no Google Cloud."
+        ? "Pedido recusado — active a Geocoding API neste projeto, inclua-a nas restrições da chave e evite «referenciadores HTTP» em chaves usadas só no servidor (o Next chama a API sem referer)."
         : `Geocoding: ${data.status}`);
     return NextResponse.json({ error: msg }, { status: 502 });
   }

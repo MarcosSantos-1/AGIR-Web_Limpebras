@@ -3,7 +3,8 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { EvidenceMediaThumb } from "@/components/evidence/evidence-media-thumb";
 import { motion } from "framer-motion";
-import { useEffect, useMemo, useState, type MouseEvent } from "react";
+import { Suspense, useEffect, useMemo, useState, type MouseEvent } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Search,
   Calendar,
@@ -81,12 +82,15 @@ const typeConfig = {
 export default function HistoricoPage() {
   return (
     <AppShell title="Histórico" subtitle="Registro oficial de ações realizadas">
-      <HistoricoPageBody />
+      <Suspense fallback={<HistoricoTimelineSkeleton rows={6} />}>
+        <HistoricoPageBody />
+      </Suspense>
     </AppShell>
   );
 }
 
 function HistoricoPageBody() {
+  const searchParams = useSearchParams();
   const [monthYm, setMonthYm] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -95,6 +99,9 @@ function HistoricoPageBody() {
   const [selectedType, setSelectedType] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [expandedRecord, setExpandedRecord] = useState<number | null>(null);
+  const [pendingAgendaExpand, setPendingAgendaExpand] = useState<number | null>(
+    null,
+  );
   const [records, setRecords] = useState<HistoryRecordDoc[]>([]);
   const [agendaMonthEvents, setAgendaMonthEvents] = useState<AgendaEvent[]>(
     [],
@@ -187,6 +194,38 @@ function HistoricoPageBody() {
     const statusMatch = selectedStatus === "all" || record.status === selectedStatus;
     return searchMatch && typeMatch && statusMatch;
   });
+
+  useEffect(() => {
+    const agendaId = searchParams.get("agendaId");
+    if (!agendaId) return;
+    const ym = searchParams.get("ym");
+    if (ym && /^\d{4}-\d{2}$/.test(ym)) {
+      setMonthYm(ym);
+    }
+    setSelectedType("all");
+    setSelectedStatus("all");
+    setSearchQuery("");
+    const id = Number.parseInt(agendaId, 10);
+    if (Number.isFinite(id)) setPendingAgendaExpand(id);
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!historicoReady || pendingAgendaExpand == null) return;
+    const id = pendingAgendaExpand;
+    if (!visibleRecords.some((r) => r.id === id)) {
+      setPendingAgendaExpand(null);
+      return;
+    }
+    setExpandedRecord(id);
+    setPendingAgendaExpand(null);
+    const t = window.setTimeout(() => {
+      document.getElementById(`historico-card-${id}`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 200);
+    return () => window.clearTimeout(t);
+  }, [historicoReady, pendingAgendaExpand, visibleRecords]);
 
   const toggleExpand = (id: number) => {
     setExpandedRecord(expandedRecord === id ? null : id);
@@ -349,6 +388,7 @@ function HistoricoPageBody() {
             return (
               <motion.div
                 key={record.id}
+                id={`historico-card-${record.id}`}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.05 }}

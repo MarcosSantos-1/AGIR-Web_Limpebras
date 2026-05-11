@@ -1,6 +1,7 @@
 import {
   collection,
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -105,6 +106,29 @@ function scrubUndefined(obj: Record<string, unknown>): Record<string, unknown> {
   return out;
 }
 
+/** Omite `undefined`; `null` vira remoção de campo no Firestore (merge). */
+function scrubFirestoreWrite(obj: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const k of Object.keys(obj)) {
+    const v = obj[k];
+    if (v === undefined) continue;
+    if (v === null) {
+      out[k] = deleteField();
+      continue;
+    }
+    out[k] = v;
+  }
+  return out;
+}
+
+/** Patch de agenda: permite anular coordenadas com `null`. */
+export type AgendaEventFieldPatch = Partial<
+  Omit<AgendaEvent, "id" | "locationLat" | "locationLng">
+> & {
+  locationLat?: number | null;
+  locationLng?: number | null;
+};
+
 export async function allocateNextAgendaNumericId(): Promise<number> {
   const db = getFirebaseDb();
   const snapshot = await getDocs(collection(db, AGENDA_COLLECTION));
@@ -134,28 +158,41 @@ export async function createAgendaDocument(
   const db = getFirebaseDb();
   await setDoc(
     doc(db, AGENDA_COLLECTION, String(id)),
-    scrubUndefined({ ...full } as Record<string, unknown>),
+    scrubFirestoreWrite(scrubUndefined({ ...full } as Record<string, unknown>)),
   );
   return id;
 }
 
 export async function updateAgendaEventFields(
   id: number,
-  patch: Partial<Omit<AgendaEvent, "id">>,
+  patch: AgendaEventFieldPatch,
 ): Promise<void> {
   const db = getFirebaseDb();
   const ref = doc(db, AGENDA_COLLECTION, String(id));
-  const payload = scrubUndefined({ ...patch } as Record<string, unknown>);
+  const payload = scrubFirestoreWrite(
+    scrubUndefined({ ...patch } as Record<string, unknown>),
+  );
   if (Object.keys(payload).length === 0) return;
   await setDoc(ref, payload, { merge: true });
 }
 
+/** Escrita merge completa (ex. histórico → agenda); coords podem ser `null` para limpar. */
+export type MergeWriteAgendaInput = Omit<
+  AgendaEvent,
+  "locationLat" | "locationLng"
+> & {
+  locationLat?: number | null;
+  locationLng?: number | null;
+};
+
 /** Garante documento completo (ex.: edição a partir do Histórico sem `agendaEvents` ainda). */
-export async function mergeWriteAgendaEvent(event: AgendaEvent): Promise<void> {
+export async function mergeWriteAgendaEvent(
+  event: MergeWriteAgendaInput,
+): Promise<void> {
   const db = getFirebaseDb();
   await setDoc(
     doc(db, AGENDA_COLLECTION, String(event.id)),
-    scrubUndefined({ ...event } as Record<string, unknown>),
+    scrubFirestoreWrite(scrubUndefined({ ...event } as Record<string, unknown>)),
     { merge: true },
   );
 }

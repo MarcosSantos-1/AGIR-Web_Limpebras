@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import dynamic from "next/dynamic";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Command,
   CommandEmpty,
@@ -46,6 +52,7 @@ import {
   Check,
   ChevronsUpDown,
   Loader2,
+  Search,
 } from "lucide-react";
 import { DatePickerField } from "@/components/forms/date-picker-field";
 import { SubregionalSelectField } from "@/components/forms/subregional-select-field";
@@ -63,6 +70,7 @@ import {
   fetchAgendaEventByNumericId,
   mergeWriteAgendaEvent,
   updateAgendaEventFields,
+  type AgendaEventFieldPatch,
 } from "@/lib/firestore/agenda";
 import { replaceHistoryFromCompletedAgendaEvent } from "@/lib/history-persist";
 import { historyRecordDocToAgendaEvent } from "@/lib/history-to-agenda";
@@ -82,6 +90,7 @@ import {
   subregionalMeta,
   type SubregionalId,
 } from "@/lib/constants/subregionais";
+import type { ModalLocationMiniMapFlyTo } from "@/components/acao/modal-location-mini-map";
 
 function RequiredStar() {
   return (
@@ -217,6 +226,23 @@ function parseLinks(text: string): string[] {
   return text.split(/\n/).map((l) => l.trim()).filter(Boolean);
 }
 
+type LocalGeocodeHit = { lat: number; lng: number; formatted_address: string };
+
+const ModalLocationMiniMap = dynamic(
+  () =>
+    import("@/components/acao/modal-location-mini-map").then(
+      (m) => m.ModalLocationMiniMap,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-[220px] w-full items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-50 text-sm text-zinc-500">
+        A carregar mapa…
+      </div>
+    ),
+  },
+);
+
 function fieldGrid() {
   return "grid gap-4 sm:grid-cols-2";
 }
@@ -313,6 +339,24 @@ function AcaoVisitaDialog({
   const [acaoData, setAcaoData] = React.useState("");
   const [acaoHorario, setAcaoHorario] = React.useState("");
   const [localEndereco, setLocalEndereco] = React.useState("");
+  const [locationCoords, setLocationCoords] = React.useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [coordsBoundAddress, setCoordsBoundAddress] = React.useState("");
+  const [localPopoverOpen, setLocalPopoverOpen] = React.useState(false);
+  const [localGeocodeHits, setLocalGeocodeHits] = React.useState<
+    LocalGeocodeHit[]
+  >([]);
+  const [localGeocodeLoading, setLocalGeocodeLoading] = React.useState(false);
+  const [localGeocodeError, setLocalGeocodeError] = React.useState<
+    string | null
+  >(null);
+  const localGeocodeReq = React.useRef(0);
+  const localMapFlyNonceRef = React.useRef(0);
+  const [localMiniMapOpen, setLocalMiniMapOpen] = React.useState(false);
+  const [localMapFlyTo, setLocalMapFlyTo] =
+    React.useState<ModalLocationMiniMapFlyTo | null>(null);
   const [descricaoFeito, setDescricaoFeito] = React.useState("");
   const [observacoesGerais, setObservacoesGerais] = React.useState("");
   const [linksPostagemText, setLinksPostagemText] = React.useState("");
@@ -347,6 +391,11 @@ function AcaoVisitaDialog({
       setAcaoData("");
       setAcaoHorario("");
       setLocalEndereco("");
+      setLocationCoords(null);
+      setCoordsBoundAddress("");
+      setLocalGeocodeHits([]);
+      setLocalGeocodeError(null);
+      setLocalPopoverOpen(false);
       setDescricaoFeito("");
       setObservacoesGerais("");
       setLinksPostagemText("");
@@ -363,10 +412,13 @@ function AcaoVisitaDialog({
       setEquipeIntegrantes([]);
       setSaveError(null);
       setSaving(false);
+      setLocalMiniMapOpen(false);
+      setLocalMapFlyTo(null);
       return;
     }
     setCamposErro(false);
     setSaveError(null);
+    setLocalGeocodeError(null);
     setTipoServico(tipoAgendaPreferenciaSelect(initialEvent.type));
     setTituloAcao(initialEvent.title);
     setAcaoData(initialEvent.date);
@@ -379,6 +431,30 @@ function AcaoVisitaDialog({
       tEnd === AGENDA_TIME_UNSPECIFIED;
     setAcaoHorario(unspecified ? "" : tStart);
     setLocalEndereco(initialEvent.location);
+    const lat0 = initialEvent.locationLat;
+    const lng0 = initialEvent.locationLng;
+    if (
+      typeof lat0 === "number" &&
+      typeof lng0 === "number" &&
+      Number.isFinite(lat0) &&
+      Number.isFinite(lng0)
+    ) {
+      setLocationCoords({ lat: lat0, lng: lng0 });
+      setCoordsBoundAddress(initialEvent.location.trim());
+      setLocalMiniMapOpen(true);
+      localMapFlyNonceRef.current += 1;
+      setLocalMapFlyTo({
+        lat: lat0,
+        lng: lng0,
+        zoom: 16,
+        nonce: localMapFlyNonceRef.current,
+      });
+    } else {
+      setLocationCoords(null);
+      setCoordsBoundAddress("");
+      setLocalMiniMapOpen(false);
+      setLocalMapFlyTo(null);
+    }
     setSubregionalAcao(initialEvent.subregional ?? "");
     setResponsavelAcao(
       initialEvent.responsible === "—" ? "" : initialEvent.responsible,
@@ -427,6 +503,80 @@ function AcaoVisitaDialog({
     setEquipeIntegrantes(integrantesFromAgendaEvent(initialEvent));
   }, [open, initialEvent?.id, preferFinalizado]);
 
+  const executeLocalGeocode = React.useCallback(async (queryRaw: string) => {
+    const q = queryRaw.trim();
+    if (q.length < 2) {
+      setLocalGeocodeHits([]);
+      setLocalGeocodeError("Indique pelo menos 2 caracteres para pesquisar.");
+      setLocalPopoverOpen(true);
+      return;
+    }
+    const seq = ++localGeocodeReq.current;
+    setLocalGeocodeLoading(true);
+    setLocalGeocodeError(null);
+    try {
+      const res = await fetch("/api/geocode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: q }),
+      });
+      let data: unknown;
+      try {
+        data = await res.json();
+      } catch {
+        data = {};
+      }
+      const payload = data as {
+        results?: LocalGeocodeHit[];
+        error?: string;
+      };
+      if (seq !== localGeocodeReq.current) return;
+      if (!res.ok) {
+        setLocalGeocodeHits([]);
+        const msg =
+          typeof payload.error === "string" && payload.error.trim()
+            ? payload.error
+            : res.status === 503
+              ? "Geocoding não configurado. Defina GOOGLE_MAPS_API_KEY ou NEXT_PUBLIC_GOOGLE_MAPS_API_KEY no .env e reinicie o servidor."
+              : `Não foi possível obter sugestões (${res.status}).`;
+        setLocalGeocodeError(msg);
+        setLocalPopoverOpen(true);
+        return;
+      }
+      const hits = Array.isArray(payload.results) ? payload.results : [];
+      setLocalGeocodeHits(hits);
+      setLocalPopoverOpen(true);
+      if (hits.length > 0) {
+        localMapFlyNonceRef.current += 1;
+        setLocalMapFlyTo({
+          lat: hits[0]!.lat,
+          lng: hits[0]!.lng,
+          zoom: 16,
+          nonce: localMapFlyNonceRef.current,
+        });
+      }
+    } catch {
+      if (localGeocodeReq.current === seq) {
+        setLocalGeocodeHits([]);
+        setLocalGeocodeError("Falha de rede ao contactar o servidor.");
+        setLocalPopoverOpen(true);
+      }
+    } finally {
+      if (localGeocodeReq.current === seq) setLocalGeocodeLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (!open) {
+      setLocalGeocodeHits([]);
+      setLocalGeocodeError(null);
+      setLocalGeocodeLoading(false);
+      setLocalPopoverOpen(false);
+      setLocalMiniMapOpen(false);
+      setLocalMapFlyTo(null);
+    }
+  }, [open]);
+
   /** Troca tipo de serviço e regras de panfletagem sem “apagar” unidades vindas da edição. */
   function onTipoServicoChange(v: string) {
     setTipoServico(v);
@@ -437,6 +587,55 @@ function AcaoVisitaDialog({
       setUnidadesPanfletos("");
     }
   }
+
+  const handleModalMapPick = React.useCallback(async (lat: number, lng: number) => {
+    setLocationCoords({ lat, lng });
+    localMapFlyNonceRef.current += 1;
+    setLocalMapFlyTo({
+      lat,
+      lng,
+      zoom: 17,
+      nonce: localMapFlyNonceRef.current,
+    });
+    try {
+      const res = await fetch("/api/geocode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lat, lng }),
+      });
+      let data: unknown;
+      try {
+        data = await res.json();
+      } catch {
+        data = {};
+      }
+      const payload = data as {
+        results?: Array<{ formatted_address: string }>;
+      };
+      if (
+        res.ok &&
+        Array.isArray(payload.results) &&
+        payload.results[0]?.formatted_address
+      ) {
+        const addr = payload.results[0].formatted_address;
+        setLocalEndereco(addr);
+        setCoordsBoundAddress(addr.trim());
+      }
+    } catch {
+      /* coords mantidas; texto pode ser corrigido à mão */
+    }
+  }, []);
+
+  function triggerLocalAddressSearch() {
+    setLocalMiniMapOpen(true);
+    void executeLocalGeocode(localEndereco);
+  }
+
+  const localAddressCoordPreview =
+    locationCoords ??
+    (localMapFlyTo
+      ? { lat: localMapFlyTo.lat, lng: localMapFlyTo.lng }
+      : null);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -533,6 +732,19 @@ function AcaoVisitaDialog({
             patch.equipeIntegrantes = integrantesNomes;
             patch.equipe =
               integrantesNomes.length > 0 ? integrantesNomes.join(", ") : "";
+
+            const fieldPatch: AgendaEventFieldPatch = {
+              ...patch,
+              ...(locationCoords
+                ? {
+                    locationLat: locationCoords.lat,
+                    locationLng: locationCoords.lng,
+                  }
+                : initialEvent?.id != null
+                  ? { locationLat: null, locationLng: null }
+                  : {}),
+            };
+
             setSaving(true);
             try {
               let targetId: number;
@@ -540,19 +752,28 @@ function AcaoVisitaDialog({
                 targetId = initialEvent.id;
                 const remote = await fetchAgendaEventByNumericId(targetId);
                 if (remote) {
-                  await updateAgendaEventFields(targetId, patch);
+                  await updateAgendaEventFields(targetId, fieldPatch);
                 } else {
                   await mergeWriteAgendaEvent({
                     ...initialEvent,
-                    ...patch,
+                    ...fieldPatch,
                     id: targetId,
                     createdByUid:
                       initialEvent.createdByUid ?? user?.uid,
                   });
                 }
               } else {
-                targetId = await createAgendaDocument({
+                const createPayload: Omit<AgendaEvent, "id"> = {
                   ...patch,
+                  ...(locationCoords
+                    ? {
+                        locationLat: locationCoords.lat,
+                        locationLng: locationCoords.lng,
+                      }
+                    : {}),
+                };
+                targetId = await createAgendaDocument({
+                  ...createPayload,
                   ...(user?.uid ? { createdByUid: user.uid } : {}),
                 });
               }
@@ -864,6 +1085,20 @@ function AcaoVisitaDialog({
                     />
                   </div>
                   <div className="space-y-2 sm:col-span-2">
+                    {localMiniMapOpen ? (
+                      <div className="space-y-2">
+                        <ModalLocationMiniMap
+                          marker={localAddressCoordPreview}
+                          flyTo={localMapFlyTo}
+                          onMapClick={handleModalMapPick}
+                        />
+                        <p className="text-xs text-zinc-500">
+                          Toque no mapa para definir ou corrigir o ponto; o
+                          texto do local atualiza por geocoding reverso. A lupa
+                          mantém a pesquisa por endereço e sugestões.
+                        </p>
+                      </div>
+                    ) : null}
                     <Label
                       htmlFor="acao-local"
                       className="text-zinc-600"
@@ -871,19 +1106,138 @@ function AcaoVisitaDialog({
                       Local / endereço
                       <RequiredStar />
                     </Label>
-                    <Input
-                      id="acao-local"
-                      name="local"
-                      className={cn(
-                        "h-11 border-zinc-200",
-                        camposErro &&
-                          !localEndereco.trim() &&
-                          "border-red-300 ring-1 ring-red-200",
-                      )}
-                      placeholder="Rua, número, bairro ou nome do local"
-                      value={localEndereco}
-                      onChange={(e) => setLocalEndereco(e.target.value)}
-                    />
+                    <Popover
+                      modal={false}
+                      open={localPopoverOpen}
+                      onOpenChange={setLocalPopoverOpen}
+                    >
+                      <PopoverAnchor asChild>
+                        <div className="relative w-full">
+                          <Input
+                            id="acao-local"
+                            name="local"
+                            autoCorrect="off"
+                            spellCheck={false}
+                            className={cn(
+                              "h-11 border-zinc-200 pr-12",
+                              camposErro &&
+                                !localEndereco.trim() &&
+                                "border-red-300 ring-1 ring-red-200",
+                            )}
+                            placeholder="Rua, número, bairro ou nome do local"
+                            value={localEndereco}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setLocalEndereco(v);
+                              if (v.trim() !== coordsBoundAddress.trim()) {
+                                setLocationCoords(null);
+                                setCoordsBoundAddress("");
+                                setLocalMapFlyTo(null);
+                              }
+                            }}
+                          onKeyDown={(e) => {
+                            if (e.key !== "Enter") return;
+                            e.preventDefault();
+                            triggerLocalAddressSearch();
+                          }}
+                          onFocus={() => {
+                            if (localGeocodeHits.length > 0) {
+                              setLocalPopoverOpen(true);
+                            }
+                          }}
+                          autoComplete="off"
+                          />
+                          <Button
+                            type="button"
+                            size="icon"
+                            disabled={saving || localGeocodeLoading}
+                            title="Pesquisar endereço e mostrar mapa"
+                            aria-label="Pesquisar endereço e mostrar mapa"
+                            className="absolute right-1 top-1/2 h-9 w-9 shrink-0 -translate-y-1/2 rounded-lg bg-gradient-to-br from-[#f318e3] to-[#6a0eaf] text-white shadow-sm hover:opacity-95 disabled:opacity-50"
+                            onClick={triggerLocalAddressSearch}
+                          >
+                            {localGeocodeLoading ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Search className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </PopoverAnchor>
+                      <PopoverContent
+                        className="z-[300] w-[var(--radix-popover-trigger-width)] min-w-[280px] max-w-[min(100vw-2rem,32rem)] p-0 shadow-lg"
+                        align="start"
+                        onOpenAutoFocus={(ev) => ev.preventDefault()}
+                      >
+                        <Command shouldFilter={false}>
+                          <CommandList className="max-h-[min(50vh,280px)]">
+                            {localGeocodeLoading ? (
+                              <div className="flex items-center justify-center gap-2 py-6 text-sm text-zinc-500">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                A procurar endereços…
+                              </div>
+                            ) : null}
+                            {!localGeocodeLoading && localGeocodeError ? (
+                              <div className="border-b border-zinc-100 px-3 py-3 text-sm text-red-700">
+                                {localGeocodeError}
+                              </div>
+                            ) : null}
+                            {!localGeocodeLoading &&
+                            !localGeocodeError &&
+                            localEndereco.trim().length >= 2 &&
+                            localGeocodeHits.length === 0 ? (
+                              <CommandEmpty>
+                                Nenhum resultado — tente outro termo.
+                              </CommandEmpty>
+                            ) : null}
+                            <CommandGroup heading="Sugestões">
+                              {localGeocodeHits.map((hit, idx) => (
+                                <CommandItem
+                                  key={`${hit.lat}-${hit.lng}-${idx}`}
+                                  value={hit.formatted_address}
+                                  onSelect={() => {
+                                    setLocalMiniMapOpen(true);
+                                    localMapFlyNonceRef.current += 1;
+                                    setLocalMapFlyTo({
+                                      lat: hit.lat,
+                                      lng: hit.lng,
+                                      zoom: 17,
+                                      nonce: localMapFlyNonceRef.current,
+                                    });
+                                    setLocalEndereco(hit.formatted_address);
+                                    setLocationCoords({
+                                      lat: hit.lat,
+                                      lng: hit.lng,
+                                    });
+                                    setCoordsBoundAddress(
+                                      hit.formatted_address.trim(),
+                                    );
+                                    setLocalPopoverOpen(false);
+                                  }}
+                                  className="cursor-pointer"
+                                >
+                                  <MapPin className="mr-2 h-4 w-4 shrink-0 text-zinc-400" />
+                                  <span className="line-clamp-2">
+                                    {hit.formatted_address}
+                                  </span>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <p className="text-xs font-medium text-zinc-800 tabular-nums">
+                      Lat{" "}
+                      {localAddressCoordPreview
+                        ? localAddressCoordPreview.lat.toFixed(6)
+                        : "—"}
+                      {", "}
+                      Lng{" "}
+                      {localAddressCoordPreview
+                        ? localAddressCoordPreview.lng.toFixed(6)
+                        : "—"}
+                    </p>
                   </div>
                   <div className="space-y-2 sm:col-span-2">
                     <Label

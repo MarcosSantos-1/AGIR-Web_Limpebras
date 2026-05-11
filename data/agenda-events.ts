@@ -40,6 +40,9 @@ export type AgendaEvent = {
   time: string;
   endTime: string;
   location: string;
+  /** Coordenadas quando o local foi escolhido via geocoding (mapa / serviços no terreno). */
+  locationLat?: number;
+  locationLng?: number;
   /** Subregional territorial (indicadores / distribuição). */
   subregional?: SubregionalId;
   priority: "high" | "medium" | "low";

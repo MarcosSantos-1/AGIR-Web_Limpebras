@@ -4,20 +4,20 @@ import { AppShell } from "@/components/layout/app-shell";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { useState, useMemo, useRef, FormEvent } from "react";
+import Link from "next/link";
 import {
   Plus,
   Layers,
   MapPin,
   AlertTriangle,
-  Recycle,
   Trash2,
-  Home,
   X,
   Clock,
   User,
   Search,
   Loader2,
   Pencil,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,12 +46,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/auth-context";
+import { useAgendaEvents } from "@/contexts/agenda-events-context";
 import { useCustomPontosViciados } from "@/contexts/custom-pontos-viciados-context";
 import {
   MAPA_MARKERS,
   MAPA_POLYGONS,
   mergeMapMarkers,
   resolveMapaItem,
+  agendaEventsToMapDisplayPoints,
   allStaticMapMarkerIds,
   type MapDisplayPoint,
   type MapPolygon,
@@ -71,6 +73,7 @@ import type {
   OperationalMapFlyTo,
 } from "@/components/map/operational-map";
 import { formatDateBr, cn } from "@/lib/utils";
+import { SubregionalBadge } from "@/components/subregional-badge";
 import { toast } from "sonner";
 
 const OperationalMap = dynamic(
@@ -88,26 +91,54 @@ const OperationalMap = dynamic(
 
 const pointTypes = [
   {
+    id: "ecoponto",
+    label: "Ecoponto",
+    faClass: "fa-solid fa-recycle",
+    color: "bg-zinc-500",
+    textColor: "text-zinc-600",
+  },
+  {
+    id: "servico-acao-ambiental",
+    label: "Ação ambiental (realizada)",
+    faClass: "fa-solid fa-leaf",
+    color: "bg-emerald-600",
+    textColor: "text-emerald-600",
+  },
+  {
+    id: "servico-evento",
+    label: "Evento (realizado)",
+    faClass: "fa-solid fa-calendar-days",
+    color: "bg-violet-600",
+    textColor: "text-violet-600",
+  },
+  {
+    id: "servico-panfletagem",
+    label: "Panfletagem (realizada)",
+    faClass: "fa-solid fa-bullhorn",
+    color: "bg-blue-600",
+    textColor: "text-blue-600",
+  },
+  {
     id: "ponto-viciado",
     label: "Ponto Viciado",
-    icon: Trash2,
+    faClass: "fa-solid fa-trash-can",
     color: "bg-red-500",
     textColor: "text-red-500",
   },
   {
-    id: "ecoponto",
-    label: "Ecoponto",
-    icon: Recycle,
-    color: "bg-emerald-500",
-    textColor: "text-emerald-500",
-  },
-  {
     id: "nucleo-habitacional",
     label: "Núcleo habitacional",
-    icon: Home,
+    faClass: "fa-solid fa-house-chimney",
     color: "bg-amber-500",
     textColor: "text-amber-500",
   },
+] as const;
+
+const DEFAULT_MAP_LAYER_TYPES = [
+  "ecoponto",
+  "servico-acao-ambiental",
+  "servico-evento",
+  "servico-panfletagem",
 ] as const;
 
 type MapItem = MapDisplayPoint | MapPolygon;
@@ -133,6 +164,7 @@ function reservedCodigosForPv(
 
 export default function MapaPage() {
   const { user } = useAuth();
+  const { events: agendaEvents } = useAgendaEvents();
   const {
     customPontosViciados,
     customPontoEntries,
@@ -141,9 +173,9 @@ export default function MapaPage() {
     deletePontoViciadoByCodigo,
   } = useCustomPontosViciados();
 
-  const [selectedTypes, setSelectedTypes] = useState<string[]>(
-    pointTypes.map((t) => t.id),
-  );
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([
+    ...DEFAULT_MAP_LAYER_TYPES,
+  ]);
   const [typesPopoverOpen, setTypesPopoverOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mapBase, setMapBase] = useState<"carto" | "satellite">("carto");
@@ -184,8 +216,18 @@ export default function MapaPage() {
     [customPontosViciados],
   );
 
+  const agendaMarkers = useMemo(
+    () => agendaEventsToMapDisplayPoints(agendaEvents),
+    [agendaEvents],
+  );
+
+  const allMarkers = useMemo(
+    () => [...agendaMarkers, ...mergedMarkers],
+    [agendaMarkers, mergedMarkers],
+  );
+
   const { filteredMarkers, filteredPolygons, visibleCount } = useMemo(() => {
-    const markers = mergedMarkers.filter((p) => selectedTypes.includes(p.type));
+    const markers = allMarkers.filter((p) => selectedTypes.includes(p.type));
     const polygons = MAPA_POLYGONS.filter((p) =>
       selectedTypes.includes(p.type),
     );
@@ -194,7 +236,7 @@ export default function MapaPage() {
       filteredPolygons: polygons,
       visibleCount: markers.length + polygons.length,
     };
-  }, [selectedTypes, mergedMarkers]);
+  }, [selectedTypes, allMarkers]);
 
   const mapLayerPoints: OperationalMapPoint[] = useMemo(
     () =>
@@ -209,7 +251,7 @@ export default function MapaPage() {
   );
 
   const selectedItem: MapItem | null = resolveMapaItem(
-    mergedMarkers,
+    allMarkers,
     MAPA_POLYGONS,
     selectedId,
   );
@@ -239,25 +281,24 @@ export default function MapaPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lat, lng }),
       });
-      const data = (await res.json()) as
-        | { results: GeocodeHit[]; error?: string }
-        | { error: string };
-
-      if (!res.ok || "error" in data) {
+      const data: unknown = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const payload = data as { error?: string };
         const msg =
-          "error" in data && typeof data.error === "string"
-            ? data.error
+          typeof payload.error === "string" && payload.error.trim()
+            ? payload.error
             : "Endereço indisponível.";
         toast.error(msg);
         return false;
       }
-      if (!data.results?.length) {
+      const payload = data as { results?: GeocodeHit[] };
+      if (!payload.results?.length) {
         toast.warning(
           "Coordenadas sem endereço conhecido — preencha o endereço manualmente.",
         );
         return true;
       }
-      setAddPvEndereco(data.results[0]!.formatted_address);
+      setAddPvEndereco(payload.results[0]!.formatted_address);
       return true;
     } catch {
       toast.error("Falha ao obter o endereço. Tente de novo ou preencha à mão.");
@@ -448,26 +489,23 @@ export default function MapaPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ address: q }),
       });
-      const data = (await res.json()) as
-        | { results: GeocodeHit[]; error?: string }
-        | { error: string };
-      if (!res.ok || "error" in data) {
+      const data: unknown = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const payload = data as { error?: string };
         const msg =
-          "error" in data && typeof data.error === "string"
-            ? data.error
+          typeof payload.error === "string" && payload.error.trim()
+            ? payload.error
             : "Pesquisa indisponível.";
         setGeocodeError(msg);
         return;
       }
-      if (!data.results.length) {
+      const payload = data as { results?: GeocodeHit[]; error?: string };
+      const results = Array.isArray(payload.results) ? payload.results : [];
+      if (results.length === 0) {
         setGeocodeError("Nenhum resultado no Brasil. Tente outro termo.");
         return;
       }
-      if (data.results.length === 1) {
-        applyGeocodeHit(data.results[0]!);
-        return;
-      }
-      setGeocodeAlternatives(data.results);
+      setGeocodeAlternatives(results);
     } catch {
       setGeocodeError("Falha de rede. Tente novamente.");
     } finally {
@@ -544,7 +582,7 @@ export default function MapaPage() {
                     {geocodeError}
                   </p>
                 ) : null}
-                {geocodeAlternatives && geocodeAlternatives.length > 1 ? (
+                {geocodeAlternatives && geocodeAlternatives.length > 0 ? (
                   <ul className="max-h-48 overflow-y-auto rounded-lg border border-zinc-200/80 bg-white/98 text-left text-xs shadow-md">
                     {geocodeAlternatives.map((hit, idx) => (
                       <li key={`${hit.lat}-${hit.lng}-${idx}`}>
@@ -599,7 +637,6 @@ export default function MapaPage() {
                   </div>
                   <div className="space-y-2">
                     {pointTypes.map((type) => {
-                      const Icon = type.icon;
                       const isSelected = selectedTypes.includes(type.id);
                       return (
                         <button
@@ -615,7 +652,10 @@ export default function MapaPage() {
                           <div
                             className={`flex h-8 w-8 items-center justify-center rounded-lg ${type.color}`}
                           >
-                            <Icon className="h-4 w-4 text-white" />
+                            <i
+                              className={`${type.faClass} text-sm text-white`}
+                              aria-hidden
+                            />
                           </div>
                           <span className="text-sm font-medium text-zinc-700">
                             {type.label}
@@ -750,10 +790,10 @@ export default function MapaPage() {
                   <div
                     className={`flex h-10 w-10 items-center justify-center rounded-xl ${getTypeConfig(selectedItem.type).color}`}
                   >
-                    {(() => {
-                      const Icon = getTypeConfig(selectedItem.type).icon;
-                      return <Icon className="h-5 w-5 text-white" />;
-                    })()}
+                    <i
+                      className={`${getTypeConfig(selectedItem.type).faClass} text-lg text-white`}
+                      aria-hidden
+                    />
                   </div>
                   <div>
                     <span
@@ -779,35 +819,72 @@ export default function MapaPage() {
               </div>
 
               <div className="space-y-3 border-t border-zinc-100 pt-4">
-                <div className="flex items-center gap-3 text-sm">
-                  <MapPin className="h-4 w-4 shrink-0 text-zinc-400" />
+                <div className="flex items-start gap-3 text-sm">
+                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" />
                   <span className="text-zinc-600">{selectedItem.address}</span>
                 </div>
+                {"subregional" in selectedItem &&
+                selectedItem.subregional ? (
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                    <SubregionalBadge subregional={selectedItem.subregional} />
+                  </div>
+                ) : null}
                 {selectedItem.type === "ponto-viciado" &&
-                  selectedItem.subprefeitura ? (
-                    <div className="flex items-center gap-3 text-sm">
-                      <Layers className="h-4 w-4 shrink-0 text-zinc-400" />
-                      <span className="text-zinc-600">
-                        Subregional: {selectedItem.subprefeitura}
-                      </span>
-                    </div>
-                  ) : null}
-                {selectedItem.lastAction && (
+                selectedItem.subprefeitura &&
+                !("subregional" in selectedItem && selectedItem.subregional) ? (
                   <div className="flex items-center gap-3 text-sm">
-                    <Clock className="h-4 w-4 text-zinc-400" />
+                    <Layers className="h-4 w-4 shrink-0 text-zinc-400" />
+                    <span className="text-zinc-600">
+                      Subregional: {selectedItem.subprefeitura}
+                    </span>
+                  </div>
+                ) : null}
+                {"serviceDateTimeBr" in selectedItem &&
+                selectedItem.serviceDateTimeBr ? (
+                  <div className="flex items-center gap-3 text-sm">
+                    <Clock className="h-4 w-4 shrink-0 text-zinc-400" />
+                    <span className="text-zinc-600">
+                      {selectedItem.serviceDateTimeBr}
+                    </span>
+                  </div>
+                ) : null}
+                {selectedItem.lastAction ? (
+                  <div className="flex items-center gap-3 text-sm">
+                    <Clock className="h-4 w-4 shrink-0 text-zinc-400" />
                     <span className="text-zinc-600">
                       Última ação: {formatDateBr(selectedItem.lastAction)}
                     </span>
                   </div>
-                )}
-                {selectedItem.responsible && (
+                ) : null}
+                {"agendaNumericId" in selectedItem &&
+                selectedItem.agendaNumericId != null ? (
+                  selectedItem.integrantes &&
+                  selectedItem.integrantes.length > 0 ? (
+                    <div className="flex gap-3 text-sm">
+                      <Users className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" />
+                      <ul className="flex flex-col gap-1 text-zinc-600">
+                        {selectedItem.integrantes.map((nome) => (
+                          <li key={nome}>{nome}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : selectedItem.responsible ? (
+                    <div className="flex items-baseline gap-3 text-sm">
+                      <User className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" />
+                      <span className="text-zinc-600">
+                        {selectedItem.responsible}{" "}
+                        <span className="text-zinc-400">(responsável)</span>
+                      </span>
+                    </div>
+                  ) : null
+                ) : selectedItem.responsible ? (
                   <div className="flex items-center gap-3 text-sm">
-                    <User className="h-4 w-4 text-zinc-400" />
+                    <User className="h-4 w-4 shrink-0 text-zinc-400" />
                     <span className="text-zinc-600">
                       {selectedItem.responsible}
                     </span>
                   </div>
-                )}
+                ) : null}
                 {selectedItem.detailLines &&
                   selectedItem.detailLines.length > 0 && (
                     <ul className="space-y-2 border-t border-zinc-100 pt-3 text-sm text-zinc-600">
@@ -822,6 +899,24 @@ export default function MapaPage() {
                     </ul>
                   )}
               </div>
+
+              {"agendaNumericId" in selectedItem &&
+              selectedItem.agendaNumericId != null &&
+              selectedItem.agendaMonthYm ? (
+                <div className="mt-4 flex justify-center border-t border-zinc-100 pt-4">
+                  <Button
+                    asChild
+                    type="button"
+                    className="rounded-xl bg-orange-500 px-8 text-white hover:bg-orange-600"
+                  >
+                    <Link
+                      href={`/historico?ym=${encodeURIComponent(selectedItem.agendaMonthYm)}&agendaId=${selectedItem.agendaNumericId}`}
+                    >
+                      Histórico
+                    </Link>
+                  </Button>
+                </div>
+              ) : null}
 
               {selectedItem.recurrent && selectedItem.occurrences > 0 && (
                 <div className="mt-4 rounded-xl bg-red-50 p-3">

@@ -35,12 +35,14 @@ type EditableAgendaKeys =
   | "completionPhotoDataUrls"
   | "linksPostagem";
 
+type AgendaContextPatch = Partial<Pick<AgendaEvent, EditableAgendaKeys>> & {
+  locationLat?: number | null;
+  locationLng?: number | null;
+};
+
 type AgendaEventsContextValue = {
   events: AgendaEvent[];
-  updateEvent: (
-    id: number,
-    patch: Partial<Pick<AgendaEvent, EditableAgendaKeys>>,
-  ) => Promise<void>;
+  updateEvent: (id: number, patch: AgendaContextPatch) => Promise<void>;
   deleteEvent: (id: number) => Promise<void>;
   getEvent: (id: string | number) => AgendaEvent | undefined;
   hydrated: boolean;
@@ -64,7 +66,7 @@ export function AgendaEventsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateEvent = useCallback(
-    async (id: number, patch: Partial<Pick<AgendaEvent, EditableAgendaKeys>>) => {
+    async (id: number, patch: AgendaContextPatch) => {
       let toWrite = { ...patch };
       if (
         patch.completionPhotoDataUrls?.some(

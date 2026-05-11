@@ -1,12 +1,26 @@
+import type { AgendaEvent } from "@/data/agenda-events";
 import featuresEco from "@/data/features-ECO.json";
 import featuresPv from "@/data/features-PV.json";
 import featuresNh from "@/data/features-NH.json";
+import {
+  isSubregionalId,
+  type SubregionalId,
+} from "@/lib/constants/subregionais";
+import { integrantesFromAgendaEvent } from "@/lib/agenda/equipe-parsing";
+import { formatAgendaDateTimeBr } from "@/lib/agenda/time-display";
 
 export type MapaStatus = "ativo" | "inativo" | "resolvido" | "em-andamento" | "recorrente";
 
+export type MapMarkerPointType =
+  | "ponto-viciado"
+  | "ecoponto"
+  | "servico-acao-ambiental"
+  | "servico-evento"
+  | "servico-panfletagem";
+
 export type MapDisplayPoint = {
   id: string;
-  type: "ponto-viciado" | "ecoponto";
+  type: MapMarkerPointType;
   position: [number, number];
   title: string;
   address: string;
@@ -17,6 +31,15 @@ export type MapDisplayPoint = {
   occurrences: number;
   /** Só preenchido em ponto viciado — para o formulário de revitalização. */
   subprefeitura?: string;
+  subregional?: SubregionalId;
+  /** Serviços (agenda concluída): equipa no terreno. */
+  integrantes?: string[];
+  /** Serviços: data/hora formatada (pt-BR). */
+  serviceDateTimeBr?: string;
+  /** Mês do registo (yyyy-mm) para abrir o histórico. */
+  agendaMonthYm?: string;
+  /** Id numérico da agenda / histórico. */
+  agendaNumericId?: number;
   detailLines?: { label: string; value: string }[];
 };
 
@@ -319,4 +342,54 @@ export function resolveMapaItem(
 ): MapDisplayPoint | MapPolygon | null {
   if (!id) return null;
   return markers.find((p) => p.id === id) ?? polygons.find((p) => p.id === id) ?? null;
+}
+
+function agendaTypeToServicoMapType(
+  t: AgendaEvent["type"],
+): "servico-acao-ambiental" | "servico-evento" | "servico-panfletagem" | null {
+  if (t === "acao-ambiental") return "servico-acao-ambiental";
+  if (t === "evento") return "servico-evento";
+  if (t === "panfletagem") return "servico-panfletagem";
+  return null;
+}
+
+/** Ações concluídas com coordenadas — camada «serviços no terreno». */
+export function agendaEventsToMapDisplayPoints(
+  events: AgendaEvent[],
+): MapDisplayPoint[] {
+  const out: MapDisplayPoint[] = [];
+  for (const ev of events) {
+    if (ev.status !== "concluido") continue;
+    const mapType = agendaTypeToServicoMapType(ev.type);
+    if (!mapType) continue;
+    const lat = ev.locationLat;
+    const lng = ev.locationLng;
+    if (
+      typeof lat !== "number" ||
+      typeof lng !== "number" ||
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng)
+    ) {
+      continue;
+    }
+    const integrantes = integrantesFromAgendaEvent(ev);
+    out.push({
+      id: `agenda-${ev.id}`,
+      type: mapType,
+      position: [lat, lng],
+      title: ev.title,
+      address: ev.location,
+      status: "ativo",
+      lastAction: null,
+      responsible: ev.responsible ?? null,
+      recurrent: false,
+      occurrences: 0,
+      subregional: isSubregionalId(ev.subregional) ? ev.subregional : undefined,
+      integrantes: integrantes.length > 0 ? integrantes : undefined,
+      serviceDateTimeBr: formatAgendaDateTimeBr(ev),
+      agendaMonthYm: ev.date.length >= 7 ? ev.date.slice(0, 7) : undefined,
+      agendaNumericId: ev.id,
+    });
+  }
+  return out;
 }
