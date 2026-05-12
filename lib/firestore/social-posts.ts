@@ -1,6 +1,7 @@
 import {
   collection,
   deleteDoc,
+  deleteField,
   doc,
   onSnapshot,
   setDoc,
@@ -44,9 +45,11 @@ export function subscribeSocialPosts(
 export async function persistSocialPost(post: SocialPost): Promise<void> {
   const db = getFirebaseDb();
   const ref = doc(db, SOCIAL_COLLECTION, String(post.id));
-  const data = scrubUndefined({
-    ...post,
-  } as unknown as Record<string, unknown>);
+  const payload = { ...post } as Record<string, unknown>;
+  if (post.status !== "publicado") {
+    payload.redePublicacao = deleteField();
+  }
+  const data = scrubUndefined(payload);
   await setDoc(ref, data, { merge: true });
 }
 

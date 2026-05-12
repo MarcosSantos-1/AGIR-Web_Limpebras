@@ -10,6 +10,14 @@ export type SocialContentStatus =
 
 export type SocialContentTipo = "Post" | "Reel" | "Story";
 
+export type SocialPublicationRede = "facebook" | "instagram" | "linkedin";
+
+export const SOCIAL_PUBLICATION_REDE_LABELS: Record<SocialPublicationRede, string> = {
+  facebook: "Facebook",
+  instagram: "Instagram",
+  linkedin: "LinkedIn",
+};
+
 export interface SocialPostPhoto {
   id: number;
   type?: string;
@@ -28,6 +36,8 @@ export interface SocialPost {
   linkOuArquivo: string | null;
   /** Rascunho / material de apoio (PDF, planilha, pasta) */
   linkOuArquivoLabel?: string;
+  /** Só publicado — rede onde o conteúdo foi publicado */
+  redePublicacao?: SocialPublicationRede;
   /** Só publicado */
   legenda?: string;
   linkPost?: string;
@@ -108,6 +118,7 @@ export const socialPosts: SocialPost[] = [
     tema: "Bastidores da ação no bairro Jardim",
     responsavel: "Igor Supervisor",
     linkOuArquivo: null,
+    redePublicacao: "instagram",
     linkPost: "https://instagram.com",
     legenda: "Bastidores da ação de hoje no Jardim — equipe no terreno! 🌿 #AGIR",
     visualizacoes: 1240,
@@ -140,6 +151,7 @@ export const socialPosts: SocialPost[] = [
     tema: "Antes e depois — Praça Central",
     responsavel: "Igor Supervisor",
     linkOuArquivo: null,
+    redePublicacao: "facebook",
     linkPost: "https://facebook.com",
     legenda: "A praça de hoje! Antes/depois de mais uma revitalização concluída com a comunidade.",
     visualizacoes: 8420,

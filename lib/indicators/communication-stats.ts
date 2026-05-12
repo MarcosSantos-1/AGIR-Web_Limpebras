@@ -1,8 +1,19 @@
 import type { AgendaEvent } from "@/data/agenda-events";
-import type { SocialPost } from "@/data/social-posts";
+import type {
+  SocialPost,
+  SocialPublicationRede,
+} from "@/data/social-posts";
 
 export function isValidIsoDate(d: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(d);
+}
+
+/**
+ * Eventos da agenda que entram nos Indicadores.
+ * Exclui subregional "Interno (garagem / reuniões)".
+ */
+export function isIndicadoresAgendaEvent(e: AgendaEvent): boolean {
+  return e.subregional !== "interno";
 }
 
 /** Evento concluído com panfletagem explícita ou unidades registadas. */
@@ -11,6 +22,26 @@ export function isPanfletagemRelevant(e: AgendaEvent): boolean {
   if (e.type === "panfletagem") return true;
   const p = e.panfletosDistribuidos;
   return typeof p === "number" && p > 0;
+}
+
+function isLocaisAtendidosCampoTipo(e: AgendaEvent): boolean {
+  return (
+    e.type === "panfletagem" || e.type === "evento" || e.type === "acao-ambiental"
+  );
+}
+
+/** Concluídos no mês: panfletagem, eventos e ações ambientais (exclui interno). */
+export function locaisAtendidosCampoMonthCount(
+  events: AgendaEvent[],
+  ym: string,
+): number {
+  return events.filter(
+    (e) =>
+      isIndicadoresAgendaEvent(e) &&
+      e.status === "concluido" &&
+      e.date.startsWith(ym) &&
+      isLocaisAtendidosCampoTipo(e),
+  ).length;
 }
 
 function toIsoDate(d: Date): string {
@@ -37,6 +68,7 @@ export function averagePanfletosLast20Weekdays(events: AgendaEvent[]): number {
   let sum = 0;
   for (const iso of days) {
     for (const e of events) {
+      if (!isIndicadoresAgendaEvent(e)) continue;
       if (e.status !== "concluido" || e.date !== iso) continue;
       if (!isPanfletagemRelevant(e)) continue;
       const p = e.panfletosDistribuidos;
@@ -46,16 +78,12 @@ export function averagePanfletosLast20Weekdays(events: AgendaEvent[]): number {
   return Math.round((sum / 20) * 10) / 10;
 }
 
+/** @deprecated Prefer locaisAtendidosCampoMonthCount para o KPI alinhado ao campo. */
 export function locaisAtendidosMonthCount(
   events: AgendaEvent[],
   ym: string,
 ): number {
-  return events.filter(
-    (e) =>
-      e.status === "concluido" &&
-      e.date.startsWith(ym) &&
-      isPanfletagemRelevant(e),
-  ).length;
+  return locaisAtendidosCampoMonthCount(events, ym);
 }
 
 export function postsPublicadosNoMes(
@@ -70,19 +98,138 @@ export function postsPublicadosNoMes(
   );
 }
 
+const MONTH_SHORT_CHART = [
+  "Jan",
+  "Fev",
+  "Mar",
+  "Abr",
+  "Mai",
+  "Jun",
+  "Jul",
+  "Ago",
+  "Set",
+  "Out",
+  "Nov",
+  "Dez",
+] as const;
+
+/** Últimos 4 meses terminando no mês `ym` (AAAA-MM). */
+export function lastFourMonthsSlicesEndingAt(ym: string): {
+  ym: string;
+  label: string;
+}[] {
+  const parts = ym.split("-").map(Number);
+  const y = parts[0]!;
+  const mo = parts[1]!;
+  const end = new Date(y, mo - 1, 1);
+  const out: { ym: string; label: string }[] = [];
+  for (let i = 3; i >= 0; i--) {
+    const d = new Date(end.getFullYear(), end.getMonth() - i, 1);
+    const yms = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    out.push({ ym: yms, label: MONTH_SHORT_CHART[d.getMonth()]! });
+  }
+  return out;
+}
+
+function inferRedeFromLinkPost(url: string | undefined): SocialPublicationRede | null {
+  if (!url?.trim()) return null;
+  try {
+    const host = new URL(url.trim()).hostname.toLowerCase();
+    if (host.includes("facebook") || host.includes("fb.com")) return "facebook";
+    if (host.includes("instagram")) return "instagram";
+    if (host.includes("linkedin")) return "linkedin";
+  } catch {
+    const low = url.toLowerCase();
+    if (low.includes("facebook") || low.includes("fb.com")) return "facebook";
+    if (low.includes("instagram")) return "instagram";
+    if (low.includes("linkedin")) return "linkedin";
+  }
+  return null;
+}
+
+export function resolvePublicationRedeForPost(
+  p: SocialPost,
+): SocialPublicationRede | null {
+  if (p.status !== "publicado") return null;
+  if (p.redePublicacao) return p.redePublicacao;
+  return inferRedeFromLinkPost(p.linkPost);
+}
+
+export function postEngagementScore(p: SocialPost): number {
+  return (p.visualizacoes ?? 0) + (p.curtidas ?? 0) + (p.compartilhamentos ?? 0);
+}
+
 export function engajamentoMesTotal(posts: SocialPost[], ym: string): number {
   let t = 0;
   for (const p of postsPublicadosNoMes(posts, ym)) {
-    t += p.curtidas ?? 0;
-    t += p.compartilhamentos ?? 0;
-    t += p.visualizacoes ?? 0;
+    t += postEngagementScore(p);
   }
   return t;
+}
+
+export type EngajamentoPorRede = Record<SocialPublicationRede, number>;
+
+export function engajamentoPorRedeNoMes(
+  posts: SocialPost[],
+  ym: string,
+): EngajamentoPorRede {
+  const out: EngajamentoPorRede = {
+    facebook: 0,
+    instagram: 0,
+    linkedin: 0,
+  };
+  for (const p of postsPublicadosNoMes(posts, ym)) {
+    const r = resolvePublicationRedeForPost(p);
+    if (!r) continue;
+    out[r] += postEngagementScore(p);
+  }
+  return out;
+}
+
+export type EngajamentoSerieMes = {
+  month: string;
+  ym: string;
+  facebook: number;
+  instagram: number;
+  linkedin: number;
+  total: number;
+};
+
+export function engajamentoSeriePorRedeUltimosMeses(
+  posts: SocialPost[],
+  slices: { ym: string; label: string }[],
+): EngajamentoSerieMes[] {
+  return slices.map(({ ym, label }) => {
+    const byRede = engajamentoPorRedeNoMes(posts, ym);
+    const total = engajamentoMesTotal(posts, ym);
+    return {
+      month: label,
+      ym,
+      facebook: byRede.facebook,
+      instagram: byRede.instagram,
+      linkedin: byRede.linkedin,
+      total,
+    };
+  });
 }
 
 export function formatEngagementPt(n: number): string {
   if (n <= 0) return "0";
   return n.toLocaleString("pt-BR");
+}
+
+export function formatRedeLabel(
+  p: SocialPost,
+): string {
+  if (p.status !== "publicado") return "—";
+  const r = resolvePublicationRedeForPost(p);
+  if (!r) return "—";
+  const labels: Record<SocialPublicationRede, string> = {
+    facebook: "Facebook",
+    instagram: "Instagram",
+    linkedin: "LinkedIn",
+  };
+  return labels[r];
 }
 
 export function socialRowsForIndicatorTable(posts: SocialPost[]): {
@@ -92,6 +239,8 @@ export function socialRowsForIndicatorTable(posts: SocialPost[]): {
   tema: string;
   status: string;
   responsavel: string;
+  rede: string;
+  redeKey: SocialPublicationRede | null;
   link: string;
 }[] {
   const copy = [...posts].sort((a, b) => Number(b.id) - Number(a.id));
@@ -102,6 +251,8 @@ export function socialRowsForIndicatorTable(posts: SocialPost[]): {
     tema: p.tema,
     status: p.status,
     responsavel: p.responsavel,
+    rede: formatRedeLabel(p),
+    redeKey: resolvePublicationRedeForPost(p),
     link:
       p.linkPost?.trim() ||
       p.linkOuArquivo?.trim() ||
@@ -133,6 +284,7 @@ export function panfletagemFieldRowsFromEvents(
   return events
     .filter(
       (e) =>
+        isIndicadoresAgendaEvent(e) &&
         e.status === "concluido" &&
         e.date.startsWith(ym) &&
         isPanfletagemRelevant(e),

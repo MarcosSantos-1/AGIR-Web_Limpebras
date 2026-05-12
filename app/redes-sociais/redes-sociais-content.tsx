@@ -38,11 +38,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { PublishedMetricsSection } from "@/components/redes-sociais/published-metrics-section";
+import { SocialFollowerCards } from "@/components/redes-sociais/social-follower-cards";
 import { RedesSociaisSkeletonGrid } from "@/components/page-skeletons";
 import { useAuth } from "@/contexts/auth-context";
 import { collectStorageCandidateUrls } from "@/lib/storage/social-post-storage-urls";
 import { deleteStoredFilesByPublicUrls } from "@/lib/storage/delete-stored-files";
 import { downloadMediaUrlsSequentially } from "@/lib/download-image";
+import { formatRedeLabel } from "@/lib/indicators/communication-stats";
 import { toast } from "sonner";
 
 const filterOptions = [
@@ -240,6 +242,8 @@ function RedesSociaisPageBody() {
         ))}
       </div>
 
+      <SocialFollowerCards />
+
       {!postsHydrated ? (
         <RedesSociaisSkeletonGrid />
       ) : (
@@ -292,6 +296,19 @@ function RedesSociaisPageBody() {
                     {set.tipo}
                   </span>
                 </div>
+                {set.status === "publicado" ? (
+                  <>
+                    <div className="flex items-start gap-2 text-sm text-zinc-600">
+                      <Share2 className="mt-0.5 h-4 w-4 shrink-0 text-[#9b0ba6]" />
+                      <span>
+                        <span className="text-xs text-zinc-400">Rede</span>
+                        <br />
+                        {formatRedeLabel(set)}
+                      </span>
+                    </div>
+                    <div className="hidden sm:block" aria-hidden />
+                  </>
+                ) : null}
                 <div className="flex items-start gap-2 sm:col-span-2">
                   <User className="mt-0.5 h-4 w-4 shrink-0 text-[#9b0ba6]" />
                   <span>
@@ -308,11 +325,17 @@ function RedesSociaisPageBody() {
                     Ideia
                   </p>
                   <p className="mt-1 leading-relaxed">{set.ideiaResumo}</p>
-                  {set.notasProducao && (
-                    <p className="mt-2 text-xs text-zinc-600">{set.notasProducao}</p>
-                  )}
                 </div>
               )}
+
+              {set.notasProducao ? (
+                <div className="mb-4 rounded-xl border border-orange-900/40 bg-orange-950/15 px-4 py-3 text-sm text-orange-950">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-orange-950/90">
+                    Observações
+                  </p>
+                  <p className="mt-1.5 leading-relaxed">{set.notasProducao}</p>
+                </div>
+              ) : null}
 
               {set.legenda && set.status !== "ideia" && (
                 <div className="mb-4">

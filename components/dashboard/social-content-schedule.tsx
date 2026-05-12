@@ -2,6 +2,7 @@
 
 import type { SocialContentStatus } from "@/data/social-posts";
 import { useSocialPosts } from "@/contexts/social-posts-context";
+import { formatRedeLabel } from "@/lib/indicators/communication-stats";
 import { formatDateBr } from "@/lib/utils";
 import { motion } from "framer-motion";
 import {
@@ -128,6 +129,22 @@ export function SocialContentSchedule() {
                   <p className="mt-1 text-sm font-medium text-zinc-800">{row.tipo}</p>
                 </div>
               </div>
+
+              {row.status === "publicado" && (
+                <div className="flex gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-100">
+                    <Share2 className="h-4 w-4 text-[#9b0ba6]" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                      Rede
+                    </p>
+                    <p className="mt-1 text-sm font-medium text-zinc-800">
+                      {formatRedeLabel(row)}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="flex gap-3 sm:col-span-2">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-100">

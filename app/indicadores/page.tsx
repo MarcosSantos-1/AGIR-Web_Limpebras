@@ -3,12 +3,12 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { IndicadoresPageSkeleton } from "@/components/page-skeletons";
 import { useAgendaEvents } from "@/contexts/agenda-events-context";
+import { useSocialFollowers } from "@/contexts/social-followers-context";
 import { useSocialPosts } from "@/contexts/social-posts-context";
 import { motion } from "framer-motion";
 import {
   Activity,
   RefreshCcw,
-  AlertTriangle,
   MapPin,
   ArrowUpRight,
   ArrowDownRight,
@@ -25,6 +25,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatDateBr } from "@/lib/utils";
 import {
   SUBREGIONAIS,
@@ -34,8 +42,13 @@ import type { AgendaEvent } from "@/data/agenda-events";
 import {
   averagePanfletosLast20Weekdays,
   engajamentoMesTotal,
+  engajamentoPorRedeNoMes,
+  engajamentoSeriePorRedeUltimosMeses,
   formatEngagementPt,
-  locaisAtendidosMonthCount,
+  isIndicadoresAgendaEvent,
+  isValidIsoDate,
+  lastFourMonthsSlicesEndingAt,
+  locaisAtendidosCampoMonthCount,
   panfletagemFieldRowsFromEvents,
   postsPublicadosNoMes,
   socialRowsForIndicatorTable,
@@ -51,25 +64,25 @@ import {
   PieChart,
   Pie,
   Cell,
-  Area,
-  AreaChart,
+  LineChart,
+  Line,
 } from "recharts";
-import { useMemo } from "react";
+import { collectIndicatorMonthsWithData } from "@/lib/indicators/indicator-months";
+import { followerEvolutionChartSeries } from "@/lib/indicators/follower-evolution";
+import { SocialRedeFaIcon } from "@/components/redes-sociais/social-rede-fa-icon";
+import { useEffect, useMemo, useState } from "react";
 
-const MONTH_SHORT = [
-  "Jan",
-  "Fev",
-  "Mar",
-  "Abr",
-  "Mai",
-  "Jun",
-  "Jul",
-  "Ago",
-  "Set",
-  "Out",
-  "Nov",
-  "Dez",
-] as const;
+function agendaCompletedForIndicators(
+  events: AgendaEvent[],
+  ym: string,
+): AgendaEvent[] {
+  return events.filter(
+    (e) =>
+      isIndicadoresAgendaEvent(e) &&
+      e.date.startsWith(ym) &&
+      e.status === "concluido",
+  );
+}
 
 function currentYearMonth(): string {
   const d = new Date();
@@ -78,79 +91,84 @@ function currentYearMonth(): string {
 
 function previousYearMonth(ym: string): string {
   const [y, m] = ym.split("-").map(Number);
+  if (!Number.isFinite(y) || !Number.isFinite(m)) return ym;
   const d = new Date(y!, m! - 2, 1);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
-
-/** Últimos 4 meses (inclui o mês corrente), rótulo curto no gráfico. */
-function lastFourMonthsSlices(): { ym: string; label: string }[] {
-  const out: { ym: string; label: string }[] = [];
-  const now = new Date();
-  for (let i = 3; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    out.push({ ym, label: MONTH_SHORT[d.getMonth()]! });
-  }
-  return out;
-}
-
-function completedInMonth(events: AgendaEvent[], ym: string): AgendaEvent[] {
-  return events.filter(
-    (e) => e.date.startsWith(ym) && e.status === "concluido",
-  );
-}
-
-const reincidenceData = [
-  { month: "Jan", reincidencias: 5 },
-  { month: "Fev", reincidencias: 8 },
-  { month: "Mar", reincidencias: 4 },
-  { month: "Abr", reincidencias: 3 },
-];
-
-const criticalRegions = [
-  { name: "R. Silva Jardim - Centro", occurrences: 5, status: "crítico" },
-  { name: "Av. Marginal km 5 - Zona Sul", occurrences: 8, status: "crítico" },
-];
-
-function ComingSoonOverlay({ label = "Em breve" }: { label?: string }) {
-  return (
-    <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center rounded-3xl bg-white/55 px-4 backdrop-blur-[2px]">
-      <span className="rounded-full bg-zinc-900/85 px-4 py-2 text-center text-sm font-medium text-white shadow-lg">
-        {label}
-      </span>
-      <p className="mt-2 max-w-sm text-center text-xs text-zinc-600">
-        Pré-visualização com dados de exemplo; integração em breve.
-      </p>
-    </div>
-  );
 }
 
 export default function IndicadoresPage() {
   const { events, hydrated } = useAgendaEvents();
   const { posts: socialPosts, hydrated: socialHydrated } = useSocialPosts();
-  const dataReady = hydrated && socialHydrated;
+  const {
+    history: followerHistory,
+    counts: followerCounts,
+    historyHydrated,
+  } = useSocialFollowers();
+  const dataReady = hydrated && socialHydrated && historyHydrated;
 
-  const ymNow = currentYearMonth();
-  const ymPrev = previousYearMonth(ymNow);
+  const monthOptions = useMemo(
+    () => collectIndicatorMonthsWithData(events, socialPosts, followerHistory),
+    [events, socialPosts, followerHistory],
+  );
+  const [selectedYm, setSelectedYm] = useState("");
+
+  useEffect(() => {
+    if (monthOptions.length === 0) {
+      setSelectedYm("");
+      return;
+    }
+    setSelectedYm((cur) =>
+      monthOptions.some((o) => o.value === cur) ? cur : monthOptions[0]!.value,
+    );
+  }, [monthOptions]);
+
+  const ymPrev = selectedYm ? previousYearMonth(selectedYm) : "";
+
+  const followerChartMonthsAsc = useMemo(() => {
+    const fromHistory = [...new Set(followerHistory.map((h) => h.yearMonth))].filter(
+      (ym) => /^\d{4}-\d{2}$/.test(ym),
+    );
+    const fromIndicators = monthOptions.map((o) => o.value);
+    return [...new Set([...fromHistory, ...fromIndicators])].sort((a, b) =>
+      a.localeCompare(b),
+    );
+  }, [followerHistory, monthOptions]);
+
+  const followerEvolutionData = useMemo(
+    () =>
+      followerEvolutionChartSeries(followerHistory, {
+        monthsAsc:
+          followerChartMonthsAsc.length > 0 ? followerChartMonthsAsc : undefined,
+        fallbackCounts: followerCounts,
+        fallbackYm: currentYearMonth(),
+      }),
+    [followerHistory, followerChartMonthsAsc, followerCounts],
+  );
+
+  const noFollowerChartData =
+    followerHistory.length === 0 &&
+    followerCounts.facebook === 0 &&
+    followerCounts.instagram === 0 &&
+    followerCounts.linkedin === 0;
 
   const communicationKpis = useMemo(() => {
     const avg = averagePanfletosLast20Weekdays(events);
-    const loc = locaisAtendidosMonthCount(events, ymNow);
-    const pub = postsPublicadosNoMes(socialPosts, ymNow).length;
-    const eng = engajamentoMesTotal(socialPosts, ymNow);
+    const loc = locaisAtendidosCampoMonthCount(events, selectedYm);
+    const pub = postsPublicadosNoMes(socialPosts, selectedYm).length;
+    const eng = engajamentoMesTotal(socialPosts, selectedYm);
     const readyAg = hydrated;
     const readySo = socialHydrated;
     return [
       {
         label: "Média de panfletos / dia",
         value: readyAg ? avg.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : "…",
-        hint: "últimos 20 dias úteis (agenda concluída)",
+        hint: "últimos 20 dias úteis (concluídas no terreno; exceto interno)",
         icon: BarChart2,
       },
       {
         label: "Locais atendidos (mês)",
         value: readyAg ? String(loc) : "…",
-        hint: "registos com panfletagem no mês corrente",
+        hint: "panfletagens, eventos e ações ambientais concluídas (exceto interno)",
         icon: MapPin,
       },
       {
@@ -166,30 +184,42 @@ export default function IndicadoresPage() {
         icon: Heart,
       },
     ];
-  }, [events, socialPosts, hydrated, socialHydrated, ymNow]);
+  }, [events, socialPosts, hydrated, socialHydrated, selectedYm]);
 
-  const socialRows = useMemo(
-    () => socialRowsForIndicatorTable(socialPosts),
-    [socialPosts],
-  );
+  const socialRows = useMemo(() => {
+    const inMonth = socialPosts.filter(
+      (p) => isValidIsoDate(p.date) && p.date.startsWith(selectedYm),
+    );
+    return socialRowsForIndicatorTable(inMonth);
+  }, [socialPosts, selectedYm]);
 
   const panfletagemRows = useMemo(
-    () => panfletagemFieldRowsFromEvents(events, ymNow),
-    [events, ymNow],
+    () => panfletagemFieldRowsFromEvents(events, selectedYm),
+    [events, selectedYm],
   );
 
+  const engagementByRede = useMemo(
+    () => engajamentoPorRedeNoMes(socialPosts, selectedYm),
+    [socialPosts, selectedYm],
+  );
+
+  const engagementSeries = useMemo(() => {
+    const slices = lastFourMonthsSlicesEndingAt(selectedYm);
+    return engajamentoSeriePorRedeUltimosMeses(socialPosts, slices);
+  }, [socialPosts, selectedYm]);
+
   const monthlyData = useMemo(() => {
-    const slices = lastFourMonthsSlices();
+    const slices = lastFourMonthsSlicesEndingAt(selectedYm);
     return slices.map(({ ym, label }) => {
-      const done = completedInMonth(events, ym);
+      const done = agendaCompletedForIndicators(events, ym);
       const revitalizacoes = done.filter((e) => e.type === "revitalizacao").length;
       const acoes = done.length - revitalizacoes;
       return { month: label, acoes, revitalizacoes };
     });
-  }, [events]);
+  }, [events, selectedYm]);
 
   const regionData = useMemo(() => {
-    const done = completedInMonth(events, ymNow);
+    const done = agendaCompletedForIndicators(events, selectedYm);
     const total = done.length;
     const counts = new Map<string, number>();
     for (const e of done) {
@@ -219,15 +249,17 @@ export default function IndicadoresPage() {
       ...r,
       pct: Math.round((r.value / total) * 1000) / 10,
     }));
-  }, [events, ymNow]);
+  }, [events, selectedYm]);
 
   const stats = useMemo(() => {
-    const cur = completedInMonth(events, ymNow);
-    const prev = completedInMonth(events, ymPrev);
+    const cur = agendaCompletedForIndicators(events, selectedYm);
+    const prev = agendaCompletedForIndicators(events, ymPrev);
     const acoesCur = cur.filter((e) => e.type !== "revitalizacao").length;
     const acoesPrev = prev.filter((e) => e.type !== "revitalizacao").length;
     const revCur = cur.filter((e) => e.type === "revitalizacao").length;
     const revPrev = prev.filter((e) => e.type === "revitalizacao").length;
+    const locCur = locaisAtendidosCampoMonthCount(events, selectedYm);
+    const locPrev = locaisAtendidosCampoMonthCount(events, ymPrev);
 
     const pctDelta = (a: number, b: number) => {
       if (b <= 0) return a > 0 ? "+100%" : "—";
@@ -253,23 +285,15 @@ export default function IndicadoresPage() {
         description: "concluídas no mês",
       },
       {
-        label: "Reincidências",
-        value: "3",
-        change: "-25%",
-        trend: "down" as const,
-        icon: AlertTriangle,
-        description: "indicador piloto",
-      },
-      {
-        label: "Regiões Críticas",
-        value: "2",
-        change: "-1",
-        trend: "down" as const,
+        label: "Locais atendidos (mês)",
+        value: hydrated ? String(locCur) : "…",
+        change: hydrated ? pctDelta(locCur, locPrev) : "…",
+        trend: locCur >= locPrev ? ("up" as const) : ("down" as const),
         icon: MapPin,
-        description: "em monitoramento",
+        description: "panfletagem, eventos e ações ambientais",
       },
     ];
-  }, [events, hydrated, ymNow, ymPrev]);
+  }, [events, hydrated, selectedYm, ymPrev]);
 
   return (
     <AppShell title="Indicadores" subtitle="Visão rápida de performance">
@@ -277,8 +301,54 @@ export default function IndicadoresPage() {
         <IndicadoresPageSkeleton />
       ) : (
       <>
+      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <span className="whitespace-nowrap text-sm font-medium text-zinc-700">
+            Mês
+          </span>
+          <Select
+            value={selectedYm || undefined}
+            onValueChange={setSelectedYm}
+            disabled={monthOptions.length === 0}
+          >
+            <SelectTrigger className="h-10 w-full min-w-[200px] max-w-xs rounded-xl border-zinc-200 bg-white">
+              <SelectValue
+                placeholder={
+                  monthOptions.length === 0
+                    ? "Sem meses com dados"
+                    : "Mês"
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {monthOptions.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-wrap gap-2 lg:justify-end">
+          <Button
+            type="button"
+            disabled
+            className="h-10 rounded-xl border-0 bg-[#1877f2] px-4 text-white opacity-55 shadow-sm"
+          >
+            Relatório de redes sociais
+          </Button>
+          <Button
+            type="button"
+            disabled
+            className="h-10 rounded-xl border-0 bg-emerald-600 px-4 text-white opacity-55 shadow-sm"
+          >
+            Relatório de educação ambiental
+          </Button>
+        </div>
+      </div>
+
       {/* Main Stats */}
-      <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {stats.map((stat, index) => (
           <motion.div
             key={stat.label}
@@ -349,7 +419,7 @@ export default function IndicadoresPage() {
           >
             <h3 className="text-lg font-semibold text-zinc-900">Cronograma de redes sociais</h3>
             <p className="mb-4 text-sm text-zinc-500">
-              Data · Tipo · Tema · Status · Responsável · Link / arquivo
+              Data · Tipo · Tema · Status · Responsável · Rede · Link / arquivo
             </p>
             <Table>
               <TableHeader>
@@ -359,13 +429,14 @@ export default function IndicadoresPage() {
                   <TableHead>Tema</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Responsável</TableHead>
+                  <TableHead>Rede</TableHead>
                   <TableHead className="text-right">Link / arquivo</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {socialRows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-10 text-center text-sm text-zinc-500">
+                    <TableCell colSpan={7} className="py-10 text-center text-sm text-zinc-500">
                       Sem conteúdos de redes no Banco de Dados.
                     </TableCell>
                   </TableRow>
@@ -394,12 +465,202 @@ export default function IndicadoresPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-zinc-700">{row.responsavel}</TableCell>
+                    <TableCell className="text-sm text-zinc-600">
+                      {row.redeKey ? (
+                        <span className="flex items-center gap-2">
+                          <SocialRedeFaIcon
+                            rede={row.redeKey}
+                            className="w-4 shrink-0 text-center text-base leading-none text-zinc-800"
+                          />
+                          <span>{row.rede}</span>
+                        </span>
+                      ) : (
+                        row.rede
+                      )}
+                    </TableCell>
                     <TableCell className="text-right text-xs text-zinc-500">{row.link}</TableCell>
                   </TableRow>
                   ))
                 )}
               </TableBody>
             </Table>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.06 }}
+            className="rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50"
+          >
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-zinc-900">Engajamento por rede</h3>
+                <p className="text-sm text-zinc-500">
+                  Evolução nos últimos 4 meses até o mês selecionado (soma de visualizações,
+                  curtidas e partilhas por post publicado). Rede por campo ou inferida pelo link.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3 text-xs text-zinc-600">
+                <span className="inline-flex items-center gap-1.5">
+                  <SocialRedeFaIcon
+                    rede="facebook"
+                    className="text-center text-base leading-none text-[#1877f2]"
+                  />
+                  {formatEngagementPt(engagementByRede.facebook)}
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <SocialRedeFaIcon
+                    rede="instagram"
+                    className="text-center text-base leading-none text-[#E4405F]"
+                  />
+                  {formatEngagementPt(engagementByRede.instagram)}
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <SocialRedeFaIcon
+                    rede="linkedin"
+                    className="text-center text-base leading-none text-[#0A66C2]"
+                  />
+                  {formatEngagementPt(engagementByRede.linkedin)}
+                </span>
+              </div>
+            </div>
+            <ResponsiveContainer width="100%" height={280}>
+              <LineChart data={engagementSeries}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" vertical={false} />
+                <XAxis
+                  dataKey="month"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#71717a", fontSize: 12 }}
+                />
+                <YAxis
+                  allowDecimals={false}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#71717a", fontSize: 12 }}
+                />
+                <Tooltip
+                  formatter={(value: number) => formatEngagementPt(value)}
+                  contentStyle={{
+                    backgroundColor: "#fff",
+                    border: "none",
+                    borderRadius: "12px",
+                    boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="facebook"
+                  name="Facebook"
+                  stroke="#1877f2"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="instagram"
+                  name="Instagram"
+                  stroke="#E4405F"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="linkedin"
+                  name="LinkedIn"
+                  stroke="#0A66C2"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="total"
+                  name="Total"
+                  stroke="#52525b"
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.08 }}
+            className="rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50"
+          >
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-zinc-900">
+                  Evolução de seguidores por rede
+                </h3>
+                <p className="text-sm text-zinc-500">
+                  Último registo guardado em cada mês por rede; entre atualizações mantém-se o
+                  valor anterior (evolução contínua).
+                </p>
+              </div>
+            </div>
+            {noFollowerChartData ? (
+              <p className="py-8 text-center text-sm text-zinc-500">
+                Ainda não há histórico de seguidores. Os valores passam a ser registados quando
+                atualizar contagens na página Redes sociais.
+              </p>
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={followerEvolutionData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" vertical={false} />
+                  <XAxis
+                    dataKey="monthShort"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "#71717a", fontSize: 12 }}
+                  />
+                  <YAxis
+                    allowDecimals={false}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "#71717a", fontSize: 12 }}
+                  />
+                  <Tooltip
+                    formatter={(value: number) =>
+                      value.toLocaleString("pt-BR", { maximumFractionDigits: 0 })
+                    }
+                    contentStyle={{
+                      backgroundColor: "#fff",
+                      border: "none",
+                      borderRadius: "12px",
+                      boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="facebook"
+                    name="Facebook"
+                    stroke="#1877F2"
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="instagram"
+                    name="Instagram"
+                    stroke="#E4405F"
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="linkedin"
+                    name="LinkedIn"
+                    stroke="#0A66C2"
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </motion.div>
 
           <motion.div
@@ -427,7 +688,7 @@ export default function IndicadoresPage() {
                 {panfletagemRows.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="py-10 text-center text-sm text-zinc-500">
-                      Nenhuma panfletagem concluída neste mês na agenda.
+                      Nenhuma panfletagem concluída no mês selecionado na agenda.
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -462,7 +723,10 @@ export default function IndicadoresPage() {
           <div className="mb-6 flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-zinc-900">Ações por Mês</h3>
-              <p className="text-sm text-zinc-500">Concluídas nos últimos 4 meses</p>
+              <p className="text-sm text-zinc-500">
+                Concluídas nos últimos 4 meses até o mês selecionado (exceto registos internos —
+                garagem / reuniões)
+              </p>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
@@ -509,12 +773,13 @@ export default function IndicadoresPage() {
         >
           <h3 className="text-lg font-semibold text-zinc-900">Distribuição por Subregional</h3>
           <p className="text-sm text-zinc-500">
-            Ações concluídas no mês corrente · subregional nas ações; nas revitalizações, a
-            partir da subprefeitura do ponto viciado
+            Ações concluídas no mês selecionado, exceto subregional Interno (garagem / reuniões).
+            Subregional nas visitas; nas revitalizações, a partir da subprefeitura do ponto
+            viciado.
           </p>
           {regionData.length === 0 ? (
             <div className="mt-10 flex min-h-[200px] flex-col items-center justify-center gap-2 text-center text-sm text-zinc-500">
-              <p>Nenhuma ação concluída neste mês ou sem subregional informado nos registos.</p>
+              <p>Nenhuma ação concluída no mês selecionado ou sem subregional informado nos registos.</p>
               <p className="text-xs text-zinc-400">
                 Preencha Subregional nas ações de visita; nas revitalizações o mapa define a
                 subprefeitura.
@@ -571,94 +836,6 @@ export default function IndicadoresPage() {
               </div>
             </>
           )}
-        </motion.div>
-
-        {/* Reincidence Trend — preview desativada */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="relative col-span-12 rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50 lg:col-span-6"
-        >
-          <div className="pointer-events-none opacity-[0.42] saturate-[0.65]">
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-zinc-900">Tendência de Reincidências</h3>
-              <p className="text-sm text-zinc-500">Evolução mensal de pontos reincidentes</p>
-            </div>
-            <ResponsiveContainer width="100%" height={200}>
-              <AreaChart data={reincidenceData}>
-                <defs>
-                  <linearGradient id="reincidenceGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#f318e3" stopOpacity={0.3} />
-                    <stop offset="100%" stopColor="#f318e3" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" vertical={false} />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "#71717a", fontSize: 12 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: "#71717a", fontSize: 12 }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#fff",
-                    border: "none",
-                    borderRadius: "12px",
-                    boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="reincidencias"
-                  stroke="#f318e3"
-                  strokeWidth={2}
-                  fill="url(#reincidenceGradient)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-          <ComingSoonOverlay />
-        </motion.div>
-
-        {/* Critical Regions — preview desativada */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="relative col-span-12 rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50 lg:col-span-6"
-        >
-          <div className="pointer-events-none opacity-[0.42] saturate-[0.65]">
-            <div className="mb-6 flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-zinc-900">Regiões Críticas</h3>
-                <p className="text-sm text-zinc-500">Áreas que demandam atenção</p>
-              </div>
-              <span className="rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-700">
-                {criticalRegions.length} áreas
-              </span>
-            </div>
-            <div className="space-y-3">
-              {criticalRegions.map((region, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between rounded-xl bg-red-50 p-4"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100">
-                      <AlertTriangle className="h-5 w-5 text-red-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-zinc-900">{region.name}</p>
-                      <p className="text-sm text-red-600">
-                        {region.occurrences} ocorrências
-                      </p>
-                    </div>
-                  </div>
-                  <span className="rounded-full bg-red-600 px-3 py-1 text-xs font-medium text-white">
-                    Crítico
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <ComingSoonOverlay />
         </motion.div>
       </div>
       </>

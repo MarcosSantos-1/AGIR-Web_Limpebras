@@ -34,6 +34,8 @@ import {
   SocialMediaDropzone,
   type SocialConteudoMediaItem,
 } from "@/components/redes-sociais/social-media-dropzone";
+import { DatePickerField } from "@/components/forms/date-picker-field";
+import { TimePickerField } from "@/components/forms/time-picker-field";
 import { useSocialPosts } from "@/contexts/social-posts-context";
 import { useAuth } from "@/contexts/auth-context";
 import { useUserProfile } from "@/contexts/user-profile-context";
@@ -43,7 +45,10 @@ import type {
   SocialContentStatus,
   SocialContentTipo,
   SocialPost,
+  SocialPublicationRede,
 } from "@/data/social-posts";
+import { SOCIAL_PUBLICATION_REDE_LABELS } from "@/data/social-posts";
+import { SocialRedeFaIcon } from "@/components/redes-sociais/social-rede-fa-icon";
 
 export type ConteudoStatusFase = SocialContentStatus;
 
@@ -112,6 +117,12 @@ const STATUS_OPTIONS: {
 ];
 
 const TIPOS: SocialContentTipo[] = ["Post", "Reel", "Story"];
+
+const REDES_PUBLICACAO: SocialPublicationRede[] = [
+  "facebook",
+  "instagram",
+  "linkedin",
+];
 
 const MAX_SOCIAL_MEDIA_TOTAL = 18;
 
@@ -191,6 +202,7 @@ function hydrateFormFromPost(post: SocialPost) {
     dataPublicacao,
     horaPublicacao,
     notas: post.notasProducao ?? "",
+    redePublicacao: post.redePublicacao,
   };
 }
 
@@ -201,6 +213,7 @@ export function mergeFormIntoSocialPost(
   draft: FormDraft,
 ): SocialPost {
   const { fase, tema, tipo, responsavel, ideiaTexto, legenda } = draft;
+  const redeVal = draft.redePublicacao;
   const arquivoUrl = draft.linkArquivo.trim();
   const linkPostVal = draft.linkPost.trim();
 
@@ -261,6 +274,9 @@ export function mergeFormIntoSocialPost(
     linkOuArquivo: fase === "ideia" ? null : linkOuArquivoVal,
     linkOuArquivoLabel:
       fase === "ideia" || !linkOuArquivoVal ? undefined : linkOuArquivoLabel,
+    ...(fase === "publicado" && redeVal
+      ? { redePublicacao: redeVal }
+      : {}),
   };
 
   if (fase === "publicado") {
@@ -380,12 +396,16 @@ function ConteudoFormDialog({
   const [dataPublicacao, setDataPublicacao] = React.useState("");
   const [horaPublicacao, setHoraPublicacao] = React.useState("");
   const [notas, setNotas] = React.useState("");
+  const [redePublicacao, setRedePublicacao] = React.useState<
+    SocialPublicationRede | ""
+  >("");
   const [media, setMedia] = React.useState<SocialConteudoMediaItem[]>([]);
   const [removedExistingPhotoIds, setRemovedExistingPhotoIds] = React.useState<
     number[]
   >([]);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
+  const [camposDataErro, setCamposDataErro] = React.useState(false);
 
   /* Sincronizar estado do formulário com props ao abrir — padrão de diálogo controlado. */
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -412,6 +432,8 @@ function ConteudoFormDialog({
       setDataPublicacao(h.dataPublicacao);
       setHoraPublicacao(h.horaPublicacao);
       setNotas(h.notas);
+      setRedePublicacao(h.redePublicacao ?? "");
+      setCamposDataErro(false);
       return;
     }
 
@@ -429,8 +451,10 @@ function ConteudoFormDialog({
     setDataPublicacao("");
     setHoraPublicacao("");
     setNotas("");
+    setRedePublicacao("");
     setSubmitError(null);
     setSubmitting(false);
+    setCamposDataErro(false);
   }, [open, editingPost]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -438,6 +462,21 @@ function ConteudoFormDialog({
     e.preventDefault();
     if (submitting) return;
     setSubmitError(null);
+    setCamposDataErro(false);
+    if (fase === "agendado" && !dataPauta.trim()) {
+      setCamposDataErro(true);
+      setSubmitError("Informe a data da publicação agendada.");
+      return;
+    }
+    if (fase === "publicado" && !dataPublicacao.trim()) {
+      setCamposDataErro(true);
+      setSubmitError("Informe a data da publicação.");
+      return;
+    }
+    if (fase === "publicado" && !redePublicacao) {
+      setSubmitError("Selecione a rede onde o conteúdo foi publicado.");
+      return;
+    }
     setSubmitting(true);
 
     const draft = {
@@ -457,6 +496,10 @@ function ConteudoFormDialog({
       dataPublicacao,
       horaPublicacao,
       notas,
+      redePublicacao:
+        fase === "publicado" && redePublicacao
+          ? (redePublicacao as SocialPublicationRede)
+          : undefined,
     };
 
     try {
@@ -547,7 +590,12 @@ function ConteudoFormDialog({
                 </Label>
                 <Select
                   value={fase}
-                  onValueChange={(v) => setFase(v as ConteudoStatusFase)}
+                  onValueChange={(v) => {
+                    const next = v as ConteudoStatusFase;
+                    setFase(next);
+                    setCamposDataErro(false);
+                    if (next !== "publicado") setRedePublicacao("");
+                  }}
                 >
                   <SelectTrigger
                     id="fase-conteudo"
@@ -600,7 +648,41 @@ function ConteudoFormDialog({
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
+                {fase === "publicado" ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="rede-publicacao">Rede (publicação)</Label>
+                    <Select
+                      value={redePublicacao || undefined}
+                      onValueChange={(v) =>
+                        setRedePublicacao(v as SocialPublicationRede)
+                      }
+                      required
+                    >
+                      <SelectTrigger
+                        id="rede-publicacao"
+                        className="h-11 w-full min-w-0 border-zinc-200 bg-white"
+                      >
+                        <SelectValue placeholder="Onde foi postado" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {REDES_PUBLICACAO.map((r) => (
+                          <SelectItem key={r} value={r}>
+                            <span className="flex items-center gap-2">
+                              <SocialRedeFaIcon
+                                rede={r}
+                                className="w-4 text-center text-base leading-none"
+                              />
+                              {SOCIAL_PUBLICATION_REDE_LABELS[r]}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <div className="hidden sm:block" aria-hidden />
+                )}
+                <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="resp">Responsável</Label>
                   <Input
                     id="resp"
@@ -619,24 +701,27 @@ function ConteudoFormDialog({
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="data-pauta">Data</Label>
-                      <Input
+                      <Label htmlFor="data-pauta" className="text-zinc-600">
+                        Data
+                      </Label>
+                      <DatePickerField
                         id="data-pauta"
-                        type="date"
-                        className="h-11 border-zinc-200"
                         value={dataPauta}
-                        onChange={(e) => setDataPauta(e.target.value)}
-                        required
+                        onChange={(v) => {
+                          setDataPauta(v);
+                          setCamposDataErro(false);
+                        }}
+                        invalid={camposDataErro && !dataPauta.trim()}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="hora-pauta">Horário (opcional)</Label>
-                      <Input
+                      <Label htmlFor="hora-pauta" className="text-zinc-600">
+                        Horário (opcional)
+                      </Label>
+                      <TimePickerField
                         id="hora-pauta"
-                        type="time"
-                        className="h-11 border-zinc-200"
                         value={horaPauta}
-                        onChange={(e) => setHoraPauta(e.target.value)}
+                        onChange={setHoraPauta}
                       />
                     </div>
                   </div>
@@ -650,28 +735,27 @@ function ConteudoFormDialog({
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="data-pub">Data da publicação</Label>
-                      <Input
+                      <Label htmlFor="data-pub" className="text-zinc-600">
+                        Data da publicação
+                      </Label>
+                      <DatePickerField
                         id="data-pub"
-                        type="date"
-                        className="h-11 border-zinc-200"
                         value={dataPublicacao}
-                        onChange={(e) =>
-                          setDataPublicacao(e.target.value)
-                        }
-                        required
+                        onChange={(v) => {
+                          setDataPublicacao(v);
+                          setCamposDataErro(false);
+                        }}
+                        invalid={camposDataErro && !dataPublicacao.trim()}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="hora-pub">Horário (opcional)</Label>
-                      <Input
+                      <Label htmlFor="hora-pub" className="text-zinc-600">
+                        Horário (opcional)
+                      </Label>
+                      <TimePickerField
                         id="hora-pub"
-                        type="time"
-                        className="h-11 border-zinc-200"
                         value={horaPublicacao}
-                        onChange={(e) =>
-                          setHoraPublicacao(e.target.value)
-                        }
+                        onChange={setHoraPublicacao}
                       />
                     </div>
                     <div className="space-y-2 sm:col-span-2">
