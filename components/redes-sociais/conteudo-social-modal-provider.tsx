@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import {
   Share2,
@@ -202,7 +203,11 @@ function hydrateFormFromPost(post: SocialPost) {
     dataPublicacao,
     horaPublicacao,
     notas: post.notasProducao ?? "",
-    redePublicacao: post.redePublicacao,
+    redePublicacao: post.redePublicacao
+      ? Array.isArray(post.redePublicacao)
+        ? post.redePublicacao
+        : [post.redePublicacao]
+      : undefined,
   };
 }
 
@@ -213,7 +218,9 @@ export function mergeFormIntoSocialPost(
   draft: FormDraft,
 ): SocialPost {
   const { fase, tema, tipo, responsavel, ideiaTexto, legenda } = draft;
-  const redeVal = draft.redePublicacao;
+  const redeVal = draft.redePublicacao && draft.redePublicacao.length > 0
+    ? draft.redePublicacao
+    : undefined;
   const arquivoUrl = draft.linkArquivo.trim();
   const linkPostVal = draft.linkPost.trim();
 
@@ -397,8 +404,8 @@ function ConteudoFormDialog({
   const [horaPublicacao, setHoraPublicacao] = React.useState("");
   const [notas, setNotas] = React.useState("");
   const [redePublicacao, setRedePublicacao] = React.useState<
-    SocialPublicationRede | ""
-  >("");
+    SocialPublicationRede[]
+  >([]);
   const [media, setMedia] = React.useState<SocialConteudoMediaItem[]>([]);
   const [removedExistingPhotoIds, setRemovedExistingPhotoIds] = React.useState<
     number[]
@@ -432,7 +439,13 @@ function ConteudoFormDialog({
       setDataPublicacao(h.dataPublicacao);
       setHoraPublicacao(h.horaPublicacao);
       setNotas(h.notas);
-      setRedePublicacao(h.redePublicacao ?? "");
+      setRedePublicacao(
+        h.redePublicacao
+          ? Array.isArray(h.redePublicacao)
+            ? h.redePublicacao
+            : [h.redePublicacao]
+          : [],
+      );
       setCamposDataErro(false);
       return;
     }
@@ -451,7 +464,7 @@ function ConteudoFormDialog({
     setDataPublicacao("");
     setHoraPublicacao("");
     setNotas("");
-    setRedePublicacao("");
+    setRedePublicacao([]);
     setSubmitError(null);
     setSubmitting(false);
     setCamposDataErro(false);
@@ -473,8 +486,8 @@ function ConteudoFormDialog({
       setSubmitError("Informe a data da publicação.");
       return;
     }
-    if (fase === "publicado" && !redePublicacao) {
-      setSubmitError("Selecione a rede onde o conteúdo foi publicado.");
+    if (fase === "publicado" && redePublicacao.length === 0) {
+      setSubmitError("Selecione ao menos uma rede onde o conteúdo foi publicado.");
       return;
     }
     setSubmitting(true);
@@ -497,8 +510,8 @@ function ConteudoFormDialog({
       horaPublicacao,
       notas,
       redePublicacao:
-        fase === "publicado" && redePublicacao
-          ? (redePublicacao as SocialPublicationRede)
+        fase === "publicado" && redePublicacao.length > 0
+          ? redePublicacao
           : undefined,
     };
 
@@ -594,7 +607,7 @@ function ConteudoFormDialog({
                     const next = v as ConteudoStatusFase;
                     setFase(next);
                     setCamposDataErro(false);
-                    if (next !== "publicado") setRedePublicacao("");
+                    if (next !== "publicado") setRedePublicacao([]);
                   }}
                 >
                   <SelectTrigger
@@ -650,34 +663,36 @@ function ConteudoFormDialog({
                 </div>
                 {fase === "publicado" ? (
                   <div className="space-y-2">
-                    <Label htmlFor="rede-publicacao">Rede (publicação)</Label>
-                    <Select
-                      value={redePublicacao || undefined}
-                      onValueChange={(v) =>
-                        setRedePublicacao(v as SocialPublicationRede)
-                      }
-                      required
-                    >
-                      <SelectTrigger
-                        id="rede-publicacao"
-                        className="h-11 w-full min-w-0 border-zinc-200 bg-white"
-                      >
-                        <SelectValue placeholder="Onde foi postado" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {REDES_PUBLICACAO.map((r) => (
-                          <SelectItem key={r} value={r}>
-                            <span className="flex items-center gap-2">
-                              <SocialRedeFaIcon
-                                rede={r}
-                                className="w-4 text-center text-base leading-none"
-                              />
+                    <Label>Redes (publicação)</Label>
+                    <div className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-white p-3">
+                      {REDES_PUBLICACAO.map((r) => {
+                        const checked = redePublicacao.includes(r);
+                        return (
+                          <label
+                            key={r}
+                            className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-zinc-50"
+                          >
+                            <Checkbox
+                              checked={checked}
+                              onCheckedChange={(v) => {
+                                setRedePublicacao((prev) =>
+                                  v
+                                    ? [...prev, r]
+                                    : prev.filter((x) => x !== r),
+                                );
+                              }}
+                            />
+                            <SocialRedeFaIcon
+                              rede={r}
+                              className="w-4 text-center text-base leading-none"
+                            />
+                            <span className="text-sm font-medium text-zinc-700">
                               {SOCIAL_PUBLICATION_REDE_LABELS[r]}
                             </span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                          </label>
+                        );
+                      })}
+                    </div>
                   </div>
                 ) : (
                   <div className="hidden sm:block" aria-hidden />

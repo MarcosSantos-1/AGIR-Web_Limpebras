@@ -7,9 +7,10 @@ import {
   getHomeWeekSummaryRangeLabel,
 } from "@/data/agenda-events";
 import { useAgendaEvents } from "@/contexts/agenda-events-context";
+import { useSocialPosts } from "@/contexts/social-posts-context";
 import { getCurrentWeekMondayIso, getTodayIsoInTimeZone } from "@/lib/date/week";
 import { motion } from "framer-motion";
-import { CheckCircle2, Clock, AlertCircle, ChevronRight } from "lucide-react";
+import { CheckCircle2, Clock, AlertCircle, Share2, ChevronRight } from "lucide-react";
 import Link from "next/link";
 
 const statusConfig = {
@@ -20,10 +21,11 @@ const statusConfig = {
 
 export function WeekSummary() {
   const { events } = useAgendaEvents();
+  const { posts } = useSocialPosts();
   const weekStartIso = getCurrentWeekMondayIso();
   const todayIso = getTodayIsoInTimeZone();
   const weekLabel = getHomeWeekSummaryRangeLabel(todayIso, weekStartIso);
-  const weekData = getHomeWeekSummaryColumns(todayIso, events, weekStartIso);
+  const weekData = getHomeWeekSummaryColumns(todayIso, events, weekStartIso, posts);
 
   return (
     <motion.div
@@ -70,27 +72,48 @@ export function WeekSummary() {
             </div>
             <div className="space-y-2">
               {day.tasks.map((task, taskIndex) => {
+                const isSocial = !!task.socialPostId;
                 const config = statusConfig[task.status];
-                const Icon = config.icon;
+                const Icon = isSocial ? Share2 : config.icon;
                 const inner = (
                   <div
-                    className={`rounded-xl ${config.bg} p-2.5 ${
-                      task.eventId > 0
+                    className={`rounded-xl ${
+                      isSocial ? "bg-fuchsia-50" : config.bg
+                    } p-2.5 ${
+                      task.eventId > 0 || isSocial
                         ? "cursor-pointer transition-shadow hover:shadow-md"
                         : ""
                     }`}
                   >
                     <div className="flex items-start gap-2">
-                      <Icon className={`mt-0.5 h-3.5 w-3.5 ${config.color}`} />
+                      <Icon
+                        className={`mt-0.5 h-3.5 w-3.5 ${
+                          isSocial ? "text-fuchsia-500" : config.color
+                        }`}
+                      />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-xs font-medium text-zinc-700">
                           {task.title}
                         </p>
-                        <p className="text-[10px] text-zinc-500">{task.time}</p>
+                        {task.time ? (
+                          <p className="text-[10px] text-zinc-500">{task.time}</p>
+                        ) : null}
                       </div>
                     </div>
                   </div>
                 );
+
+                if (isSocial) {
+                  return (
+                    <Link
+                      key={`${day.day}-${taskIndex}`}
+                      href={`/redes-sociais?content=${task.socialPostId}`}
+                      scroll={false}
+                    >
+                      {inner}
+                    </Link>
+                  );
+                }
 
                 if (task.eventId > 0) {
                   return (

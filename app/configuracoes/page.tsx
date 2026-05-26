@@ -3,6 +3,7 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { useTheme } from "next-themes";
 import {
   User,
   Palette,
@@ -12,6 +13,7 @@ import {
   Check,
   Moon,
   Sun,
+  Monitor,
   MessageCircle,
   Users,
   Loader2,
@@ -50,7 +52,7 @@ const settingsSections = [
     id: "aparencia",
     label: "Aparência",
     icon: Palette,
-    description: "Tema e personalização — em desenvolvimento",
+    description: "Tema e cor de destaque",
   },
   {
     id: "dados",
@@ -69,6 +71,8 @@ const settingsSections = [
 export default function ConfiguracoesPage() {
   const [activeSection, setActiveSection] = useState("perfil");
   const { user } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const [accentColor, setAccentColor] = useState("#f318e3");
   const [exportingExcel, setExportingExcel] = useState(false);
 
   const handleExportExcel = async () => {
@@ -176,80 +180,79 @@ export default function ConfiguracoesPage() {
           {activeSection === "equipe" && <EquipaAcessoSection />}
 
           {activeSection === "aparencia" && (
-            <div className="relative space-y-6">
-              <p className="rounded-xl border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-                <span className="font-medium">Em breve.</span> Tema escuro,
-                alto contraste e preferências mais finas ficarão disponíveis
-                após a próxima rodada maior do app.
-              </p>
-              <div className="rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50 opacity-[0.55]">
-                <h3 className="mb-6 text-lg font-semibold text-zinc-900">
+            <div className="space-y-6">
+              <div className="rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50 dark:bg-zinc-900 dark:shadow-zinc-800/30">
+                <h3 className="mb-6 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
                   Tema
                 </h3>
                 <div className="grid grid-cols-3 gap-4">
-                  <button
-                    type="button"
-                    disabled
-                    className="flex flex-col items-center gap-3 rounded-xl border-2 border-[#f318e3] bg-[#f318e3]/5 p-4"
-                  >
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-md">
-                      <Sun className="h-6 w-6 text-amber-500" />
-                    </div>
-                    <span className="text-sm font-medium text-zinc-900">
-                      Claro
-                    </span>
-                    <Check className="h-4 w-4 text-[#f318e3]" />
-                  </button>
-                  <button
-                    type="button"
-                    disabled
-                    className="flex flex-col items-center gap-3 rounded-xl border border-zinc-200 p-4"
-                  >
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-800 shadow-md">
-                      <Moon className="h-6 w-6 text-white" />
-                    </div>
-                    <span className="text-sm font-medium text-zinc-900">
-                      Escuro
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    disabled
-                    className="flex flex-col items-center gap-3 rounded-xl border border-zinc-200 p-4"
-                  >
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-white to-zinc-800 shadow-md">
-                      <div className="h-3 w-3 rounded-full bg-zinc-400" />
-                    </div>
-                    <span className="text-sm font-medium text-zinc-900">
-                      Sistema
-                    </span>
-                  </button>
+                  {([
+                    { value: "light", label: "Claro", Icon: Sun, iconClass: "text-amber-500", bgClass: "bg-white dark:bg-zinc-200" },
+                    { value: "dark", label: "Escuro", Icon: Moon, iconClass: "text-white", bgClass: "bg-zinc-800" },
+                    { value: "system", label: "Sistema", Icon: Monitor, iconClass: "text-zinc-500", bgClass: "bg-gradient-to-br from-white to-zinc-800" },
+                  ] as const).map(({ value, label, Icon, iconClass, bgClass }) => {
+                    const isActive = theme === value;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setTheme(value)}
+                        className={`flex flex-col items-center gap-3 rounded-xl p-4 transition-all ${
+                          isActive
+                            ? "border-2 border-[var(--gradient-start)] bg-[var(--gradient-start)]/5"
+                            : "border border-zinc-200 hover:border-zinc-300 dark:border-zinc-700 dark:hover:border-zinc-600"
+                        }`}
+                      >
+                        <div className={`flex h-12 w-12 items-center justify-center rounded-xl shadow-md ${bgClass}`}>
+                          <Icon className={`h-6 w-6 ${iconClass}`} />
+                        </div>
+                        <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                          {label}
+                        </span>
+                        {isActive && (
+                          <Check className="h-4 w-4 text-[var(--gradient-start)]" />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50 opacity-[0.55]">
-                <h3 className="mb-6 text-lg font-semibold text-zinc-900">
+              <div className="rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50 dark:bg-zinc-900 dark:shadow-zinc-800/30">
+                <h3 className="mb-6 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
                   Cor de destaque
                 </h3>
                 <div className="flex gap-3">
-                  {["#f318e3", "#6366f1", "#10b981", "#f59e0b", "#ef4444"].map(
-                    (color) => (
+                  {[
+                    { hex: "#f318e3", label: "Fúcsia" },
+                    { hex: "#6366f1", label: "Índigo" },
+                    { hex: "#10b981", label: "Esmeralda" },
+                    { hex: "#f59e0b", label: "Âmbar" },
+                    { hex: "#ef4444", label: "Vermelho" },
+                  ].map(({ hex, label }) => {
+                    const isSelected = accentColor === hex;
+                    return (
                       <button
-                        key={color}
+                        key={hex}
                         type="button"
-                        disabled
-                        className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-                          color === "#f318e3" ? "ring-2 ring-offset-2" : ""
+                        title={label}
+                        onClick={() => {
+                          setAccentColor(hex);
+                          document.documentElement.style.setProperty("--gradient-start", hex);
+                        }}
+                        className={`flex h-10 w-10 items-center justify-center rounded-xl transition-transform hover:scale-110 ${
+                          isSelected ? "ring-2 ring-offset-2 dark:ring-offset-zinc-900" : ""
                         }`}
-                        style={{ backgroundColor: color }}
+                        style={{ backgroundColor: hex, ...(isSelected ? { ringColor: hex } : {}) }}
                       >
-                        {color === "#f318e3" && (
-                          <Check className="h-5 w-5 text-white" />
-                        )}
+                        {isSelected && <Check className="h-5 w-5 text-white" />}
                       </button>
-                    ),
-                  )}
+                    );
+                  })}
                 </div>
+                <p className="mt-4 text-xs text-zinc-500 dark:text-zinc-400">
+                  A cor de destaque é aplicada em elementos do app como gradientes e ícones.
+                </p>
               </div>
             </div>
           )}

@@ -1401,13 +1401,150 @@ function RevitalizacaoDialog({
   initialEvent: AgendaEvent | null;
   preferFinalizado?: boolean;
 }) {
-  const { pontosVicioFormOptions } = useCustomPontosViciados();
+  const { pontosVicioFormOptions, addPontoViciado } = useCustomPontosViciados();
   const [situacaoRev, setSituacaoRev] = React.useState<
     "agendar" | "finalizado"
   >("agendar");
   const [pontoViciadoId, setPontoViciadoId] = React.useState<string>("");
   const [pvComboOpen, setPvComboOpen] = React.useState(false);
   const [pvSearch, setPvSearch] = React.useState("");
+
+  const { user } = useAuth();
+  const { profile } = useUserProfile();
+
+  const [addingNewPonto, setAddingNewPonto] = React.useState(false);
+  const [newPontoCodigo, setNewPontoCodigo] = React.useState("");
+  const [newPontoAddress, setNewPontoAddress] = React.useState("");
+  const [newPontoSubprefeitura, setNewPontoSubprefeitura] = React.useState("");
+  const [newPontoLat, setNewPontoLat] = React.useState<number | null>(null);
+  const [newPontoLng, setNewPontoLng] = React.useState<number | null>(null);
+  const [newPontoSaving, setNewPontoSaving] = React.useState(false);
+  const [newPontoError, setNewPontoError] = React.useState<string | null>(null);
+  const [newPontoSearchQuery, setNewPontoSearchQuery] = React.useState("");
+  const [newPontoSearching, setNewPontoSearching] = React.useState(false);
+  const [newPontoMapFlyTo, setNewPontoMapFlyTo] =
+    React.useState<ModalLocationMiniMapFlyTo | null>(null);
+  const newPontoFlyNonce = React.useRef(0);
+
+  const resetNewPontoForm = React.useCallback(() => {
+    setAddingNewPonto(false);
+    setNewPontoCodigo("");
+    setNewPontoAddress("");
+    setNewPontoSubprefeitura("");
+    setNewPontoLat(null);
+    setNewPontoLng(null);
+    setNewPontoError(null);
+    setNewPontoSearchQuery("");
+    setNewPontoMapFlyTo(null);
+  }, []);
+
+  const handleNewPontoSearch = React.useCallback(async () => {
+    const q = newPontoSearchQuery.trim();
+    if (q.length < 2) return;
+    setNewPontoSearching(true);
+    try {
+      const res = await fetch("/api/geocode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: q }),
+      });
+      const data = (await res.json()) as {
+        results?: { lat: number; lng: number; formatted_address: string }[];
+      };
+      const hit = data.results?.[0];
+      if (hit) {
+        setNewPontoLat(hit.lat);
+        setNewPontoLng(hit.lng);
+        if (!newPontoAddress) setNewPontoAddress(hit.formatted_address);
+        newPontoFlyNonce.current += 1;
+        setNewPontoMapFlyTo({
+          lat: hit.lat,
+          lng: hit.lng,
+          zoom: 17,
+          nonce: newPontoFlyNonce.current,
+        });
+      }
+    } catch {
+      /* silently fail */
+    } finally {
+      setNewPontoSearching(false);
+    }
+  }, [newPontoSearchQuery, newPontoAddress]);
+
+  const handleNewPontoMapClick = React.useCallback(
+    async (lat: number, lng: number) => {
+      setNewPontoLat(lat);
+      setNewPontoLng(lng);
+      newPontoFlyNonce.current += 1;
+      setNewPontoMapFlyTo({
+        lat,
+        lng,
+        zoom: 17,
+        nonce: newPontoFlyNonce.current,
+      });
+      try {
+        const res = await fetch("/api/geocode", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ lat, lng }),
+        });
+        const data = (await res.json()) as {
+          results?: { formatted_address: string }[];
+        };
+        const addr = data.results?.[0]?.formatted_address;
+        if (addr) setNewPontoAddress(addr);
+      } catch {
+        /* silently fail */
+      }
+    },
+    [],
+  );
+
+  const handleSaveNewPonto = React.useCallback(async () => {
+    setNewPontoError(null);
+    const codigo = newPontoCodigo.trim();
+    if (!codigo) {
+      setNewPontoError("Informe o código do ponto.");
+      return;
+    }
+    if (pontosVicioFormOptions.some((p) => p.id === codigo)) {
+      setNewPontoError("Já existe um ponto com este código.");
+      return;
+    }
+    if (newPontoLat == null || newPontoLng == null) {
+      setNewPontoError("Busque ou clique no mapa para definir a localização.");
+      return;
+    }
+    setNewPontoSaving(true);
+    try {
+      await addPontoViciado({
+        codigo,
+        address: newPontoAddress.trim() || "Sem endereço",
+        subprefeitura: newPontoSubprefeitura.trim(),
+        lat: newPontoLat,
+        lng: newPontoLng,
+        createdByUid: user?.uid,
+      });
+      setPontoViciadoId(codigo);
+      resetNewPontoForm();
+    } catch (err) {
+      setNewPontoError(
+        err instanceof Error ? err.message : "Erro ao salvar ponto.",
+      );
+    } finally {
+      setNewPontoSaving(false);
+    }
+  }, [
+    newPontoCodigo,
+    newPontoAddress,
+    newPontoSubprefeitura,
+    newPontoLat,
+    newPontoLng,
+    pontosVicioFormOptions,
+    addPontoViciado,
+    user?.uid,
+    resetNewPontoForm,
+  ]);
   const [revFotoUrls, setRevFotoUrls] = React.useState<string[]>([]);
   const [linksPostagemText, setLinksPostagemText] = React.useState("");
   const [panfletagemRealizada, setPanfletagemRealizada] = React.useState(false);
@@ -1422,8 +1559,6 @@ function RevitalizacaoDialog({
   const [savingRev, setSavingRev] = React.useState(false);
   const [pontoErro, setPontoErro] = React.useState(false);
   const revitalizacaoFormScrollRef = React.useRef<HTMLDivElement>(null);
-  const { user } = useAuth();
-  const { profile } = useUserProfile();
 
   React.useEffect(() => {
     if (!open) return;
@@ -1446,9 +1581,11 @@ function RevitalizacaoDialog({
       setSaveErrorRev(null);
       setSavingRev(false);
       setPontoErro(false);
+      resetNewPontoForm();
       return;
     }
     setSaveErrorRev(null);
+    resetNewPontoForm();
     setSavingRev(false);
     setPontoErro(false);
     setDataRevitalizacao(initialEvent.date);
@@ -1819,6 +1956,18 @@ function RevitalizacaoDialog({
                         </Command>
                       </PopoverContent>
                     </Popover>
+                    {!addingNewPonto && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="mt-1.5 h-auto px-0 text-xs font-medium text-[#9b0ba6] hover:text-[#9b0ba6]/80 hover:bg-transparent"
+                        onClick={() => setAddingNewPonto(true)}
+                      >
+                        <MapPin className="mr-1 h-3 w-3" />
+                        Cadastrar novo ponto viciado
+                      </Button>
+                    )}
                   </div>
                   <div className="space-y-2 sm:col-span-1">
                     <Label
@@ -1858,6 +2007,130 @@ function RevitalizacaoDialog({
                     ) : null}
                   </div>
                 </div>
+
+                {addingNewPonto && (
+                  <div className="mt-4 space-y-3 rounded-2xl border-2 border-dashed border-violet-200 bg-violet-50/40 p-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-violet-900">
+                        Cadastrar novo ponto viciado
+                      </p>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-zinc-500"
+                        onClick={resetNewPontoForm}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                    {newPontoError && (
+                      <p className="rounded-lg border border-red-200 bg-red-50/80 px-3 py-2 text-xs font-medium text-red-700">
+                        {newPontoError}
+                      </p>
+                    )}
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-zinc-600">
+                          Código <RequiredStar />
+                        </Label>
+                        <Input
+                          className="h-9 border-zinc-200 text-sm"
+                          placeholder="Ex.: CV-001"
+                          value={newPontoCodigo}
+                          onChange={(e) => setNewPontoCodigo(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-zinc-600">
+                          Subprefeitura
+                        </Label>
+                        <Input
+                          className="h-9 border-zinc-200 text-sm"
+                          placeholder="Ex.: Capela do Socorro"
+                          value={newPontoSubprefeitura}
+                          onChange={(e) =>
+                            setNewPontoSubprefeitura(e.target.value)
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-zinc-600">
+                        Buscar endereço
+                      </Label>
+                      <div className="flex gap-2">
+                        <Input
+                          className="h-9 flex-1 border-zinc-200 text-sm"
+                          placeholder="Rua, número, bairro…"
+                          value={newPontoSearchQuery}
+                          onChange={(e) =>
+                            setNewPontoSearchQuery(e.target.value)
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              void handleNewPontoSearch();
+                            }
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-9 shrink-0 rounded-lg"
+                          disabled={newPontoSearching}
+                          onClick={() => void handleNewPontoSearch()}
+                        >
+                          {newPontoSearching ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Search className="h-3.5 w-3.5" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-zinc-600">
+                        Endereço
+                      </Label>
+                      <Input
+                        className="h-9 border-zinc-200 text-sm"
+                        placeholder="Preenchido pela busca ou clique no mapa"
+                        value={newPontoAddress}
+                        onChange={(e) => setNewPontoAddress(e.target.value)}
+                      />
+                    </div>
+                    <ModalLocationMiniMap
+                      className="!min-h-[180px]"
+                      marker={
+                        newPontoLat != null && newPontoLng != null
+                          ? { lat: newPontoLat, lng: newPontoLng }
+                          : null
+                      }
+                      flyTo={newPontoMapFlyTo}
+                      onMapClick={handleNewPontoMapClick}
+                    />
+                    <p className="text-[10px] text-zinc-500">
+                      Clique no mapa para ajustar a localização exata.
+                    </p>
+                    <Button
+                      type="button"
+                      className="h-9 w-full rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-sm text-white hover:opacity-90"
+                      disabled={newPontoSaving}
+                      onClick={() => void handleSaveNewPonto()}
+                    >
+                      {newPontoSaving ? (
+                        <>
+                          <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                          Salvando…
+                        </>
+                      ) : (
+                        "Salvar ponto e selecionar"
+                      )}
+                    </Button>
+                  </div>
+                )}
               </SectionBox>
 
               <SectionBox icon={Calendar} title="Data da revitalização">

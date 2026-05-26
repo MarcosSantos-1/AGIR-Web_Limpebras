@@ -2,6 +2,7 @@
 
 import { AppShell } from "@/components/layout/app-shell";
 import { useAgendaEvents } from "@/contexts/agenda-events-context";
+import { useSocialPosts } from "@/contexts/social-posts-context";
 import {
   mergeAgendaHighlightIfNeeded,
   useAgendaViewportEvents,
@@ -34,6 +35,7 @@ import {
   Users,
   Image,
   Pencil,
+  Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -68,6 +70,15 @@ const statusOptions = [
 
 const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
+type SocialAgendaItem = {
+  kind: "social";
+  id: number;
+  title: string;
+  date: string;
+  tipo: string;
+  status: string;
+};
+
 /** Conteúdo da agenda — precisa ficar dentro de `AppShell` (usa `useNovaAcao`). */
 function AgendaPageContent() {
   const router = useRouter();
@@ -84,6 +95,27 @@ function AgendaPageContent() {
   const lastScrolledId = useRef<string | null>(null);
 
   const { getEvent, updateEvent } = useAgendaEvents();
+  const { posts: socialPosts } = useSocialPosts();
+
+  const socialItemsForDate = useCallback(
+    (dateStr: string): SocialAgendaItem[] => {
+      return socialPosts
+        .filter(
+          (p) =>
+            p.date === dateStr &&
+            (p.status === "agendado" || p.status === "publicado"),
+        )
+        .map((p) => ({
+          kind: "social" as const,
+          id: p.id,
+          title: `${p.tipo}: ${p.tema}`,
+          date: p.date,
+          tipo: p.tipo,
+          status: p.status,
+        }));
+    },
+    [socialPosts],
+  );
 
   const { openAgendaEventForEdit } = useNovaAcao();
 
@@ -326,7 +358,9 @@ function AgendaPageContent() {
             {weekDates.map((date, index) => {
               const dateStr = date.toISOString().split("T")[0];
               const isTodayCell = dateStr === today;
-              const hasEvents = getEventsForDate(date).length > 0;
+              const hasEvents =
+                getEventsForDate(date).length > 0 ||
+                socialItemsForDate(dateStr).length > 0;
 
               return (
                 <button
@@ -512,11 +546,42 @@ function AgendaPageContent() {
                       </div>
                     );
                   })}
-                  {dayEvents.length === 0 && (
-                    <p className="py-8 text-center text-xs text-zinc-400">
-                      Sem eventos
-                    </p>
-                  )}
+                  {socialItemsForDate(dateStr).map((sp) => (
+                    <div
+                      key={`social-${sp.id}`}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() =>
+                        router.push(`/redes-sociais?content=${sp.id}`)
+                      }
+                      onKeyDown={(ev) => {
+                        if (ev.key === "Enter" || ev.key === " ") {
+                          ev.preventDefault();
+                          router.push(`/redes-sociais?content=${sp.id}`);
+                        }
+                      }}
+                      className="cursor-pointer rounded-xl bg-fuchsia-50 p-3 shadow-sm transition-all hover:shadow-md"
+                    >
+                      <div className="mb-2 flex items-center gap-2">
+                        <Share2 className="h-3 w-3 text-fuchsia-500" />
+                        <span className="text-[10px] font-medium text-fuchsia-600">
+                          Redes Sociais
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium text-zinc-900 line-clamp-2">
+                        {sp.title}
+                      </p>
+                      <span className="mt-1 text-[10px] font-medium text-fuchsia-500">
+                        {sp.status === "publicado" ? "Publicado" : "Agendado"}
+                      </span>
+                    </div>
+                  ))}
+                  {dayEvents.length === 0 &&
+                    socialItemsForDate(dateStr).length === 0 && (
+                      <p className="py-8 text-center text-xs text-zinc-400">
+                        Sem eventos
+                      </p>
+                    )}
                 </div>
               </motion.div>
             );
@@ -626,9 +691,33 @@ function AgendaPageContent() {
                             </div>
                           );
                         })}
-                        {dayEvents.length === 0 && (
-                          <p className="pt-1 text-[10px] text-zinc-300">—</p>
-                        )}
+                        {socialItemsForDate(dateStr).map((sp) => (
+                          <div
+                            key={`social-${sp.id}`}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() =>
+                              router.push(`/redes-sociais?content=${sp.id}`)
+                            }
+                            onKeyDown={(ev) => {
+                              if (ev.key === "Enter" || ev.key === " ") {
+                                ev.preventDefault();
+                                router.push(`/redes-sociais?content=${sp.id}`);
+                              }
+                            }}
+                            className="cursor-pointer rounded-md border border-fuchsia-100 bg-fuchsia-50/80 px-1.5 py-0.5 text-[10px] font-medium text-zinc-800"
+                            title={sp.title}
+                          >
+                            <div className="flex items-center gap-0.5 truncate">
+                              <Share2 className="inline h-2.5 w-2.5 shrink-0 text-fuchsia-500" />
+                              <span className="truncate">{sp.title}</span>
+                            </div>
+                          </div>
+                        ))}
+                        {dayEvents.length === 0 &&
+                          socialItemsForDate(dateStr).length === 0 && (
+                            <p className="pt-1 text-[10px] text-zinc-300">—</p>
+                          )}
                       </div>
                     </div>
                   );
@@ -695,11 +784,65 @@ function AgendaPageContent() {
       {/* List View */}
       {viewMode === "list" && (
         <div className="space-y-4">
-          {listFilteredEvents.length === 0 && (
-            <p className="py-8 text-center text-sm text-zinc-500">
-              Nenhum evento com os filtros atuais.
-            </p>
-          )}
+          {listFilteredEvents.length === 0 &&
+            socialPosts.filter(
+              (p) =>
+                (p.status === "agendado" || p.status === "publicado") &&
+                p.date !== "—" &&
+                (!listDateFilter || p.date === listDateFilter),
+            ).length === 0 && (
+              <p className="py-8 text-center text-sm text-zinc-500">
+                Nenhum evento com os filtros atuais.
+              </p>
+            )}
+
+          {/* Social content cards */}
+          {socialPosts
+            .filter(
+              (p) =>
+                (p.status === "agendado" || p.status === "publicado") &&
+                p.date !== "—" &&
+                (!listDateFilter || p.date === listDateFilter),
+            )
+            .sort((a, b) => a.date.localeCompare(b.date))
+            .map((sp, index) => (
+              <motion.div
+                key={`social-list-${sp.id}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.03 }}
+                onClick={() =>
+                  router.push(`/redes-sociais?content=${sp.id}`)
+                }
+                className="cursor-pointer rounded-2xl border border-fuchsia-100 bg-fuchsia-50/60 p-5 shadow-lg shadow-zinc-200/50 transition-all hover:shadow-xl"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#f318e3] to-[#6a0eaf] text-white">
+                    <Share2 className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-semibold text-zinc-900">
+                        {sp.tipo}: {sp.tema}
+                      </h4>
+                      <span className="rounded-full bg-fuchsia-100 px-2 py-0.5 text-xs font-medium text-fuchsia-700">
+                        {sp.status === "publicado" ? "Publicado" : "Agendado"}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-zinc-500">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        {formatDateBr(sp.date)}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <User className="h-4 w-4" />
+                        {sp.responsavel}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
           {listFilteredEvents.map((event, index) => {
               const typeConfig = getTypeConfig(event.type);
               const statusConfig = getStatusConfig(event.status);

@@ -11,6 +11,7 @@ import {
 } from "@/lib/date/week";
 import { addDays, format, getISODay } from "date-fns";
 import type { SubregionalId } from "@/lib/constants/subregionais";
+import type { SocialPost } from "@/data/social-posts";
 
 export const DASHBOARD_AGENDA = {
   weekStartIso: "2026-04-21",
@@ -262,6 +263,7 @@ type WeekTask = {
   status: WeekTaskStatus;
   time: string;
   eventId: number;
+  socialPostId?: number;
 };
 
 export type WeekSummaryColumn = {
@@ -328,6 +330,7 @@ export function getHomeWeekSummaryColumns(
   todayIso: string,
   sourceEvents: AgendaEvent[] = agendaEvents,
   weekStartIso: string = getCurrentWeekMondayIso(),
+  socialPosts: SocialPost[] = [],
 ): WeekSummaryColumn[] {
   const monday = parseYmdLocal(weekStartIso);
   const offset = getHomeWeekSummaryMondayOffset(todayIso);
@@ -347,6 +350,19 @@ export function getHomeWeekSummaryColumns(
       time: e.time,
       eventId: e.id,
     }));
+
+    const daySocialPosts = socialPosts.filter(
+      (p) => p.date === iso && (p.status === "agendado" || p.status === "publicado"),
+    );
+    for (const sp of daySocialPosts) {
+      tasks.push({
+        title: `${sp.tipo}: ${sp.tema}`,
+        status: sp.status === "publicado" ? "done" : "pending",
+        time: "",
+        eventId: 0,
+        socialPostId: sp.id,
+      });
+    }
 
     columns.push({
       day,

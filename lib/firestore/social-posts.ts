@@ -48,6 +48,8 @@ export async function persistSocialPost(post: SocialPost): Promise<void> {
   const payload = { ...post } as Record<string, unknown>;
   if (post.status !== "publicado") {
     payload.redePublicacao = deleteField();
+  } else if (Array.isArray(post.redePublicacao) && post.redePublicacao.length === 0) {
+    payload.redePublicacao = deleteField();
   }
   const data = scrubUndefined(payload);
   await setDoc(ref, data, { merge: true });

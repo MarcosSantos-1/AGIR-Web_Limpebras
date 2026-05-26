@@ -36,8 +36,8 @@ export interface SocialPost {
   linkOuArquivo: string | null;
   /** Rascunho / material de apoio (PDF, planilha, pasta) */
   linkOuArquivoLabel?: string;
-  /** Só publicado — rede onde o conteúdo foi publicado */
-  redePublicacao?: SocialPublicationRede;
+  /** Só publicado — rede(s) onde o conteúdo foi publicado */
+  redePublicacao?: SocialPublicationRede | SocialPublicationRede[];
   /** Só publicado */
   legenda?: string;
   linkPost?: string;

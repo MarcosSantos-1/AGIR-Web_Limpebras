@@ -151,8 +151,21 @@ export function resolvePublicationRedeForPost(
   p: SocialPost,
 ): SocialPublicationRede | null {
   if (p.status !== "publicado") return null;
-  if (p.redePublicacao) return p.redePublicacao;
+  if (p.redePublicacao) {
+    return Array.isArray(p.redePublicacao) ? p.redePublicacao[0] ?? null : p.redePublicacao;
+  }
   return inferRedeFromLinkPost(p.linkPost);
+}
+
+export function resolveAllPublicationRedes(
+  p: SocialPost,
+): SocialPublicationRede[] {
+  if (p.status !== "publicado") return [];
+  if (p.redePublicacao) {
+    return Array.isArray(p.redePublicacao) ? p.redePublicacao : [p.redePublicacao];
+  }
+  const inferred = inferRedeFromLinkPost(p.linkPost);
+  return inferred ? [inferred] : [];
 }
 
 export function postEngagementScore(p: SocialPost): number {
@@ -222,14 +235,14 @@ export function formatRedeLabel(
   p: SocialPost,
 ): string {
   if (p.status !== "publicado") return "—";
-  const r = resolvePublicationRedeForPost(p);
-  if (!r) return "—";
+  const redes = resolveAllPublicationRedes(p);
+  if (redes.length === 0) return "—";
   const labels: Record<SocialPublicationRede, string> = {
     facebook: "Facebook",
     instagram: "Instagram",
     linkedin: "LinkedIn",
   };
-  return labels[r];
+  return redes.map((r) => labels[r]).join(", ");
 }
 
 export function socialRowsForIndicatorTable(posts: SocialPost[]): {

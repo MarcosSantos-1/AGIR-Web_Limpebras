@@ -48,7 +48,9 @@ function statusLabel(status: SocialContentStatus) {
 
 export function SocialContentSchedule() {
   const { posts } = useSocialPosts();
-  const rows = posts.slice(0, 4);
+  const rows = posts
+    .filter((p) => p.status !== "publicado")
+    .slice(0, 4);
 
   return (
     <motion.div
