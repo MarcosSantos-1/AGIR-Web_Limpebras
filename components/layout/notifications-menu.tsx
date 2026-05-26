@@ -135,7 +135,7 @@ export function NotificationsMenu() {
         >
           <Bell className="h-5 w-5 text-zinc-600" />
           {showBadge && (
-            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] px-0.5 text-[10px] font-semibold text-white">
+            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent-gradient px-0.5 text-[10px] font-semibold text-white">
               {badge}
             </span>
           )}

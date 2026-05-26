@@ -11,7 +11,7 @@ const actionButtons = [
     key: "acao-visita" as const,
     label: "Ação / Visita",
     icon: Waypoints,
-    color: "from-[#f318e3] to-[#6a0eaf]",
+    color: "from-[var(--gradient-start)] to-[var(--gradient-end)]",
   },
   {
     key: "revitalizacao" as const,

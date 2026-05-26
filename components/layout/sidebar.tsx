@@ -82,13 +82,13 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
         collapsed ? "mx-auto w-11 justify-center px-0 py-3" : "gap-3 px-4 py-3",
         isActive
           ? "text-white"
-          : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900",
+          : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-50",
       )}
     >
       {isActive && (
         <motion.div
           layoutId="sidebar-active"
-          className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf]"
+          className="absolute inset-0 rounded-xl bg-accent-gradient shadow-accent"
           transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
         />
       )}
@@ -101,7 +101,7 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
     <TooltipProvider delayDuration={300}>
       <aside
         className={cn(
-          "fixed left-0 top-0 z-40 flex h-screen flex-col bg-white shadow-xl transition-[width] duration-200 ease-linear",
+          "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-zinc-100 bg-white shadow-xl transition-[width] duration-200 ease-linear dark:border-zinc-800 dark:bg-zinc-950",
           collapsed ? "w-[4.5rem]" : "w-72",
         )}
       >
@@ -112,7 +112,7 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
           )}
         >
           {!collapsed && (
-            <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-zinc-50 ring-1 ring-zinc-200/80">
+            <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-zinc-50 ring-1 ring-zinc-200/80 dark:bg-zinc-900 dark:ring-zinc-700">
               <ImageNext
                 src="/AGIR_logo.svg"
                 alt="AGIR"
@@ -125,10 +125,10 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
           )}
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <h1 className="text-lg font-semibold tracking-tight text-zinc-900">
+              <h1 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
                 AGIR
               </h1>
-              <p className="line-clamp-2 text-xs text-zinc-500">
+              <p className="line-clamp-2 text-xs text-zinc-500 dark:text-zinc-400">
                 Gestão ambiental e comunicação
               </p>
             </div>
@@ -140,7 +140,7 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
                 onClick={onToggleCollapsed}
                 aria-expanded={!collapsed}
                 className={cn(
-                  "flex shrink-0 items-center justify-center rounded-xl border border-zinc-200/80 bg-zinc-50 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900",
+                  "flex shrink-0 items-center justify-center rounded-xl border border-zinc-200/80 bg-zinc-50 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-50",
                   collapsed ? "h-9 w-9" : "h-10 w-10",
                 )}
               >
@@ -162,7 +162,7 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
 
         {collapsed && (
           <div className="flex justify-center pb-1 pt-2">
-            <div className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-zinc-50 ring-1 ring-zinc-200/80">
+            <div className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-zinc-50 ring-1 ring-zinc-200/80 dark:bg-zinc-900 dark:ring-zinc-700">
               <ImageNext
                 src="/AGIR_logo.svg"
                 alt=""
@@ -191,12 +191,12 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
           })}
         </nav>
 
-        <div className="border-t border-zinc-100 p-3">
+        <div className="border-t border-zinc-100 p-3 dark:border-zinc-800">
           {!collapsed ? (
             <>
               <Link
                 href="/configuracoes"
-                className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
+                className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
               >
                 <Settings className="h-5 w-5" />
                 <span>Configurações</span>
@@ -207,7 +207,7 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
                   await signOut();
                   router.replace("/login");
                 }}
-                className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-zinc-600 transition-colors hover:bg-red-50 hover:text-red-600"
+                className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-zinc-600 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-zinc-300 dark:hover:bg-red-950/40 dark:hover:text-red-400"
               >
                 <LogOut className="h-5 w-5" />
                 <span>Sair</span>
@@ -219,7 +219,7 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
                 <TooltipTrigger asChild>
                   <Link
                     href="/configuracoes"
-                    className="flex h-11 w-11 items-center justify-center rounded-xl text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
+                    className="flex h-11 w-11 items-center justify-center rounded-xl text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
                   >
                     <Settings className="h-5 w-5" />
                     <span className="sr-only">Configurações</span>
@@ -235,7 +235,7 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
                       await signOut();
                       router.replace("/login");
                     }}
-                    className="flex h-11 w-11 items-center justify-center rounded-xl text-zinc-600 transition-colors hover:bg-red-50 hover:text-red-600"
+                    className="flex h-11 w-11 items-center justify-center rounded-xl text-zinc-600 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-zinc-300 dark:hover:bg-red-950/40 dark:hover:text-red-400"
                   >
                     <LogOut className="h-5 w-5" />
                     <span className="sr-only">Sair</span>
@@ -248,10 +248,10 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
         </div>
 
         {!collapsed ? (
-          <div className="border-t border-zinc-100 p-4">
+          <div className="border-t border-zinc-100 p-4 dark:border-zinc-800">
             <div className="flex items-center gap-3">
               <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white shadow-md"
                 style={{
                   background: `linear-gradient(to bottom right, ${gradientFrom}, ${gradientTo})`,
                 }}
@@ -259,15 +259,15 @@ export function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
                 {avatarInitials}
               </div>
               <div className="min-w-0 flex-1 overflow-hidden">
-                <p className="truncate text-sm font-medium text-zinc-900">
+                <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
                   {displayName}
                 </p>
-                <p className="truncate text-xs text-zinc-500">{displayCargo}</p>
+                <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">{displayCargo}</p>
               </div>
             </div>
           </div>
         ) : (
-          <div className="border-t border-zinc-100 p-3">
+          <div className="border-t border-zinc-100 p-3 dark:border-zinc-800">
             <Tooltip>
               <TooltipTrigger asChild>
                 <div

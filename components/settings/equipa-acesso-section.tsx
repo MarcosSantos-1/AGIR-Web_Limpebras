@@ -146,7 +146,7 @@ export function EquipaAcessoSection() {
           <Button
             type="submit"
             disabled={busyInvite}
-            className="h-11 shrink-0 rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] text-white"
+            className="h-11 shrink-0 rounded-xl bg-accent-gradient text-white"
           >
             Enviar convite
           </Button>

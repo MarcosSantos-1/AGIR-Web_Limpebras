@@ -46,7 +46,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#f318e3] border-t-transparent" />
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--gradient-start)] border-t-transparent" />
       </div>
     );
   }
@@ -54,7 +54,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (!user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#f318e3] border-t-transparent" />
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--gradient-start)] border-t-transparent" />
       </div>
     );
   }

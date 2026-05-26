@@ -158,12 +158,12 @@ export function DailyChecklist({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.5 }}
-      className="rounded-3xl bg-white p-5 shadow-lg shadow-zinc-200/50"
+      className="rounded-3xl border border-zinc-100 bg-white p-5 shadow-card dark:border-zinc-800 dark:bg-zinc-900"
     >
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-base font-semibold text-zinc-900">
+            <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
               Checklist diário
             </h3>
             {!viewingToday ? (
@@ -194,10 +194,10 @@ export function DailyChecklist({
               {showAddRow ? "Ocultar" : "Nova tarefa"}
             </Button>
           </div>
-          <p className="mt-1 text-xs font-medium text-zinc-600">
+          <p className="mt-1 text-xs font-medium text-zinc-600 dark:text-zinc-300">
             {formatChecklistDayHeading(selectedDate)}
           </p>
-          <p className="mt-0.5 text-xs text-zinc-500">
+          <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400 dark:text-zinc-500">
             {total === 0 ? (
               "Nenhuma tarefa neste dia — adicione abaixo"
             ) : (
@@ -208,7 +208,7 @@ export function DailyChecklist({
           </p>
         </div>
         <div className="shrink-0 text-right">
-          <span className="text-2xl font-bold text-[#9b0ba6]">
+          <span className="text-2xl font-bold text-[var(--gradient-accent)]">
             {Math.round(progress)}%
           </span>
         </div>
@@ -216,7 +216,7 @@ export function DailyChecklist({
 
       {showAddRow && (
         <div id="daily-checklist-add" className="mb-4 rounded-2xl border border-zinc-200 bg-zinc-50/90 p-3">
-          <p className="mb-2 text-xs font-medium text-zinc-600">Nova tarefa</p>
+          <p className="mb-2 text-xs font-medium text-zinc-600 dark:text-zinc-300">Nova tarefa</p>
           <div className="flex gap-2">
             <Input
               value={newTitle}
@@ -232,7 +232,7 @@ export function DailyChecklist({
             />
             <Button
               type="button"
-              className="h-10 shrink-0 rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] px-4 text-white"
+              className="h-10 shrink-0 rounded-xl bg-accent-gradient px-4 text-white"
               onClick={addTask}
             >
               Adicionar
@@ -246,7 +246,7 @@ export function DailyChecklist({
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.5, delay: 0.6 }}
-          className="h-full rounded-full bg-gradient-to-r from-[#f318e3] to-[#6a0eaf]"
+          className="h-full rounded-full bg-accent-gradient"
         />
       </div>
 
@@ -264,7 +264,7 @@ export function DailyChecklist({
               <div
                 className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors ${
                   task.done
-                    ? "bg-gradient-to-r from-[#f318e3] to-[#6a0eaf]"
+                    ? "bg-accent-gradient"
                     : "border-2 border-zinc-300"
                 }`}
               >
@@ -276,7 +276,7 @@ export function DailyChecklist({
               </div>
               <span
                 className={`min-w-0 flex-1 text-sm leading-snug ${
-                  task.done ? "text-zinc-400 line-through" : "text-zinc-700"
+                  task.done ? "text-zinc-400 line-through" : "text-zinc-700 dark:text-zinc-300"
                 }`}
               >
                 {task.title}
@@ -287,7 +287,7 @@ export function DailyChecklist({
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-zinc-500 hover:bg-zinc-200/70 hover:text-zinc-800"
+                className="h-8 w-8 text-zinc-500 hover:bg-zinc-200/70 hover:text-zinc-800 dark:text-zinc-200"
                 onClick={(e) => {
                   e.stopPropagation();
                   openEdit(task);
@@ -315,11 +315,11 @@ export function DailyChecklist({
       </div>
 
       {!showAddRow && items.length === 0 && (
-        <p className="mt-2 text-center text-xs text-zinc-400">
+        <p className="mt-2 text-center text-xs text-zinc-400 dark:text-zinc-500">
           Use{" "}
           <button
             type="button"
-            className="font-medium text-[#9b0ba6] underline decoration-[#f318e3]/35 underline-offset-2 hover:decoration-[#f318e3]"
+            className="font-medium text-[var(--gradient-accent)] underline decoration-[var(--gradient-start)]/35 underline-offset-2 hover:decoration-[var(--gradient-start)]"
             onClick={() => setShowAddRow(true)}
           >
             Nova tarefa
@@ -365,7 +365,7 @@ export function DailyChecklist({
               Cancelar
             </Button>
             <Button
-              className="rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] text-white"
+              className="rounded-xl bg-accent-gradient text-white"
               onClick={saveEdit}
               disabled={!editDraft.trim()}
             >

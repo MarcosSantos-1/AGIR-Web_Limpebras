@@ -22,20 +22,20 @@ export function Header({ title, subtitle }: HeaderProps) {
   const { open: openConteudoModal } = useConteudoSocialModal();
 
   return (
-    <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-zinc-100 bg-white/80 px-8 backdrop-blur-sm">
+    <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-zinc-100 bg-white/80 px-8 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/80">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
           {title}
         </h1>
-        {subtitle && <p className="text-sm text-zinc-500">{subtitle}</p>}
+        {subtitle && <p className="text-sm text-zinc-500 dark:text-zinc-400">{subtitle}</p>}
       </div>
 
       <div className="flex items-center gap-3">
-      
+
         {/* Quick Add */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button className="h-10 gap-2 rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] px-4 text-sm font-medium text-white shadow-lg shadow-[#f318e3]/25 hover:opacity-90">
+            <Button className="h-10 gap-2 rounded-xl bg-accent-gradient px-4 text-sm font-medium text-white shadow-accent hover:opacity-90">
               <Plus className="h-4 w-4" />
               <span>Nova Ação</span>
               <ChevronDown className="h-3 w-3" />
@@ -46,12 +46,12 @@ export function Header({ title, subtitle }: HeaderProps) {
               className="cursor-pointer gap-3 rounded-lg py-2.5"
               onSelect={() => openModal("acao-visita")}
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-r from-[#f318e3]/15 to-[#6a0eaf]/15 text-[#9b0ba6]">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-r from-[var(--gradient-start)]/15 to-[var(--gradient-end)]/15 text-accent">
                 <Waypoints className="h-4 w-4" />
               </span>
               <div className="flex flex-col gap-0.5">
                 <span className="font-medium">Ação / Visita</span>
-                <span className="text-xs font-normal text-zinc-500">
+                <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">
                   Agendar ou registrar concluída
                 </span>
               </div>
@@ -65,7 +65,7 @@ export function Header({ title, subtitle }: HeaderProps) {
               </span>
               <div className="flex flex-col gap-0.5">
                 <span className="font-medium">Revitalização</span>
-                <span className="text-xs font-normal text-zinc-500">
+                <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">
                   Quantitativos e registro
                 </span>
               </div>
@@ -79,7 +79,7 @@ export function Header({ title, subtitle }: HeaderProps) {
               </span>
               <div className="flex min-w-0 flex-col gap-0.5">
                 <span className="font-medium">Novo conteúdo</span>
-                <span className="text-xs font-normal text-zinc-500">
+                <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">
                   Redes sociais (modal)
                 </span>
               </div>

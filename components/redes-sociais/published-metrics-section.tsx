@@ -134,7 +134,7 @@ export function PublishedMetricsSection({ post }: { post: SocialPost }) {
         onBlur={handleEditableBlur}
         className={
           editing
-            ? "rounded-xl ring-2 ring-[#f318e3]/25 ring-offset-2 ring-offset-zinc-50"
+            ? "rounded-xl ring-2 ring-[var(--gradient-start)]/25 ring-offset-2 ring-offset-zinc-50"
             : undefined
         }
       >

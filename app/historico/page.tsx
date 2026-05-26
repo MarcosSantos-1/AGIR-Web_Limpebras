@@ -261,7 +261,7 @@ function HistoricoPageBody() {
             type="month"
             value={monthYm}
             onChange={(e) => setMonthYm(e.target.value)}
-            className="h-12 rounded-xl border-0 bg-white px-4 text-sm font-medium shadow-lg shadow-zinc-200/50 focus:outline-none focus:ring-2 focus:ring-[#f318e3]/20"
+            className="h-12 rounded-xl border-0 bg-white px-4 text-sm font-medium shadow-lg shadow-zinc-200/50 focus:outline-none focus:ring-2 focus:ring-[var(--gradient-start)]/20"
           />
         </label>
         <div className="relative min-w-[220px] flex-1">
@@ -271,11 +271,11 @@ function HistoricoPageBody() {
             placeholder="Buscar por título, local ou responsável..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-12 w-full rounded-xl border-0 bg-white pl-12 pr-4 text-sm shadow-lg shadow-zinc-200/50 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#f318e3]/20"
+            className="h-12 w-full rounded-xl border-0 bg-white pl-12 pr-4 text-sm shadow-lg shadow-zinc-200/50 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[var(--gradient-start)]/20"
           />
         </div>
         <Select value={selectedType} onValueChange={setSelectedType}>
-          <SelectTrigger className="h-12 min-w-[200px] rounded-xl border-0 bg-white px-4 text-sm shadow-lg shadow-zinc-200/50 focus:ring-2 focus:ring-[#f318e3]/20">
+          <SelectTrigger className="h-12 min-w-[200px] rounded-xl border-0 bg-white px-4 text-sm shadow-lg shadow-zinc-200/50 focus:ring-2 focus:ring-[var(--gradient-start)]/20">
             <SelectValue placeholder="Tipo" />
           </SelectTrigger>
           <SelectContent>
@@ -288,7 +288,7 @@ function HistoricoPageBody() {
           </SelectContent>
         </Select>
         <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-          <SelectTrigger className="h-12 min-w-[180px] rounded-xl border-0 bg-white px-4 text-sm shadow-lg shadow-zinc-200/50 focus:ring-2 focus:ring-[#f318e3]/20">
+          <SelectTrigger className="h-12 min-w-[180px] rounded-xl border-0 bg-white px-4 text-sm shadow-lg shadow-zinc-200/50 focus:ring-2 focus:ring-[var(--gradient-start)]/20">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -341,7 +341,7 @@ function HistoricoPageBody() {
           className="rounded-2xl bg-white p-5 shadow-lg shadow-zinc-200/50"
         >
           <p className="text-sm font-medium text-zinc-500">Total de Fotos</p>
-          <p className="mt-2 text-3xl font-semibold text-[#9b0ba6]">
+          <p className="mt-2 text-3xl font-semibold text-[var(--gradient-accent)]">
             {visibleRecords.reduce(
               (sum, r) => sum + r.photos + (r.extraPhotoUrls?.length ?? 0),
               0,
@@ -404,7 +404,7 @@ function HistoricoPageBody() {
 
                 <div
                   className={`cursor-pointer rounded-2xl bg-white p-5 shadow-lg shadow-zinc-200/50 transition-all hover:shadow-xl ${
-                    isExpanded ? "ring-2 ring-[#f318e3]/30" : ""
+                    isExpanded ? "ring-2 ring-[var(--gradient-start)]/30" : ""
                   }`}
                   onClick={() => toggleExpand(record.id)}
                 >
@@ -555,7 +555,7 @@ function HistoricoPageBody() {
                                 <button
                                   key={`ex-${i}`}
                                   type="button"
-                                  className="h-16 w-16 overflow-hidden rounded-lg border border-zinc-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f318e3]/40"
+                                  className="h-16 w-16 overflow-hidden rounded-lg border border-zinc-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gradient-start)]/40"
                                   onClick={(ev) => {
                                     ev.stopPropagation();
                                     openEvidenceLightbox(
@@ -586,7 +586,7 @@ function HistoricoPageBody() {
                         {record.type === "revitalizacao" ? (
                           <button
                             type="button"
-                            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] px-4 py-2 text-sm font-medium text-white"
+                            className="flex items-center gap-2 rounded-xl bg-accent-gradient px-4 py-2 text-sm font-medium text-white"
                             onClick={(ev) => ev.stopPropagation()}
                           >
                             <FileText className="h-4 w-4" />

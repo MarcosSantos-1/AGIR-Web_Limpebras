@@ -21,13 +21,13 @@ export function ImportantVisits() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.4 }}
-      className="rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50"
+      className="rounded-3xl border border-zinc-100 bg-white p-6 shadow-card dark:border-zinc-800 dark:bg-zinc-900"
     >
       <div className="mb-5 flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-zinc-900">Ações / Visitas</h3>
+        <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Ações / Visitas</h3>
         <Link
           href={agendaListUrl(weekStartIso)}
-          className="flex items-center gap-1 text-sm font-medium text-[#9b0ba6] hover:underline"
+          className="flex items-center gap-1 text-sm font-medium text-[var(--gradient-accent)] hover:underline"
         >
           Ver todas
           <ArrowRight className="h-4 w-4" />
@@ -36,7 +36,7 @@ export function ImportantVisits() {
 
       <div className="space-y-3">
         {items.length === 0 && (
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 dark:text-zinc-500">
             Nenhuma ação pendente nesta semana.
           </p>
         )}
@@ -49,17 +49,17 @@ export function ImportantVisits() {
                 view: "list",
               })}
               scroll={false}
-              className="block rounded-2xl border border-zinc-100 p-4 transition-all hover:border-[#f318e3]/20 hover:shadow-md"
+              className="block rounded-2xl border border-zinc-100 p-4 transition-all hover:border-[var(--gradient-start)]/20 hover:shadow-md"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <h4 className="font-medium text-zinc-900">{visit.title}</h4>
+                    <h4 className="font-medium text-zinc-900 dark:text-zinc-100">{visit.title}</h4>
                   </div>
-                  <p className="mt-1 text-sm text-[#9b0ba6]">{visit.typeLabel}</p>
+                  <p className="mt-1 text-sm text-[var(--gradient-accent)]">{visit.typeLabel}</p>
                 </div>
               </div>
-              <div className="mt-3 flex items-center gap-4 text-xs text-zinc-500">
+              <div className="mt-3 flex items-center gap-4 text-xs text-zinc-500 dark:text-zinc-400 dark:text-zinc-500">
                 <span className="flex items-center gap-1">
                   <MapPin className="h-3.5 w-3.5" />
                   {visit.address}

@@ -358,8 +358,8 @@ export default function IndicadoresPage() {
             className="rounded-2xl bg-white p-5 shadow-lg shadow-zinc-200/50"
           >
             <div className="flex items-start justify-between">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#f318e3]/10 to-[#6a0eaf]/10">
-                <stat.icon className="h-5 w-5 text-[#9b0ba6]" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--gradient-start)]/10 to-[var(--gradient-end)]/10">
+                <stat.icon className="h-5 w-5 text-[var(--gradient-accent)]" />
               </div>
               <div
                 className={`flex items-center gap-1 text-sm font-medium ${
@@ -403,8 +403,8 @@ export default function IndicadoresPage() {
                   <p className="mt-2 text-2xl font-semibold text-zinc-900">{k.value}</p>
                   <p className="mt-1 text-xs text-zinc-400">{k.hint}</p>
                 </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#f318e3]/10 to-[#6a0eaf]/10">
-                  <k.icon className="h-5 w-5 text-[#9b0ba6]" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--gradient-start)]/10 to-[var(--gradient-end)]/10">
+                  <k.icon className="h-5 w-5 text-[var(--gradient-accent)]" />
                 </div>
               </div>
             </motion.div>
@@ -730,7 +730,7 @@ export default function IndicadoresPage() {
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full bg-gradient-to-r from-[#f318e3] to-[#6a0eaf]" />
+                <span className="h-3 w-3 rounded-full bg-accent-gradient" />
                 <span className="text-sm text-zinc-500">Ações</span>
               </div>
               <div className="flex items-center gap-2">

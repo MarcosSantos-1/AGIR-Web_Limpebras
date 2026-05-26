@@ -212,13 +212,13 @@ function RedesSociaisPageBody() {
             placeholder="Buscar por tema, legenda, responsável…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-12 w-full rounded-xl border-0 bg-white pl-12 pr-4 text-sm shadow-lg shadow-zinc-200/50 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#f318e3]/20"
+            className="h-12 w-full rounded-xl border-0 bg-white pl-12 pr-4 text-sm shadow-lg shadow-zinc-200/50 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[var(--gradient-start)]/20"
           />
         </div>
         <Button
           type="button"
           onClick={() => openConteudoModal()}
-          className="h-12 shrink-0 rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] px-5 text-white shadow-lg shadow-[#f318e3]/25 sm:px-6"
+          className="h-12 shrink-0 rounded-xl bg-accent-gradient px-5 text-white shadow-lg shadow-[var(--gradient-start)]/25 sm:px-6"
         >
           <Share2 className="mr-2 h-5 w-5" />
           Novo conteúdo
@@ -233,7 +233,7 @@ function RedesSociaisPageBody() {
             onClick={() => setSelectedFilter(filter.id)}
             className={`rounded-xl px-4 py-2.5 text-sm font-medium transition-all ${
               selectedFilter === filter.id
-                ? "bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] text-white shadow-lg shadow-[#f318e3]/25"
+                ? "bg-accent-gradient text-white shadow-lg shadow-[var(--gradient-start)]/25"
                 : "bg-white text-zinc-600 shadow-md hover:bg-zinc-50"
             }`}
           >
@@ -263,7 +263,7 @@ function RedesSociaisPageBody() {
               transition={{ delay: setIndex * 0.05 }}
               className={`rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50 ${
                 isHighlight
-                  ? "ring-2 ring-[#f318e3]/50 ring-offset-2 ring-offset-zinc-50"
+                  ? "ring-2 ring-[var(--gradient-start)]/50 ring-offset-2 ring-offset-zinc-50"
                   : ""
               }`}
             >
@@ -281,7 +281,7 @@ function RedesSociaisPageBody() {
 
               <div className="mb-4 grid gap-3 sm:grid-cols-2">
                 <div className="flex items-start gap-2 text-sm text-zinc-600">
-                  <Calendar className="mt-0.5 h-4 w-4 shrink-0 text-[#9b0ba6]" />
+                  <Calendar className="mt-0.5 h-4 w-4 shrink-0 text-[var(--gradient-accent)]" />
                   <span>
                     <span className="text-xs text-zinc-400">Pauta / data</span>
                     <br />
@@ -289,7 +289,7 @@ function RedesSociaisPageBody() {
                   </span>
                 </div>
                 <div className="flex items-start gap-2 text-sm text-zinc-600">
-                  <Megaphone className="mt-0.5 h-4 w-4 shrink-0 text-[#9b0ba6]" />
+                  <Megaphone className="mt-0.5 h-4 w-4 shrink-0 text-[var(--gradient-accent)]" />
                   <span>
                     <span className="text-xs text-zinc-400">Formato</span>
                     <br />
@@ -299,7 +299,7 @@ function RedesSociaisPageBody() {
                 {set.status === "publicado" ? (
                   <>
                     <div className="flex items-start gap-2 text-sm text-zinc-600">
-                      <Share2 className="mt-0.5 h-4 w-4 shrink-0 text-[#9b0ba6]" />
+                      <Share2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--gradient-accent)]" />
                       <span>
                         <span className="text-xs text-zinc-400">Rede</span>
                         <br />
@@ -310,7 +310,7 @@ function RedesSociaisPageBody() {
                   </>
                 ) : null}
                 <div className="flex items-start gap-2 sm:col-span-2">
-                  <User className="mt-0.5 h-4 w-4 shrink-0 text-[#9b0ba6]" />
+                  <User className="mt-0.5 h-4 w-4 shrink-0 text-[var(--gradient-accent)]" />
                   <span>
                     <span className="text-xs text-zinc-400">Responsável</span>
                     <br />
@@ -357,7 +357,7 @@ function RedesSociaisPageBody() {
                   href={set.linkPost}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mb-4 inline-flex max-w-full items-center gap-1.5 break-all text-sm font-medium text-[#9b0ba6] hover:underline"
+                  className="mb-4 inline-flex max-w-full items-center gap-1.5 break-all text-sm font-medium text-[var(--gradient-accent)] hover:underline"
                 >
                   {set.linkPost}
                   <ExternalLink className="h-3.5 w-3.5 shrink-0" />
@@ -375,7 +375,7 @@ function RedesSociaisPageBody() {
                       href={set.linkOuArquivo}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="break-all text-[#9b0ba6] hover:underline"
+                      className="break-all text-[var(--gradient-accent)] hover:underline"
                     >
                       {set.linkOuArquivo}
                     </a>
@@ -407,7 +407,7 @@ function RedesSociaisPageBody() {
                           {photo.url && !isVideo && (
                             <button
                               type="button"
-                              className="relative block h-full w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f318e3]/40"
+                              className="relative block h-full w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gradient-start)]/40"
                               aria-label="Ver mídia em tamanho maior"
                               onClick={() =>
                                 openSocialMediaLightbox(
@@ -429,7 +429,7 @@ function RedesSociaisPageBody() {
                           {photo.url && isVideo && (
                             <button
                               type="button"
-                              className="relative block h-full w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f318e3]/40"
+                              className="relative block h-full w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gradient-start)]/40"
                               aria-label="Ver vídeo em tamanho maior"
                               onClick={() =>
                                 openSocialMediaLightbox(

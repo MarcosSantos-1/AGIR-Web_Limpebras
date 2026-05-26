@@ -138,7 +138,7 @@ function ModalHeroHeader({ mode }: { mode: "create" | "edit" }) {
   return (
     <div className="shrink-0 border-b border-zinc-100/80 bg-gradient-to-br from-fuchsia-500/8 via-white to-violet-500/10 px-6 py-5 sm:px-10 sm:py-6">
       <div className="flex items-start gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f318e3] to-[#6a0eaf] text-white shadow-lg shadow-[#f318e3]/20">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-accent-gradient-br text-white shadow-lg shadow-[var(--gradient-start)]/20">
           <Share2 className="h-6 w-6" />
         </div>
         <div className="min-w-0 space-y-1.5">
@@ -595,7 +595,7 @@ function ConteudoFormDialog({
               )}
               <div className="rounded-2xl border border-zinc-100 bg-zinc-50/60 p-4 sm:p-5">
                 <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-zinc-800">
-                  <PhaseIcon className="h-4 w-4 text-[#9b0ba6]" />
+                  <PhaseIcon className="h-4 w-4 text-[var(--gradient-accent)]" />
                   Fase do conteúdo
                 </div>
                 <Label className="sr-only" htmlFor="fase-conteudo">
@@ -923,7 +923,7 @@ function ConteudoFormDialog({
             <Button
               type="submit"
               disabled={submitting}
-              className="h-11 rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] text-white"
+              className="h-11 rounded-xl bg-accent-gradient text-white"
             >
               {submitting
                 ? "Salvando…"

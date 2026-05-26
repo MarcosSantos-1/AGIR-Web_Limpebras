@@ -128,7 +128,7 @@ function FollowerCard({ rede }: { rede: SocialPublicationRede }) {
         <button
           type="button"
           className={cn(
-            "w-full rounded-2xl bg-gradient-to-br p-[1px] text-left shadow-lg shadow-zinc-200/40 transition hover:shadow-xl hover:shadow-zinc-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9b0ba6]/40",
+            "w-full rounded-2xl bg-gradient-to-br p-[1px] text-left shadow-lg shadow-zinc-200/40 transition hover:shadow-xl hover:shadow-zinc-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gradient-accent)]/40",
             styles.ring,
           )}
         >

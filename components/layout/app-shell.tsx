@@ -41,7 +41,7 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
   return (
     <NovaAcaoProvider>
       <ConteudoSocialModalProvider>
-        <div className="min-h-screen bg-zinc-50">
+        <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
           <Sidebar
             collapsed={sidebarCollapsed}
             onToggleCollapsed={toggleSidebarCollapsed}

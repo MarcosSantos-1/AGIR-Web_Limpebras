@@ -539,7 +539,7 @@ export default function MapaPage() {
 
             {pickPvLocationMode ? (
               <div className="pointer-events-none absolute bottom-36 left-1/2 z-[1001] max-w-[min(100vw-3rem,24rem)] -translate-x-1/2">
-                <p className="pointer-events-none rounded-xl border border-[#f318e3]/40 bg-[#f318e3]/15 px-4 py-2 text-center text-xs font-medium text-[#7a0867] backdrop-blur-sm">
+                <p className="pointer-events-none rounded-xl border border-[var(--gradient-start)]/40 bg-[var(--gradient-start)]/15 px-4 py-2 text-center text-xs font-medium text-[#7a0867] backdrop-blur-sm">
                   {reverseGeoLoading
                     ? "A obter o endereço (logradouro e bairro)…"
                     : "Toque no mapa para criar o ponto."}
@@ -661,7 +661,7 @@ export default function MapaPage() {
                             {type.label}
                           </span>
                           <div
-                            className={`ml-auto h-4 w-4 rounded-full border-2 ${isSelected ? "border-[#f318e3] bg-[#f318e3]" : "border-zinc-300"}`}
+                            className={`ml-auto h-4 w-4 rounded-full border-2 ${isSelected ? "border-[var(--gradient-start)] bg-[var(--gradient-start)]" : "border-zinc-300"}`}
                           >
                             {isSelected && (
                               <svg
@@ -756,7 +756,7 @@ export default function MapaPage() {
             <Button
               type="button"
               disabled={reverseGeoLoading}
-              className="h-11 rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] px-6 text-white shadow-lg shadow-[#f318e3]/25"
+              className="h-11 rounded-xl bg-accent-gradient px-6 text-white shadow-lg shadow-[var(--gradient-start)]/25"
               onClick={startAddPontoFlow}
             >
               <Plus className="mr-2 h-5 w-5" />

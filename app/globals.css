@@ -40,6 +40,22 @@
   
   --gradient-start: #f318e3;
   --gradient-end: #6a0eaf;
+  --gradient-accent: #9b0ba6;
+
+  /* Surface tokens (substituem zinc-50/100/200 hardcoded ao migrar dark mode) */
+  --surface: #ffffff;
+  --surface-muted: #fafafa;
+  --surface-soft: oklch(0.96 0.005 286);
+  --surface-border: oklch(0.92 0.005 286);
+  --text-primary: oklch(0.21 0.006 285);
+  --text-muted: oklch(0.45 0.015 286);
+  --text-soft: oklch(0.60 0.015 286);
+
+  /* Shadows tunados — combinam com o gradient atual */
+  --shadow-soft: 0 4px 14px -2px rgb(228 228 231 / 0.4);
+  --shadow-card: 0 10px 30px -6px rgb(228 228 231 / 0.6), 0 4px 12px -4px rgb(228 228 231 / 0.5);
+  --shadow-card-hover: 0 20px 45px -10px rgb(212 212 216 / 0.5), 0 8px 18px -6px rgb(212 212 216 / 0.5);
+  --shadow-accent: 0 10px 30px -8px color-mix(in srgb, var(--gradient-start) 35%, transparent);
 }
 
 .dark {
@@ -75,6 +91,19 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.269 0 0);
   --sidebar-ring: oklch(0.439 0 0);
+
+  /* Dark mode keeps the gradient accent — only surfaces shift */
+  --surface: oklch(0.20 0.005 286);
+  --surface-muted: oklch(0.17 0.005 286);
+  --surface-soft: oklch(0.24 0.008 286);
+  --surface-border: oklch(0.30 0.008 286);
+  --text-primary: oklch(0.96 0.005 286);
+  --text-muted: oklch(0.72 0.012 286);
+  --text-soft: oklch(0.58 0.012 286);
+
+  --shadow-soft: 0 4px 14px -2px rgb(0 0 0 / 0.4);
+  --shadow-card: 0 10px 30px -6px rgb(0 0 0 / 0.55), 0 4px 12px -4px rgb(0 0 0 / 0.5);
+  --shadow-card-hover: 0 20px 45px -10px rgb(0 0 0 / 0.65), 0 8px 18px -6px rgb(0 0 0 / 0.55);
 }
 
 @theme inline {
@@ -116,6 +145,33 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Gradient + surface aliases para Tailwind (`bg-surface`, `from-gradient-start`, etc.) */
+  --color-gradient-start: var(--gradient-start);
+  --color-gradient-end: var(--gradient-end);
+  --color-gradient-accent: var(--gradient-accent);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-soft: var(--surface-soft);
+  --color-surface-border: var(--surface-border);
+  --color-text-primary: var(--text-primary);
+  --color-text-muted: var(--text-muted);
+  --color-text-soft: var(--text-soft);
+}
+
+/* Utility classes para usar as shadows tunadas e o gradient principal */
+@layer utilities {
+  .shadow-soft { box-shadow: var(--shadow-soft); }
+  .shadow-card { box-shadow: var(--shadow-card); }
+  .shadow-card-hover { box-shadow: var(--shadow-card-hover); }
+  .shadow-accent { box-shadow: var(--shadow-accent); }
+  .bg-accent-gradient {
+    background-image: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+  }
+  .bg-accent-gradient-br {
+    background-image: linear-gradient(to bottom right, var(--gradient-start), var(--gradient-end));
+  }
+  .text-accent { color: var(--gradient-accent); }
 }
 
 @layer base {

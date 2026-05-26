@@ -63,7 +63,7 @@ export function LoginForm() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-zinc-50 via-white to-fuchsia-50/40 px-4">
       <div className="w-full max-w-md rounded-3xl border border-zinc-100 bg-white p-8 shadow-xl shadow-zinc-200/60">
         <div className="mb-8 text-center">
-          <p className="text-sm font-medium uppercase tracking-wide text-[#9b0ba6]">AGIR</p>
+          <p className="text-sm font-medium uppercase tracking-wide text-[var(--gradient-accent)]">AGIR</p>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">Entrar</h1>
           <p className="mt-2 text-sm text-zinc-500">
             Entre com e-mail e senha. Quem entrou pelo convite em link define a senha ao completar o cadastro no app.
@@ -106,7 +106,7 @@ export function LoginForm() {
           <Button
             type="submit"
             disabled={busy}
-            className="h-11 w-full rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] text-white"
+            className="h-11 w-full rounded-xl bg-accent-gradient text-white"
           >
             {busy ? "A entrar…" : "Entrar"}
           </Button>
@@ -117,7 +117,7 @@ export function LoginForm() {
             type="button"
             onClick={onReset}
             disabled={busy}
-            className="text-center text-sm font-medium text-[#9b0ba6] hover:underline disabled:opacity-50"
+            className="text-center text-sm font-medium text-[var(--gradient-accent)] hover:underline disabled:opacity-50"
           >
             Esqueci a senha
           </button>

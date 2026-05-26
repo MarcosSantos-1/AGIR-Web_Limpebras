@@ -50,7 +50,7 @@ export function PostLinksDisplay({
               target="_blank"
               rel="noopener noreferrer"
               onClick={stopCardClick ? (e) => e.stopPropagation() : undefined}
-              className="group inline-flex max-w-full items-start gap-2 break-all text-sm font-medium text-[#9b0ba6] hover:underline"
+              className="group inline-flex max-w-full items-start gap-2 break-all text-sm font-medium text-[var(--gradient-accent)] hover:underline"
             >
               <span className="min-w-0">{url}</span>
               <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0 opacity-80 group-hover:opacity-100" />
@@ -83,7 +83,7 @@ export function LinksPostagemEditor({
   return (
     <div className="rounded-2xl border border-zinc-100 bg-zinc-50/50 p-5 sm:p-6">
       <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-800">
-        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[#9b0ba6] shadow-sm ring-1 ring-zinc-100">
+        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[var(--gradient-accent)] shadow-sm ring-1 ring-zinc-100">
           <ExternalLink className="h-4 w-4" />
         </span>
         Links de postagem (opcional)

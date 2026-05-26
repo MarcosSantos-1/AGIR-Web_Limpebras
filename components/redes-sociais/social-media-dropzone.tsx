@@ -96,8 +96,8 @@ export function SocialMediaDropzone({
     <div
       className={cn(
         "rounded-2xl border border-dashed p-4",
-        "border-[#9b0ba6]/30 bg-gradient-to-br from-[#f318e3]/5 to-[#6a0eaf]/5",
-        dragOver && "ring-2 ring-[#f318e3]/35",
+        "border-[var(--gradient-accent)]/30 bg-gradient-to-br from-[var(--gradient-start)]/5 to-[var(--gradient-end)]/5",
+        dragOver && "ring-2 ring-[var(--gradient-start)]/35",
       )}
       onDragEnter={(e) => {
         if (e.dataTransfer.types.includes(REORDER_MIME)) {
@@ -141,7 +141,7 @@ export function SocialMediaDropzone({
     >
       <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2 text-sm font-medium text-zinc-800">
-          <Upload className="h-4 w-4 text-[#9b0ba6]" />
+          <Upload className="h-4 w-4 text-[var(--gradient-accent)]" />
           {label}{" "}
           <span className="text-xs font-normal text-zinc-500">
             {items.length}/{maxItems} · imagem até 12 MB · vídeo até 120 MB
@@ -153,8 +153,8 @@ export function SocialMediaDropzone({
         className={cn(
           "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white py-6 text-sm transition",
           dragOver
-            ? "border-[#f318e3]/50 bg-zinc-50"
-            : "hover:border-[#f318e3]/30 hover:bg-zinc-50/80",
+            ? "border-[var(--gradient-start)]/50 bg-zinc-50"
+            : "hover:border-[var(--gradient-start)]/30 hover:bg-zinc-50/80",
         )}
       >
         <input

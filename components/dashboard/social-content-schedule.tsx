@@ -21,13 +21,13 @@ function statusClass(status: SocialContentStatus) {
     case "ideia":
       return "bg-violet-100 text-violet-800";
     case "rascunho":
-      return "bg-zinc-100 text-zinc-700";
+      return "bg-zinc-100 text-zinc-700 dark:text-zinc-300";
     case "agendado":
       return "bg-amber-100 text-amber-800";
     case "publicado":
       return "bg-emerald-100 text-emerald-800";
     default:
-      return "bg-zinc-100 text-zinc-700";
+      return "bg-zinc-100 text-zinc-700 dark:text-zinc-300";
   }
 }
 
@@ -57,24 +57,24 @@ export function SocialContentSchedule() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.45 }}
-      className="rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50"
+      className="rounded-3xl border border-zinc-100 bg-white p-6 shadow-card dark:border-zinc-800 dark:bg-zinc-900"
     >
       <div className="mb-6 flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f318e3]/15 to-[#6a0eaf]/15">
-            <Share2 className="h-5 w-5 text-[#9b0ba6]" />
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--gradient-start)]/15 to-[var(--gradient-end)]/15">
+            <Share2 className="h-5 w-5 text-[var(--gradient-accent)]" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-zinc-900">
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
               Cronograma Conteúdo
             </h3>
-            <p className="mt-0.5 text-sm text-zinc-500">Redes sociais</p>
+            <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400 dark:text-zinc-500">Redes sociais</p>
           </div>
         </div>
         <Link
           href="/redes-sociais"
           scroll={false}
-          className="flex shrink-0 items-center gap-1 text-sm font-medium text-[#9b0ba6] hover:underline"
+          className="flex shrink-0 items-center gap-1 text-sm font-medium text-[var(--gradient-accent)] hover:underline"
         >
           Ver todas
           <ArrowRight className="h-4 w-4" />
@@ -87,14 +87,14 @@ export function SocialContentSchedule() {
             key={row.id}
             href={`/redes-sociais?content=${row.id}`}
             scroll={false}
-            className="block rounded-2xl border border-zinc-100 bg-zinc-50/60 px-5 py-6 shadow-sm transition-all hover:border-[#f318e3]/25 hover:bg-white hover:shadow-md"
+            className="block rounded-2xl border border-zinc-100 bg-zinc-50/60 px-5 py-6 shadow-sm transition-all hover:border-[var(--gradient-start)]/25 hover:bg-white hover:shadow-md"
           >
             <div className="flex flex-wrap items-start justify-between gap-3 border-b border-zinc-100/80 pb-4">
               <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
                   Tema
                 </p>
-                <p className="text-base font-semibold leading-snug text-zinc-900">
+                <p className="text-base font-semibold leading-snug text-zinc-900 dark:text-zinc-100">
                   {row.tema}
                 </p>
               </div>
@@ -108,13 +108,13 @@ export function SocialContentSchedule() {
             <div className="mt-5 grid gap-5 sm:grid-cols-2">
               <div className="flex gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-100">
-                  <Calendar className="h-4 w-4 text-[#9b0ba6]" />
+                  <Calendar className="h-4 w-4 text-[var(--gradient-accent)]" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
                     Data
                   </p>
-                  <p className="mt-1 text-sm font-medium text-zinc-800">
+                  <p className="mt-1 text-sm font-medium text-zinc-800 dark:text-zinc-200">
                     {formatDateBr(row.date)}
                   </p>
                 </div>
@@ -122,26 +122,26 @@ export function SocialContentSchedule() {
 
               <div className="flex gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-100">
-                  <Layers className="h-4 w-4 text-[#9b0ba6]" />
+                  <Layers className="h-4 w-4 text-[var(--gradient-accent)]" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
                     Tipo
                   </p>
-                  <p className="mt-1 text-sm font-medium text-zinc-800">{row.tipo}</p>
+                  <p className="mt-1 text-sm font-medium text-zinc-800 dark:text-zinc-200">{row.tipo}</p>
                 </div>
               </div>
 
               {row.status === "publicado" && (
                 <div className="flex gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-100">
-                    <Share2 className="h-4 w-4 text-[#9b0ba6]" />
+                    <Share2 className="h-4 w-4 text-[var(--gradient-accent)]" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
                       Rede
                     </p>
-                    <p className="mt-1 text-sm font-medium text-zinc-800">
+                    <p className="mt-1 text-sm font-medium text-zinc-800 dark:text-zinc-200">
                       {formatRedeLabel(row)}
                     </p>
                   </div>
@@ -150,13 +150,13 @@ export function SocialContentSchedule() {
 
               <div className="flex gap-3 sm:col-span-2">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-100">
-                  <User className="h-4 w-4 text-[#9b0ba6]" />
+                  <User className="h-4 w-4 text-[var(--gradient-accent)]" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
                     Responsável
                   </p>
-                  <p className="mt-1 text-sm font-medium text-zinc-800">
+                  <p className="mt-1 text-sm font-medium text-zinc-800 dark:text-zinc-200">
                     {row.responsavel}
                   </p>
                 </div>
@@ -164,23 +164,23 @@ export function SocialContentSchedule() {
 
               <div className="flex gap-3 sm:col-span-2">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-100">
-                  <Link2 className="h-4 w-4 text-[#9b0ba6]" />
+                  <Link2 className="h-4 w-4 text-[var(--gradient-accent)]" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
                     Link / arquivo
                   </p>
                   <div className="mt-1 break-words">
                     {row.linkOuArquivo ? (
                       <span
-                        className="inline-flex items-center gap-1.5 text-sm font-medium text-[#9b0ba6]"
+                        className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--gradient-accent)]"
                         onClick={(e) => e.preventDefault()}
                       >
                         {row.linkOuArquivo}
                         <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-70" />
                       </span>
                     ) : (
-                      <span className="text-sm text-zinc-400">
+                      <span className="text-sm text-zinc-400 dark:text-zinc-500">
                         Nenhum link cadastrado
                       </span>
                     )}

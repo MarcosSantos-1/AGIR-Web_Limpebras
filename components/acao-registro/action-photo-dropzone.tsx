@@ -193,13 +193,13 @@ export function ActionPhotoDropzone({
       className={cn(
         "rounded-2xl border border-dashed p-4",
         isEmphasis &&
-          "border-[#9b0ba6]/30 bg-gradient-to-br from-[#f318e3]/5 to-[#6a0eaf]/5",
+          "border-[var(--gradient-accent)]/30 bg-gradient-to-br from-[var(--gradient-start)]/5 to-[var(--gradient-end)]/5",
         isAmber && "border-amber-200/80 bg-amber-50/40",
         !isEmphasis && !isAmber && "border-zinc-200 bg-zinc-50/80",
         dragOver &&
           (isAmber
             ? "ring-2 ring-amber-300"
-            : "ring-2 ring-[#f318e3]/35"),
+            : "ring-2 ring-[var(--gradient-start)]/35"),
       )}
       onDragEnter={(e) => {
         if (e.dataTransfer.types.includes(REORDER_MIME)) {
@@ -247,7 +247,7 @@ export function ActionPhotoDropzone({
           <Upload
             className={cn(
               "h-4 w-4",
-              isEmphasis ? "text-[#9b0ba6]" : "text-zinc-500",
+              isEmphasis ? "text-[var(--gradient-accent)]" : "text-zinc-500",
             )}
           />
           {label}
@@ -258,8 +258,8 @@ export function ActionPhotoDropzone({
         className={cn(
           "flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white py-6 text-sm transition",
           dragOver
-            ? "border-[#f318e3]/50 bg-zinc-50"
-            : "hover:border-[#f318e3]/30 hover:bg-zinc-50/80",
+            ? "border-[var(--gradient-start)]/50 bg-zinc-50"
+            : "hover:border-[var(--gradient-start)]/30 hover:bg-zinc-50/80",
         )}
         onClick={openFilePicker}
       >

@@ -264,7 +264,7 @@ function ModalHero({
     <div
       className={cn(
         "shrink-0 border-b border-zinc-100/80 bg-gradient-to-br px-6 py-5 sm:px-8",
-        accentClassName ?? "from-[#f318e3]/8 via-white to-[#6a0eaf]/6",
+        accentClassName ?? "from-[var(--gradient-start)]/8 via-white to-[var(--gradient-end)]/6",
       )}
     >
       <div className="flex items-start gap-4">
@@ -272,7 +272,7 @@ function ModalHero({
           className={cn(
             "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg",
             iconWrapperClassName ??
-              "bg-gradient-to-br from-[#f318e3] to-[#6a0eaf] shadow-[#f318e3]/25",
+              "bg-accent-gradient-br shadow-[var(--gradient-start)]/25",
           )}
         >
           <Icon className="h-6 w-6" />
@@ -309,7 +309,7 @@ function SectionBox({
       )}
     >
       <div className="mb-4 flex items-center gap-2.5 text-sm font-semibold text-zinc-800">
-        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[#9b0ba6] shadow-sm ring-1 ring-zinc-100">
+        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[var(--gradient-accent)] shadow-sm ring-1 ring-zinc-100">
           <Icon className="h-4 w-4" />
         </span>
         {sectionTitle}
@@ -841,7 +841,7 @@ function AcaoVisitaDialog({
                     className={cn(
                       "flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition-all",
                       situacao === "agendar"
-                        ? "border-[#f318e3]/50 bg-gradient-to-br from-[#f318e3]/5 to-white shadow-md"
+                        ? "border-[var(--gradient-start)]/50 bg-gradient-to-br from-[var(--gradient-start)]/5 to-white shadow-md"
                         : "border-zinc-200 bg-white hover:border-zinc-300",
                     )}
                   >
@@ -849,7 +849,7 @@ function AcaoVisitaDialog({
                       className={cn(
                         "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
                         situacao === "agendar"
-                          ? "bg-gradient-to-br from-[#f318e3] to-[#6a0eaf] text-white"
+                          ? "bg-accent-gradient-br text-white"
                           : "bg-zinc-100 text-zinc-500",
                       )}
                     >
@@ -870,7 +870,7 @@ function AcaoVisitaDialog({
                     className={cn(
                       "flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition-all",
                       situacao === "finalizado"
-                        ? "border-[#f318e3]/50 bg-gradient-to-br from-[#6a0eaf]/5 to-white shadow-md"
+                        ? "border-[var(--gradient-start)]/50 bg-gradient-to-br from-[var(--gradient-end)]/5 to-white shadow-md"
                         : "border-zinc-200 bg-white hover:border-zinc-300",
                     )}
                   >
@@ -878,7 +878,7 @@ function AcaoVisitaDialog({
                       className={cn(
                         "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
                         situacao === "finalizado"
-                          ? "bg-gradient-to-br from-[#f318e3] to-[#6a0eaf] text-white"
+                          ? "bg-accent-gradient-br text-white"
                           : "bg-zinc-100 text-zinc-500",
                       )}
                     >
@@ -1153,7 +1153,7 @@ function AcaoVisitaDialog({
                             disabled={saving || localGeocodeLoading}
                             title="Pesquisar endereço e mostrar mapa"
                             aria-label="Pesquisar endereço e mostrar mapa"
-                            className="absolute right-1 top-1/2 h-9 w-9 shrink-0 -translate-y-1/2 rounded-lg bg-gradient-to-br from-[#f318e3] to-[#6a0eaf] text-white shadow-sm hover:opacity-95 disabled:opacity-50"
+                            className="absolute right-1 top-1/2 h-9 w-9 shrink-0 -translate-y-1/2 rounded-lg bg-accent-gradient-br text-white shadow-sm hover:opacity-95 disabled:opacity-50"
                             onClick={triggerLocalAddressSearch}
                           >
                             {localGeocodeLoading ? (
@@ -1370,7 +1370,7 @@ function AcaoVisitaDialog({
             <Button
               type="submit"
               disabled={saving}
-              className="h-11 rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] text-white"
+              className="h-11 rounded-xl bg-accent-gradient text-white"
             >
               {saving ? (
                 <>
@@ -1961,7 +1961,7 @@ function RevitalizacaoDialog({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="mt-1.5 h-auto px-0 text-xs font-medium text-[#9b0ba6] hover:text-[#9b0ba6]/80 hover:bg-transparent"
+                        className="mt-1.5 h-auto px-0 text-xs font-medium text-[var(--gradient-accent)] hover:text-[var(--gradient-accent)]/80 hover:bg-transparent"
                         onClick={() => setAddingNewPonto(true)}
                       >
                         <MapPin className="mr-1 h-3 w-3" />
@@ -2312,7 +2312,7 @@ function RevitalizacaoDialog({
             <Button
               type="submit"
               disabled={savingRev}
-              className="h-11 rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] text-white"
+              className="h-11 rounded-xl bg-accent-gradient text-white"
             >
               {savingRev ? (
                 <>

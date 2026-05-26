@@ -113,7 +113,7 @@ export default function EmailLinkLoginPage() {
             <Button
               type="submit"
               disabled={busy}
-              className="h-11 w-full rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] text-white"
+              className="h-11 w-full rounded-xl bg-accent-gradient text-white"
             >
               {busy ? "A validar…" : "Concluir login"}
             </Button>
@@ -130,7 +130,7 @@ export default function EmailLinkLoginPage() {
         )}
 
         <p className="mt-8 text-center text-sm">
-          <Link href="/login" className="text-[#9b0ba6] hover:underline">
+          <Link href="/login" className="text-[var(--gradient-accent)] hover:underline">
             Voltar ao login com palavra-passe
           </Link>
         </p>

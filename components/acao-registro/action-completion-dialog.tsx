@@ -315,7 +315,7 @@ export function ActionCompletionDialog({
             </Button>
             <Button
               type="button"
-              className="rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] text-white"
+              className="rounded-xl bg-accent-gradient text-white"
               disabled={saving}
               onClick={handleSubmit}
             >

@@ -99,7 +99,7 @@ function SortableIntegranteRow({
       style={style}
       className={cn(
         "flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-2 py-2 shadow-sm",
-        isDragging && "z-10 opacity-90 ring-2 ring-[#9b0ba6]/25",
+        isDragging && "z-10 opacity-90 ring-2 ring-[var(--gradient-accent)]/25",
       )}
     >
       <button
@@ -221,7 +221,7 @@ export function EquipeIntegrantesField({
       className="rounded-2xl border border-zinc-100 bg-zinc-50/50 px-5 py-4"
     >
       <div className="mb-4 flex items-start gap-2.5">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-[#9b0ba6] shadow-sm ring-1 ring-zinc-100">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-[var(--gradient-accent)] shadow-sm ring-1 ring-zinc-100">
           <Users className="h-4 w-4" />
         </span>
         <div className="min-w-0 flex-1">
@@ -296,7 +296,7 @@ export function EquipeIntegrantesField({
                       <Button
                         type="button"
                         size="sm"
-                        className="rounded-lg bg-[#9b0ba6] text-white hover:bg-[#820a8f]"
+                        className="rounded-lg bg-[var(--gradient-accent)] text-white hover:bg-[var(--gradient-end)]"
                         onClick={() => {
                           addNome(outroNome);
                           setOutroNome("");

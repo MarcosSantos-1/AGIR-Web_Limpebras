@@ -284,7 +284,7 @@ function AgendaPageContent() {
           onClick={() => setViewMode("week")}
           className={
             viewMode === "week"
-              ? "rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] text-white"
+              ? "rounded-xl bg-accent-gradient text-white"
               : "rounded-xl"
           }
         >
@@ -297,7 +297,7 @@ function AgendaPageContent() {
           onClick={() => setViewMode("month")}
           className={
             viewMode === "month"
-              ? "rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] text-white"
+              ? "rounded-xl bg-accent-gradient text-white"
               : "rounded-xl"
           }
         >
@@ -310,7 +310,7 @@ function AgendaPageContent() {
           onClick={() => setViewMode("list")}
           className={
             viewMode === "list"
-              ? "rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] text-white"
+              ? "rounded-xl bg-accent-gradient text-white"
               : "rounded-xl"
           }
         >
@@ -368,7 +368,7 @@ function AgendaPageContent() {
                   key={index}
                   className={`flex flex-col items-center rounded-xl px-4 py-2 transition-all ${
                     isTodayCell
-                      ? "bg-gradient-to-br from-[#f318e3] to-[#6a0eaf] text-white"
+                      ? "bg-accent-gradient-br text-white"
                       : "hover:bg-zinc-100"
                   }`}
                 >
@@ -387,7 +387,7 @@ function AgendaPageContent() {
                     {date.getDate()}
                   </span>
                   {hasEvents && !isTodayCell && (
-                    <span className="mt-1 h-1.5 w-1.5 rounded-full bg-[#f318e3]" />
+                    <span className="mt-1 h-1.5 w-1.5 rounded-full bg-[var(--gradient-start)]" />
                   )}
                 </button>
               );
@@ -455,7 +455,7 @@ function AgendaPageContent() {
                 transition={{ delay: index * 0.05 }}
                 className={`min-h-[400px] rounded-2xl p-4 ${
                   isToday
-                    ? "bg-gradient-to-br from-[#f318e3]/5 to-[#6a0eaf]/5 ring-2 ring-[#f318e3]/20"
+                    ? "bg-gradient-to-br from-[var(--gradient-start)]/5 to-[var(--gradient-end)]/5 ring-2 ring-[var(--gradient-start)]/20"
                     : "bg-white shadow-lg shadow-zinc-200/50"
                 }`}
               >
@@ -465,7 +465,7 @@ function AgendaPageContent() {
                   </p>
                   <p
                     className={`text-xl font-semibold ${
-                      isToday ? "text-[#9b0ba6]" : "text-zinc-900"
+                      isToday ? "text-[var(--gradient-accent)]" : "text-zinc-900"
                     }`}
                   >
                     {date.getDate()}
@@ -495,7 +495,7 @@ function AgendaPageContent() {
                         }}
                         className={`cursor-pointer rounded-xl bg-white p-3 shadow-sm transition-all hover:shadow-md ${
                           isHighlight
-                            ? "ring-2 ring-[#f318e3]/50 ring-offset-1 ring-offset-white"
+                            ? "ring-2 ring-[var(--gradient-start)]/50 ring-offset-1 ring-offset-white"
                             : ""
                         }`}
                       >
@@ -619,13 +619,13 @@ function AgendaPageContent() {
                       key={dateStr}
                       className={`min-h-[120px] rounded-xl border border-zinc-100 p-2 ${
                         isTodayCell
-                          ? "bg-gradient-to-br from-[#f318e3]/5 to-[#6a0eaf]/5 ring-2 ring-[#f318e3]/25"
+                          ? "bg-gradient-to-br from-[var(--gradient-start)]/5 to-[var(--gradient-end)]/5 ring-2 ring-[var(--gradient-start)]/25"
                           : "bg-white"
                       }`}
                     >
                       <p
                         className={`text-sm font-semibold ${
-                          isTodayCell ? "text-[#9b0ba6]" : "text-zinc-900"
+                          isTodayCell ? "text-[var(--gradient-accent)]" : "text-zinc-900"
                         }`}
                       >
                         {date.getDate()}
@@ -650,7 +650,7 @@ function AgendaPageContent() {
                               }}
                               className={`cursor-pointer rounded-md border border-zinc-100 bg-zinc-50/80 px-1.5 py-0.5 text-[10px] font-medium text-zinc-800 ${
                                 isHighlight
-                                  ? "ring-2 ring-[#f318e3]/50 ring-offset-1"
+                                  ? "ring-2 ring-[var(--gradient-start)]/50 ring-offset-1"
                                   : ""
                               }`}
                               title={event.title}
@@ -817,7 +817,7 @@ function AgendaPageContent() {
                 className="cursor-pointer rounded-2xl border border-fuchsia-100 bg-fuchsia-50/60 p-5 shadow-lg shadow-zinc-200/50 transition-all hover:shadow-xl"
               >
                 <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#f318e3] to-[#6a0eaf] text-white">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent-gradient-br text-white">
                     <Share2 className="h-6 w-6" />
                   </div>
                   <div>
@@ -870,7 +870,7 @@ function AgendaPageContent() {
                   }}
                   className={`cursor-pointer rounded-2xl bg-white p-5 shadow-lg shadow-zinc-200/50 transition-all hover:shadow-xl ${
                     isHighlight
-                      ? "ring-2 ring-[#f318e3]/50 ring-offset-2 ring-offset-zinc-50"
+                      ? "ring-2 ring-[var(--gradient-start)]/50 ring-offset-2 ring-offset-zinc-50"
                       : isListSelected
                         ? "ring-2 ring-zinc-300 ring-offset-2"
                         : ""
@@ -1049,9 +1049,9 @@ function AgendaPageContent() {
                                           });
                                           setListStatusPickerOpen(false);
                                         }}
-                                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-[#f318e3]/30 ${
+                                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-[var(--gradient-start)]/30 ${
                                           isCurrent
-                                            ? "ring-2 ring-[#f318e3]/40 " + s.color
+                                            ? "ring-2 ring-[var(--gradient-start)]/40 " + s.color
                                             : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
                                         }`}
                                       >

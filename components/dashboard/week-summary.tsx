@@ -32,16 +32,16 @@ export function WeekSummary() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3 }}
-      className="rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50"
+      className="rounded-3xl border border-zinc-100 bg-white p-6 shadow-card dark:border-zinc-800 dark:bg-zinc-900"
     >
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-zinc-900">Resumo da Semana</h3>
-          <p className="text-sm text-zinc-500">{weekLabel}</p>
+          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Resumo da Semana</h3>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 dark:text-zinc-500">{weekLabel}</p>
         </div>
         <Link
           href={agendaHomeUrl(weekStartIso)}
-          className="flex items-center gap-1 text-sm font-medium text-[#9b0ba6] hover:underline"
+          className="flex items-center gap-1 text-sm font-medium text-[var(--gradient-accent)] hover:underline"
         >
           Ver agenda completa
           <ChevronRight className="h-4 w-4" />
@@ -56,15 +56,15 @@ export function WeekSummary() {
               key={day.iso}
               className={`rounded-2xl p-4 transition-colors ${
                 isToday
-                  ? "bg-gradient-to-br from-[#f318e3]/5 to-[#6a0eaf]/5 ring-2 ring-[#f318e3]/20"
+                  ? "bg-gradient-to-br from-[var(--gradient-start)]/5 to-[var(--gradient-end)]/5 ring-2 ring-[var(--gradient-start)]/20"
                   : "bg-zinc-50 hover:bg-zinc-100"
               }`}
             >
             <div className="mb-3 text-center">
-              <p className="text-xs font-medium uppercase text-zinc-400">{day.day}</p>
+              <p className="text-xs font-medium uppercase text-zinc-400 dark:text-zinc-500">{day.day}</p>
               <p
                 className={`mt-1 text-2xl font-semibold ${
-                  isToday ? "text-[#9b0ba6]" : "text-zinc-900"
+                  isToday ? "text-[var(--gradient-accent)]" : "text-zinc-900 dark:text-zinc-100"
                 }`}
               >
                 {day.date}
@@ -92,11 +92,11 @@ export function WeekSummary() {
                         }`}
                       />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs font-medium text-zinc-700">
+                        <p className="truncate text-xs font-medium text-zinc-700 dark:text-zinc-300">
                           {task.title}
                         </p>
                         {task.time ? (
-                          <p className="text-[10px] text-zinc-500">{task.time}</p>
+                          <p className="text-[10px] text-zinc-500 dark:text-zinc-400 dark:text-zinc-500">{task.time}</p>
                         ) : null}
                       </div>
                     </div>

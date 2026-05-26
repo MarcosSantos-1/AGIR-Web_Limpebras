@@ -132,10 +132,10 @@ export function QuickCalendar({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.4 }}
-      className="rounded-3xl bg-white p-5 shadow-lg shadow-zinc-200/50"
+      className="rounded-3xl border border-zinc-100 bg-white p-5 shadow-card dark:border-zinc-800 dark:bg-zinc-900"
     >
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-base font-semibold text-zinc-900">{title}</h3>
+        <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">{title}</h3>
         <div className="flex gap-1">
           <button
             type="button"
@@ -160,7 +160,7 @@ export function QuickCalendar({
         {weekDaysShort.map((day, index) => (
           <div
             key={`h-${index}`}
-            className="flex h-8 items-center justify-center text-xs font-medium text-zinc-400"
+            className="flex h-8 items-center justify-center text-xs font-medium text-zinc-400 dark:text-zinc-500"
           >
             {day}
           </div>
@@ -193,9 +193,9 @@ export function QuickCalendar({
               className={cn(
                 "relative flex h-9 w-full flex-col items-center justify-center rounded-lg text-sm transition-colors",
                 isToday
-                  ? "bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] font-semibold text-white ring-2 ring-[#f318e3]/40 ring-offset-1 ring-offset-white"
+                  ? "bg-accent-gradient font-semibold text-white ring-2 ring-[var(--gradient-start)]/40 ring-offset-1 ring-offset-white"
                   : isSelected
-                    ? "bg-fuchsia-50 font-semibold text-zinc-900 ring-2 ring-[#9b0ba6]/70"
+                    ? "bg-fuchsia-50 font-semibold text-zinc-900 ring-2 ring-[var(--gradient-accent)]/70"
                     : currentMonth
                       ? "text-zinc-700 hover:bg-zinc-100"
                       : "text-zinc-300",
@@ -229,11 +229,11 @@ export function QuickCalendar({
       </div>
 
       <div className="mt-4 space-y-2">
-        <p className="text-xs font-medium uppercase text-zinc-400">
+        <p className="text-xs font-medium uppercase text-zinc-400 dark:text-zinc-500">
           Feriados (nacional e São Paulo)
         </p>
         {monthHolidays.length === 0 ? (
-          <p className="rounded-xl bg-zinc-50 p-3 text-xs text-zinc-500">
+          <p className="rounded-xl bg-zinc-50 p-3 text-xs text-zinc-500 dark:text-zinc-400 dark:text-zinc-500">
             Nenhum feriado neste mês.
           </p>
         ) : (
@@ -241,10 +241,10 @@ export function QuickCalendar({
             {monthHolidays.map((h) => (
               <li
                 key={h.date + h.name}
-                className="rounded-xl bg-gradient-to-r from-[#f318e3]/5 to-[#6a0eaf]/5 p-3"
+                className="rounded-xl bg-gradient-to-r from-[var(--gradient-start)]/5 to-[var(--gradient-end)]/5 p-3"
               >
-                <p className="text-sm font-medium text-zinc-900">{h.name}</p>
-                <p className="mt-1 text-xs text-zinc-500">
+                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{h.name}</p>
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400 dark:text-zinc-500">
                   {new Date(`${h.date}T12:00:00`).toLocaleDateString("pt-BR", {
                     weekday: "long",
                     day: "numeric",

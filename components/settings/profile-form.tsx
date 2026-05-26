@@ -159,7 +159,7 @@ export function ProfileForm({
                     }}
                     className={`flex h-10 w-10 rounded-xl ring-offset-2 transition ${
                       gradientFrom === g.from && gradientTo === g.to
-                        ? "ring-2 ring-[#f318e3]"
+                        ? "ring-2 ring-[var(--gradient-start)]"
                         : ""
                     }`}
                     style={{
@@ -249,7 +249,7 @@ export function ProfileForm({
           <Button
             type="submit"
             disabled={saving || !hydrated}
-            className="rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] px-6 text-white"
+            className="rounded-xl bg-accent-gradient px-6 text-white"
           >
             {saving ? "A gravar…" : submitLabel}
           </Button>

@@ -56,12 +56,12 @@ export function StatsCards() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.1 }}
-          className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-lg shadow-zinc-200/50 transition-all hover:shadow-xl"
+          className="group relative overflow-hidden rounded-2xl border border-zinc-100 bg-white p-5 shadow-card dark:border-zinc-800 dark:bg-zinc-900 transition-all hover:-translate-y-0.5 hover:shadow-card-hover"
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-zinc-500">{stat.label}</p>
-              <p className="mt-2 text-3xl font-semibold tracking-tight text-zinc-900">
+              <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-500">{stat.label}</p>
+              <p className="mt-2 text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
                 {stat.value}
               </p>
               <p
@@ -72,17 +72,17 @@ export function StatsCards() {
                     ? "text-red-500"
                     : stat.trend === "warning"
                     ? "text-amber-600"
-                    : "text-zinc-500"
+                    : "text-zinc-500 dark:text-zinc-400 dark:text-zinc-500"
                 }`}
               >
                 {stat.change}
               </p>
             </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#f318e3]/10 to-[#6a0eaf]/10">
-              <stat.icon className="h-5 w-5 text-[#9b0ba6]" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--gradient-start)]/10 to-[var(--gradient-end)]/10">
+              <stat.icon className="h-5 w-5 text-[var(--gradient-accent)]" />
             </div>
           </div>
-          <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] opacity-0 transition-opacity group-hover:opacity-100" />
+          <div className="absolute bottom-0 left-0 h-1 w-full bg-accent-gradient opacity-0 transition-opacity group-hover:opacity-100" />
         </motion.div>
       ))}
     </div>

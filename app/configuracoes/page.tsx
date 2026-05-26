@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { ProfileForm } from "@/components/settings/profile-form";
 import { EquipaAcessoSection } from "@/components/settings/equipa-acesso-section";
 import { useAuth } from "@/contexts/auth-context";
+import { useAccentColor } from "@/contexts/accent-color-context";
 import { toast } from "sonner";
 import { fetchAllAgendaEvents } from "@/lib/firestore/agenda";
 import { fetchAllHistoryRecords } from "@/lib/firestore/history";
@@ -72,7 +73,7 @@ export default function ConfiguracoesPage() {
   const [activeSection, setActiveSection] = useState("perfil");
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
-  const [accentColor, setAccentColor] = useState("#f318e3");
+  const { accentId, setAccent, options: accentOptions } = useAccentColor();
   const [exportingExcel, setExportingExcel] = useState(false);
 
   const handleExportExcel = async () => {
@@ -107,7 +108,7 @@ export default function ConfiguracoesPage() {
           animate={{ opacity: 1, x: 0 }}
           className="w-72 shrink-0"
         >
-          <div className="rounded-2xl bg-white p-4 shadow-lg shadow-zinc-200/50">
+          <div className="rounded-2xl border border-zinc-100 bg-white p-4 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
             {settingsSections.map((section) => {
               const Icon = section.icon;
               const isActive = activeSection === section.id;
@@ -118,31 +119,31 @@ export default function ConfiguracoesPage() {
                   onClick={() => setActiveSection(section.id)}
                   className={`flex w-full items-center gap-3 rounded-xl p-3 text-left transition-all ${
                     isActive
-                      ? "bg-gradient-to-r from-[#f318e3]/10 to-[#6a0eaf]/10"
-                      : "hover:bg-zinc-50"
+                      ? "bg-[var(--gradient-start)]/10 dark:bg-[var(--gradient-start)]/15"
+                      : "hover:bg-zinc-50 dark:hover:bg-zinc-800/60"
                   }`}
                 >
                   <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl transition-shadow ${
                       isActive
-                        ? "bg-gradient-to-r from-[#f318e3] to-[#6a0eaf]"
-                        : "bg-zinc-100"
+                        ? "bg-accent-gradient shadow-accent"
+                        : "bg-zinc-100 dark:bg-zinc-800"
                     }`}
                   >
                     <Icon
-                      className={`h-5 w-5 ${isActive ? "text-white" : "text-zinc-500"}`}
+                      className={`h-5 w-5 ${isActive ? "text-white" : "text-zinc-500 dark:text-zinc-400"}`}
                     />
                   </div>
                   <div className="flex-1">
                     <p
-                      className={`font-medium ${isActive ? "text-[#9b0ba6]" : "text-zinc-900"}`}
+                      className={`font-medium ${isActive ? "text-accent" : "text-zinc-900 dark:text-zinc-100"}`}
                     >
                       {section.label}
                     </p>
-                    <p className="text-xs text-zinc-500">{section.description}</p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">{section.description}</p>
                   </div>
                   <ChevronRight
-                    className={`h-4 w-4 ${isActive ? "text-[#9b0ba6]" : "text-zinc-300"}`}
+                    className={`h-4 w-4 ${isActive ? "text-accent" : "text-zinc-300 dark:text-zinc-600"}`}
                   />
                 </button>
               );
@@ -159,15 +160,15 @@ export default function ConfiguracoesPage() {
           {activeSection === "perfil" && (
             <div className="space-y-6">
               <ProfileForm layout="settings" />
-              <div className="rounded-3xl border border-zinc-100 bg-zinc-50/40 p-4 text-sm text-zinc-600">
-                <p className="font-medium text-zinc-800">Equipe</p>
+              <div className="rounded-3xl border border-zinc-100 bg-zinc-50/40 p-4 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-300">
+                <p className="font-medium text-zinc-800 dark:text-zinc-100">Equipe</p>
                 <p className="mt-1">
                   Convites por link e nomes para as equipes nos modais estão em <strong>Equipe e acesso</strong>.
                 </p>
               </div>
-              <div className="rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50">
-                <h3 className="mb-4 text-lg font-semibold text-zinc-900">Senha</h3>
-                <p className="mb-4 text-sm text-zinc-500">
+              <div className="rounded-3xl border border-zinc-100 bg-white p-6 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
+                <h3 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Senha</h3>
+                <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
                   Última alteração: há 30 dias
                 </p>
                 <Button variant="outline" className="rounded-xl">
@@ -181,13 +182,13 @@ export default function ConfiguracoesPage() {
 
           {activeSection === "aparencia" && (
             <div className="space-y-6">
-              <div className="rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50 dark:bg-zinc-900 dark:shadow-zinc-800/30">
+              <div className="rounded-3xl border border-zinc-100 bg-white p-6 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
                 <h3 className="mb-6 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
                   Tema
                 </h3>
                 <div className="grid grid-cols-3 gap-4">
                   {([
-                    { value: "light", label: "Claro", Icon: Sun, iconClass: "text-amber-500", bgClass: "bg-white dark:bg-zinc-200" },
+                    { value: "light", label: "Claro", Icon: Sun, iconClass: "text-amber-500", bgClass: "bg-white" },
                     { value: "dark", label: "Escuro", Icon: Moon, iconClass: "text-white", bgClass: "bg-zinc-800" },
                     { value: "system", label: "Sistema", Icon: Monitor, iconClass: "text-zinc-500", bgClass: "bg-gradient-to-br from-white to-zinc-800" },
                   ] as const).map(({ value, label, Icon, iconClass, bgClass }) => {
@@ -197,10 +198,10 @@ export default function ConfiguracoesPage() {
                         key={value}
                         type="button"
                         onClick={() => setTheme(value)}
-                        className={`flex flex-col items-center gap-3 rounded-xl p-4 transition-all ${
+                        className={`flex flex-col items-center gap-3 rounded-2xl p-4 transition-all ${
                           isActive
-                            ? "border-2 border-[var(--gradient-start)] bg-[var(--gradient-start)]/5"
-                            : "border border-zinc-200 hover:border-zinc-300 dark:border-zinc-700 dark:hover:border-zinc-600"
+                            ? "border-2 border-[var(--gradient-start)] bg-[var(--gradient-start)]/5 shadow-accent"
+                            : "border border-zinc-200 hover:border-zinc-300 hover:shadow-soft dark:border-zinc-700 dark:hover:border-zinc-600"
                         }`}
                       >
                         <div className={`flex h-12 w-12 items-center justify-center rounded-xl shadow-md ${bgClass}`}>
@@ -218,65 +219,70 @@ export default function ConfiguracoesPage() {
                 </div>
               </div>
 
-              <div className="rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50 dark:bg-zinc-900 dark:shadow-zinc-800/30">
-                <h3 className="mb-6 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+              <div className="rounded-3xl border border-zinc-100 bg-white p-6 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
+                <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
                   Cor de destaque
                 </h3>
-                <div className="flex gap-3">
-                  {[
-                    { hex: "#f318e3", label: "Fúcsia" },
-                    { hex: "#6366f1", label: "Índigo" },
-                    { hex: "#10b981", label: "Esmeralda" },
-                    { hex: "#f59e0b", label: "Âmbar" },
-                    { hex: "#ef4444", label: "Vermelho" },
-                  ].map(({ hex, label }) => {
-                    const isSelected = accentColor === hex;
+                <p className="mt-1 mb-5 text-sm text-zinc-500 dark:text-zinc-400">
+                  Aplica em botões principais, ícones e gradientes do app.
+                </p>
+                <div className="grid grid-cols-6 gap-3 sm:grid-cols-11">
+                  {accentOptions.map((color) => {
+                    const isSelected = accentId === color.id;
                     return (
                       <button
-                        key={hex}
+                        key={color.id}
                         type="button"
-                        title={label}
-                        onClick={() => {
-                          setAccentColor(hex);
-                          document.documentElement.style.setProperty("--gradient-start", hex);
-                        }}
-                        className={`flex h-10 w-10 items-center justify-center rounded-xl transition-transform hover:scale-110 ${
-                          isSelected ? "ring-2 ring-offset-2 dark:ring-offset-zinc-900" : ""
+                        title={color.label}
+                        onClick={() => setAccent(color.id)}
+                        className={`group relative flex aspect-square items-center justify-center rounded-2xl transition-all hover:scale-110 ${
+                          isSelected
+                            ? "scale-105 shadow-lg ring-2 ring-offset-2 dark:ring-offset-zinc-900"
+                            : "shadow-soft hover:shadow-md"
                         }`}
-                        style={{ backgroundColor: hex, ...(isSelected ? { ringColor: hex } : {}) }}
+                        style={{
+                          background: `linear-gradient(135deg, ${color.start}, ${color.end})`,
+                          ...(isSelected ? { boxShadow: `0 8px 24px -6px ${color.start}80` } : {}),
+                        }}
                       >
-                        {isSelected && <Check className="h-5 w-5 text-white" />}
+                        {isSelected && (
+                          <Check className="h-5 w-5 text-white drop-shadow" />
+                        )}
                       </button>
                     );
                   })}
                 </div>
-                <p className="mt-4 text-xs text-zinc-500 dark:text-zinc-400">
-                  A cor de destaque é aplicada em elementos do app como gradientes e ícones.
-                </p>
+                <div className="mt-6 rounded-2xl bg-accent-gradient p-5 text-white shadow-accent">
+                  <p className="text-xs font-medium uppercase tracking-wider opacity-80">Pré-visualização</p>
+                  <p className="mt-1 text-lg font-semibold">Cor selecionada</p>
+                  <p className="mt-0.5 text-sm opacity-90">
+                    {accentOptions.find((c) => c.id === accentId)?.label}
+                  </p>
+                </div>
               </div>
             </div>
           )}
 
           {activeSection === "dados" && (
-            <div className="rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50">
+            <div className="rounded-3xl border border-zinc-100 bg-white p-6 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-zinc-900">
+                  <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
                     Exportar dados
                   </h3>
-                  <p className="mt-2 max-w-lg text-sm text-zinc-600">
+                  <p className="mt-2 max-w-lg text-sm text-zinc-600 dark:text-zinc-300">
                     Gere um ficheiro Excel com os compromissos da coleção{" "}
-                    <code className="rounded bg-zinc-100 px-1 text-xs">
+                    <code className="rounded bg-zinc-100 px-1 text-xs dark:bg-zinc-800 dark:text-zinc-200">
                       agendaEvents
                     </code>{" "}
                     e os registos de{" "}
-                    <code className="rounded bg-zinc-100 px-1 text-xs">
+                    <code className="rounded bg-zinc-100 px-1 text-xs dark:bg-zinc-800 dark:text-zinc-200">
                       historyRecords
                     </code>
                     , incluindo colunas com as URLs das fotos (agenda: conclusão;
                     histórico: evidências).
                   </p>
-                  <p className="mt-3 text-sm text-zinc-500">
+                  <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">
                     É necessário estar autenticado com permissão de leitura no
                     Firestore. A exportação pode demorar um pouco se houver muitos
                     documentos.
@@ -303,9 +309,9 @@ export default function ConfiguracoesPage() {
           )}
 
           {activeSection === "ajuda" && (
-            <div className="rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50">
-              <h3 className="text-lg font-semibold text-zinc-900">Suporte</h3>
-              <p className="mt-2 text-sm text-zinc-600">
+            <div className="rounded-3xl border border-zinc-100 bg-white p-6 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
+              <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Suporte</h3>
+              <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
                 Para dúvidas, problemas de acesso ou pedidos relacionados ao seu
                 usuário, use o WhatsApp como canal direto da aplicação.
               </p>
@@ -323,8 +329,8 @@ export default function ConfiguracoesPage() {
                   Abrir WhatsApp para suporte
                 </a>
               </Button>
-              <p className="mt-8 text-sm text-zinc-500">
-                <span className="font-medium text-zinc-700">
+              <p className="mt-8 text-sm text-zinc-500 dark:text-zinc-400">
+                <span className="font-medium text-zinc-700 dark:text-zinc-200">
                   Ajuda dentro do app — em breve.
                 </span>{" "}
                 Uma FAQ, tutoriais e links para documentação entram quando

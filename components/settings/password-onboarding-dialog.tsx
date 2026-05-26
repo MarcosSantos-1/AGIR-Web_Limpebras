@@ -118,7 +118,7 @@ export function PasswordOnboardingDialog() {
           <Button
             type="submit"
             disabled={busy}
-            className="mt-6 h-11 w-full rounded-xl bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] text-white"
+            className="mt-6 h-11 w-full rounded-xl bg-accent-gradient text-white"
           >
             {busy ? "Salvando…" : "Salvar senha e continuar"}
           </Button>

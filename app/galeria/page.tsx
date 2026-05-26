@@ -164,7 +164,7 @@ function GaleriaPageBody() {
             type="month"
             value={monthYm}
             onChange={(e) => setMonthYm(e.target.value)}
-            className="h-10 rounded-xl border-0 bg-white px-3 text-sm font-medium shadow-md shadow-zinc-200/50 focus:outline-none focus:ring-2 focus:ring-[#f318e3]/20"
+            className="h-10 rounded-xl border-0 bg-white px-3 text-sm font-medium shadow-md shadow-zinc-200/50 focus:outline-none focus:ring-2 focus:ring-[var(--gradient-start)]/20"
           />
         </label>
         <div className="relative min-w-[240px] flex-1">
@@ -174,7 +174,7 @@ function GaleriaPageBody() {
             placeholder="Endereço, nome do serviço, ID do registo, ID de revitalização…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-10 w-full rounded-xl border-0 bg-white py-2 pl-9 pr-3 text-sm shadow-md shadow-zinc-200/50 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#f318e3]/20"
+            className="h-10 w-full rounded-xl border-0 bg-white py-2 pl-9 pr-3 text-sm shadow-md shadow-zinc-200/50 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[var(--gradient-start)]/20"
           />
         </div>
       </div>
@@ -187,7 +187,7 @@ function GaleriaPageBody() {
             onClick={() => setSelectedType(filter.id)}
             className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
               selectedType === filter.id
-                ? "bg-gradient-to-r from-[#f318e3] to-[#6a0eaf] text-white shadow-md shadow-[#f318e3]/20"
+                ? "bg-accent-gradient text-white shadow-md shadow-[var(--gradient-start)]/20"
                 : "bg-white text-zinc-600 shadow-sm ring-1 ring-zinc-200/80 hover:bg-zinc-50"
             }`}
           >
@@ -228,7 +228,7 @@ function GaleriaPageBody() {
                 {n === 1 ? (
                   <button
                     type="button"
-                    className="relative block w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f318e3]/50"
+                    className="relative block w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--gradient-start)]/50"
                     onClick={() => openLightbox(album, 0)}
                   >
                     <EvidenceMediaThumb
@@ -243,7 +243,7 @@ function GaleriaPageBody() {
                     <div className="flex min-h-0 w-full gap-0.5">
                       <button
                         type="button"
-                        className="relative w-1/2 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f318e3]/50"
+                        className="relative w-1/2 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--gradient-start)]/50"
                         onClick={() => openLightbox(album, 0)}
                       >
                         <EvidenceMediaThumb
@@ -256,7 +256,7 @@ function GaleriaPageBody() {
                       </button>
                       <button
                         type="button"
-                        className="relative w-1/2 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f318e3]/50"
+                        className="relative w-1/2 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--gradient-start)]/50"
                         onClick={() => openLightbox(album, 1)}
                       >
                         <EvidenceMediaThumb
@@ -274,7 +274,7 @@ function GaleriaPageBody() {
                           <button
                             key={`${album.id}-x-${idx}`}
                             type="button"
-                            className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md ring-1 ring-zinc-200/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f318e3]/45 sm:h-14 sm:w-14"
+                            className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md ring-1 ring-zinc-200/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gradient-start)]/45 sm:h-14 sm:w-14"
                             onClick={() => openLightbox(album, idx + 2)}
                           >
                             <EvidenceMediaThumb
@@ -294,7 +294,7 @@ function GaleriaPageBody() {
                       <button
                         key={`${album.id}-s-${idx}`}
                         type="button"
-                        className="relative h-48 max-h-56 w-[82%] shrink-0 snap-center overflow-hidden rounded-lg bg-zinc-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f318e3]/45 sm:h-52 sm:w-[78%]"
+                        className="relative h-48 max-h-56 w-[82%] shrink-0 snap-center overflow-hidden rounded-lg bg-zinc-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gradient-start)]/45 sm:h-52 sm:w-[78%]"
                         onClick={() => openLightbox(album, idx)}
                       >
                         <EvidenceMediaThumb
