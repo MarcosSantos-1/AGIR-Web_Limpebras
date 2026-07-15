@@ -36,8 +36,19 @@ import {
   Image,
   Pencil,
   Share2,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -49,6 +60,7 @@ import { DatePickerField } from "@/components/forms/date-picker-field";
 import { serviceTypeColor } from "@/lib/constants/service-type-colors";
 import { SubregionalBadge } from "@/components/subregional-badge";
 import { getTodayIsoInTimeZone } from "@/lib/date/week";
+import { deleteHistoryRecord } from "@/lib/firestore/history";
 
 const eventTypes = [
   { id: "all", label: "Todos" },
@@ -91,10 +103,12 @@ function AgendaPageContent() {
   const [listDateFilter, setListDateFilter] = useState("");
   const [listSelectedId, setListSelectedId] = useState<number | null>(null);
   const [listStatusPickerOpen, setListStatusPickerOpen] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState<AgendaEvent | null>(null);
+  const [deletingEvent, setDeletingEvent] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const lastScrolledId = useRef<string | null>(null);
 
-  const { getEvent, updateEvent } = useAgendaEvents();
+  const { getEvent, updateEvent, deleteEvent } = useAgendaEvents();
   const { posts: socialPosts } = useSocialPosts();
 
   const socialItemsForDate = useCallback(
@@ -118,6 +132,29 @@ function AgendaPageContent() {
   );
 
   const { openAgendaEventForEdit } = useNovaAcao();
+
+  const confirmDeleteEvent = useCallback(async () => {
+    if (!eventToDelete) return;
+    setDeletingEvent(true);
+    try {
+      await Promise.all([
+        deleteEvent(eventToDelete.id),
+        deleteHistoryRecord(eventToDelete.id).catch(() => {
+          /* histórico pode não existir para itens só agendados */
+        }),
+      ]);
+      if (listSelectedId === eventToDelete.id) {
+        setListSelectedId(null);
+        setListStatusPickerOpen(false);
+      }
+      setEventToDelete(null);
+    } catch (err) {
+      console.error(err);
+      alert("Não foi possível excluir. Tente de novo.");
+    } finally {
+      setDeletingEvent(false);
+    }
+  }, [eventToDelete, deleteEvent, listSelectedId]);
 
   const viewportExtraDates = useMemo(
     () =>
@@ -876,18 +913,18 @@ function AgendaPageContent() {
                         : ""
                   }`}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex gap-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 flex-1 gap-4">
                       <div
-                        className="flex h-12 w-12 items-center justify-center rounded-xl text-white"
+                        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-white"
                         style={{
                           backgroundColor: serviceTypeColor(event.type),
                         }}
                       >
                         <Calendar className="h-6 w-6 text-white" />
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 pr-2">
                           <h4 className="font-semibold text-zinc-900">
                             {event.title}
                           </h4>
@@ -1081,12 +1118,63 @@ function AgendaPageContent() {
                         )}
                       </div>
                     </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 shrink-0 rounded-xl text-zinc-400 hover:bg-red-50 hover:text-red-600"
+                      aria-label="Remover da agenda"
+                      title="Remover da agenda"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEventToDelete(event);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </motion.div>
               );
             })}
         </div>
       )}
+
+      <AlertDialog
+        open={Boolean(eventToDelete)}
+        onOpenChange={(open) => {
+          if (!open && !deletingEvent) setEventToDelete(null);
+        }}
+      >
+        <AlertDialogContent className="rounded-2xl sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover da agenda?</AlertDialogTitle>
+            <AlertDialogDescription className="text-left text-zinc-600">
+              {eventToDelete
+                ? `Tem certeza que deseja excluir permanentemente “${eventToDelete.title}”? Se existir registro no histórico vinculado, ele também será removido. Esta ação não pode ser desfeita.`
+                : "Tem certeza que deseja excluir este item?"}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel disabled={deletingEvent} className="rounded-lg">
+              Cancelar
+            </AlertDialogCancel>
+            <Button
+              type="button"
+              variant="destructive"
+              className="rounded-lg"
+              disabled={deletingEvent}
+              onClick={() => void confirmDeleteEvent()}
+            >
+              {deletingEvent ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 h-4 w-4" />
+              )}
+              Excluir
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

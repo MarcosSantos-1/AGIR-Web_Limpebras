@@ -205,6 +205,9 @@ function extractIdFromTituloRev(titulo: string): string {
   return m?.[1]?.trim() ?? "";
 }
 
+const REVITALIZACAO_STRUCTURED_LINE =
+  /^(Ponto viciado|Subprefeitura|Data da revitalização|Volume retirado|Resíduos|Equipe):\s*/;
+
 /** Parse campo observations de revitalização criado pelo formulário. */
 function parseRevitalizacaoObservations(observations: string) {
   const volM = /^Volume retirado:\s*(.+)$/m.exec(observations);
@@ -215,6 +218,16 @@ function parseRevitalizacaoObservations(observations: string) {
     kg: kgM?.[1]?.replace(/\s*kg\s*$/i, "").trim() ?? "",
     equipe: eqM?.[1]?.trim() ?? "",
   };
+}
+
+/** Extrai Previsto / Observações livres do texto estruturado de revitalização. */
+function splitRevitalizacaoFreeText(observations: string) {
+  const free = observations
+    .split("\n")
+    .filter((line) => !REVITALIZACAO_STRUCTURED_LINE.test(line.trim()))
+    .join("\n")
+    .trim();
+  return splitPrevistoObservations(free);
 }
 
 function extractPontoViciado(observations: string): string {
@@ -1552,6 +1565,9 @@ function RevitalizacaoDialog({
   const [dataRevitalizacao, setDataRevitalizacao] = React.useState(() =>
     format(new Date(), "yyyy-MM-dd"),
   );
+  const [horarioRev, setHorarioRev] = React.useState("");
+  const [descricaoFeitoRev, setDescricaoFeitoRev] = React.useState("");
+  const [observacoesGeraisRev, setObservacoesGeraisRev] = React.useState("");
   const [volumeRev, setVolumeRev] = React.useState("");
   const [kgRev, setKgRev] = React.useState("");
   const [equipeRev, setEquipeRev] = React.useState("");
@@ -1578,6 +1594,9 @@ function RevitalizacaoDialog({
       setKgRev("");
       setEquipeRev("");
       setDataRevitalizacao(format(new Date(), "yyyy-MM-dd"));
+      setHorarioRev("");
+      setDescricaoFeitoRev("");
+      setObservacoesGeraisRev("");
       setSaveErrorRev(null);
       setSavingRev(false);
       setPontoErro(false);
@@ -1589,6 +1608,14 @@ function RevitalizacaoDialog({
     setSavingRev(false);
     setPontoErro(false);
     setDataRevitalizacao(initialEvent.date);
+    const tStart = initialEvent.time?.trim() ?? "";
+    const tEnd = initialEvent.endTime?.trim() ?? "";
+    const unspecified =
+      !tStart ||
+      tStart === AGENDA_TIME_UNSPECIFIED ||
+      !tEnd ||
+      tEnd === AGENDA_TIME_UNSPECIFIED;
+    setHorarioRev(unspecified ? "" : tStart);
     setSituacaoRev(
       initialEvent.status === "concluido" || preferFinalizado
         ? "finalizado"
@@ -1603,18 +1630,38 @@ function RevitalizacaoDialog({
     setVolumeRev(parsed.volume);
     setKgRev(parsed.kg);
     setEquipeRev(parsed.equipe);
-    if (initialEvent.status === "concluido" || preferFinalizado) {
+    if (initialEvent.status === "concluido") {
+      const { previsto, extra } = splitRevitalizacaoFreeText(
+        initialEvent.observations ?? "",
+      );
+      setDescricaoFeitoRev(
+        initialEvent.completionDescription?.trim() || previsto,
+      );
+      setObservacoesGeraisRev(extra);
       setRevFotoUrls((prev) => {
         revokeBlobPhotoUrls(prev);
         return [...(initialEvent.completionPhotoDataUrls ?? [])];
       });
       setLinksPostagemText((initialEvent.linksPostagem ?? []).join("\n"));
     } else {
-      setRevFotoUrls((prev) => {
-        revokeBlobPhotoUrls(prev);
-        return [];
-      });
-      setLinksPostagemText("");
+      const { previsto, extra } = splitRevitalizacaoFreeText(
+        initialEvent.observations ?? "",
+      );
+      setDescricaoFeitoRev(previsto);
+      setObservacoesGeraisRev(extra);
+      if (preferFinalizado) {
+        setLinksPostagemText((initialEvent.linksPostagem ?? []).join("\n"));
+        setRevFotoUrls((prev) => {
+          revokeBlobPhotoUrls(prev);
+          return [...(initialEvent.completionPhotoDataUrls ?? [])];
+        });
+      } else {
+        setRevFotoUrls((prev) => {
+          revokeBlobPhotoUrls(prev);
+          return [];
+        });
+        setLinksPostagemText("");
+      }
     }
     const p = initialEvent.panfletosDistribuidos;
     const un = typeof p === "number" ? String(p) : "";
@@ -1689,18 +1736,30 @@ function RevitalizacaoDialog({
                     eq ? `Equipe: ${eq} pessoa(s)` : "",
                     `Data da revitalização: ${dataRevitalizacao}`,
                   ];
-            const observations = observationLines.filter(Boolean).join("\n");
+            const structuredObs = observationLines.filter(Boolean).join("\n");
+            const freeChunks: string[] = [];
+            if (situacaoRev === "agendar") {
+              if (descricaoFeitoRev.trim())
+                freeChunks.push(`Previsto:\n${descricaoFeitoRev.trim()}`);
+              if (observacoesGeraisRev.trim())
+                freeChunks.push(observacoesGeraisRev.trim());
+            } else if (observacoesGeraisRev.trim()) {
+              freeChunks.push(observacoesGeraisRev.trim());
+            }
+            const observations = [structuredObs, ...freeChunks]
+              .filter(Boolean)
+              .join("\n\n");
 
             const status: AgendaEventStatus =
               situacaoRev === "agendar" ? "pendente" : "concluido";
-            const timeSlot =
-              situacaoRev === "agendar"
-                ? AGENDA_TIME_UNSPECIFIED
-                : "09:00";
-            const endSlot =
-              situacaoRev === "agendar"
-                ? AGENDA_TIME_UNSPECIFIED
-                : "17:00";
+            const clockTrim = horarioRev.trim();
+            const clock =
+              clockTrim !== "" ? clockTrim : AGENDA_TIME_UNSPECIFIED;
+
+            let completionDescription: string | undefined;
+            if (situacaoRev === "finalizado" && descricaoFeitoRev.trim()) {
+              completionDescription = descricaoFeitoRev.trim();
+            }
 
             const links = parseLinks(linksPostagemText);
             let panfletosDistribuidos: number | undefined;
@@ -1723,12 +1782,15 @@ function RevitalizacaoDialog({
               responsible:
                 firstNameForResponsible(user, profile?.nome) || "—",
               date: dataRevitalizacao,
-              time: timeSlot,
-              endTime: endSlot,
+              time: clock,
+              endTime: clock,
               location: enderecoPonto || "—",
               ...(subFromSp ? { subregional: subFromSp } : {}),
               priority: "medium",
               observations,
+              ...(completionDescription != null && completionDescription !== ""
+                ? { completionDescription }
+                : {}),
             };
             if (situacaoRev === "finalizado") {
               patch.linksPostagem = links;
@@ -1835,8 +1897,8 @@ function RevitalizacaoDialog({
                         Agendado
                       </span>
                       <span className="mt-0.5 block text-xs text-zinc-500">
-                        Só local e data; complete os quantitativos ao finalizar no
-                        local.
+                        Local, data e detalhes previstos; complete os
+                        quantitativos ao finalizar no local.
                       </span>
                     </span>
                   </button>
@@ -2133,17 +2195,73 @@ function RevitalizacaoDialog({
                 )}
               </SectionBox>
 
-              <SectionBox icon={Calendar} title="Data da revitalização">
-                <div className="max-w-xs space-y-2">
-                  <Label htmlFor="data-revitalizacao" className="text-zinc-600">
-                    Quando foi ou será realizada
-                    <RequiredStar />
-                  </Label>
-                  <DatePickerField
-                    id="data-revitalizacao"
-                    value={dataRevitalizacao}
-                    onChange={setDataRevitalizacao}
-                  />
+              <SectionBox icon={Calendar} title="Quando">
+                <div className={fieldGrid()}>
+                  <div className="space-y-2">
+                    <Label htmlFor="data-revitalizacao" className="text-zinc-600">
+                      Data da revitalização
+                      <RequiredStar />
+                    </Label>
+                    <DatePickerField
+                      id="data-revitalizacao"
+                      value={dataRevitalizacao}
+                      onChange={setDataRevitalizacao}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="rev-horario" className="text-zinc-600">
+                      Horário (opcional)
+                    </Label>
+                    <TimePickerField
+                      id="rev-horario"
+                      value={horarioRev}
+                      onChange={setHorarioRev}
+                    />
+                  </div>
+                </div>
+              </SectionBox>
+
+              <SectionBox
+                icon={Briefcase}
+                title={
+                  situacaoRev === "agendar"
+                    ? "Detalhes do agendamento"
+                    : "Informações da revitalização concluída"
+                }
+              >
+                <div className="grid gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="rev-feito" className="text-zinc-600">
+                      {situacaoRev === "agendar"
+                        ? "O que está previsto"
+                        : "O que foi feito"}
+                    </Label>
+                    <Textarea
+                      id="rev-feito"
+                      name="oQueFoiFeito"
+                      value={descricaoFeitoRev}
+                      onChange={(e) => setDescricaoFeitoRev(e.target.value)}
+                      placeholder={
+                        situacaoRev === "agendar"
+                          ? "Objetivo, materiais, encaminhamentos previstos…"
+                          : "Resumo do trabalho realizado, etapas e resultados…"
+                      }
+                      className="min-h-[100px] resize-y border-zinc-200"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="rev-obs" className="text-zinc-600">
+                      Observações
+                    </Label>
+                    <Textarea
+                      id="rev-obs"
+                      name="observacoes"
+                      value={observacoesGeraisRev}
+                      onChange={(e) => setObservacoesGeraisRev(e.target.value)}
+                      placeholder="Notas, pendências, próximos passos…"
+                      className="min-h-[88px] resize-y border-zinc-200"
+                    />
+                  </div>
                 </div>
               </SectionBox>
 
