@@ -19,15 +19,15 @@ import Link from "next/link";
 function statusClass(status: SocialContentStatus) {
   switch (status) {
     case "ideia":
-      return "bg-violet-100 text-violet-800";
+      return "bg-violet-100 text-violet-800 dark:bg-violet-950/50 dark:text-violet-200";
     case "rascunho":
-      return "bg-zinc-100 text-zinc-700 dark:text-zinc-300";
+      return "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300";
     case "agendado":
-      return "bg-amber-100 text-amber-800";
+      return "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200";
     case "publicado":
-      return "bg-emerald-100 text-emerald-800";
+      return "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200";
     default:
-      return "bg-zinc-100 text-zinc-700 dark:text-zinc-300";
+      return "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300";
   }
 }
 
@@ -87,9 +87,9 @@ export function SocialContentSchedule() {
             key={row.id}
             href={`/redes-sociais?content=${row.id}`}
             scroll={false}
-            className="block rounded-2xl border border-zinc-100 bg-zinc-50/60 px-5 py-6 shadow-sm transition-all hover:border-[var(--gradient-start)]/25 hover:bg-white hover:shadow-md"
+            className="block rounded-2xl border border-zinc-100 bg-zinc-50/60 px-5 py-6 shadow-sm transition-all hover:border-[var(--gradient-start)]/25 hover:bg-white hover:shadow-md dark:border-zinc-800 dark:bg-zinc-800/50 dark:hover:bg-zinc-800"
           >
-            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-zinc-100/80 pb-4">
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-zinc-100/80 pb-4 dark:border-zinc-700/80">
               <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
                   Tema
@@ -107,7 +107,7 @@ export function SocialContentSchedule() {
 
             <div className="mt-5 grid gap-5 sm:grid-cols-2">
               <div className="flex gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-100">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-100 dark:bg-zinc-900 dark:ring-zinc-700">
                   <Calendar className="h-4 w-4 text-[var(--gradient-accent)]" />
                 </div>
                 <div className="min-w-0">
@@ -121,7 +121,7 @@ export function SocialContentSchedule() {
               </div>
 
               <div className="flex gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-100">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-100 dark:bg-zinc-900 dark:ring-zinc-700">
                   <Layers className="h-4 w-4 text-[var(--gradient-accent)]" />
                 </div>
                 <div className="min-w-0">
@@ -134,7 +134,7 @@ export function SocialContentSchedule() {
 
               {row.status === "publicado" && (
                 <div className="flex gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-100">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-100 dark:bg-zinc-900 dark:ring-zinc-700">
                     <Share2 className="h-4 w-4 text-[var(--gradient-accent)]" />
                   </div>
                   <div className="min-w-0">
@@ -149,7 +149,7 @@ export function SocialContentSchedule() {
               )}
 
               <div className="flex gap-3 sm:col-span-2">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-100">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-100 dark:bg-zinc-900 dark:ring-zinc-700">
                   <User className="h-4 w-4 text-[var(--gradient-accent)]" />
                 </div>
                 <div className="min-w-0">
@@ -163,7 +163,7 @@ export function SocialContentSchedule() {
               </div>
 
               <div className="flex gap-3 sm:col-span-2">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-100">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-100 dark:bg-zinc-900 dark:ring-zinc-700">
                   <Link2 className="h-4 w-4 text-[var(--gradient-accent)]" />
                 </div>
                 <div className="min-w-0 flex-1">

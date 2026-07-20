@@ -303,7 +303,7 @@ export default function IndicadoresPage() {
       <>
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-          <span className="whitespace-nowrap text-sm font-medium text-zinc-700">
+          <span className="whitespace-nowrap text-sm font-medium text-zinc-700 dark:text-zinc-300">
             Mês
           </span>
           <Select
@@ -311,7 +311,7 @@ export default function IndicadoresPage() {
             onValueChange={setSelectedYm}
             disabled={monthOptions.length === 0}
           >
-            <SelectTrigger className="h-10 w-full min-w-[200px] max-w-xs rounded-xl border-zinc-200 bg-white">
+            <SelectTrigger className="h-10 w-full min-w-[200px] max-w-xs rounded-xl border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
               <SelectValue
                 placeholder={
                   monthOptions.length === 0
@@ -355,7 +355,7 @@ export default function IndicadoresPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="rounded-2xl bg-white p-5 shadow-lg shadow-zinc-200/50"
+            className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-card dark:border-zinc-800 dark:bg-zinc-900"
           >
             <div className="flex items-start justify-between">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--gradient-start)]/10 to-[var(--gradient-end)]/10">
@@ -374,8 +374,8 @@ export default function IndicadoresPage() {
                 {stat.change}
               </div>
             </div>
-            <p className="mt-4 text-3xl font-semibold text-zinc-900">{stat.value}</p>
-            <p className="mt-1 text-sm text-zinc-500">{stat.label}</p>
+            <p className="mt-4 text-3xl font-semibold text-zinc-900 dark:text-zinc-100">{stat.value}</p>
+            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{stat.label}</p>
             <p className="text-xs text-zinc-400">{stat.description}</p>
           </motion.div>
         ))}
@@ -384,7 +384,7 @@ export default function IndicadoresPage() {
       {/* Comunicação, redes e panfletagem (mock — substitui planilha manual) */}
       <div className="mb-8 space-y-6">
         <div>
-          <h2 className="text-lg font-semibold text-zinc-900">
+          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
             Comunicação, redes sociais e panfletagem
           </h2>
         </div>
@@ -395,12 +395,12 @@ export default function IndicadoresPage() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05 * index }}
-              className="rounded-2xl bg-white p-5 shadow-lg shadow-zinc-200/50"
+              className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-card dark:border-zinc-800 dark:bg-zinc-900"
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-medium text-zinc-500">{k.label}</p>
-                  <p className="mt-2 text-2xl font-semibold text-zinc-900">{k.value}</p>
+                  <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{k.label}</p>
+                  <p className="mt-2 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">{k.value}</p>
                   <p className="mt-1 text-xs text-zinc-400">{k.hint}</p>
                 </div>
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--gradient-start)]/10 to-[var(--gradient-end)]/10">
@@ -415,10 +415,10 @@ export default function IndicadoresPage() {
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50"
+            className="rounded-3xl border border-zinc-100 bg-white p-6 shadow-card dark:border-zinc-800 dark:bg-zinc-900"
           >
-            <h3 className="text-lg font-semibold text-zinc-900">Cronograma de redes sociais</h3>
-            <p className="mb-4 text-sm text-zinc-500">
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Cronograma de redes sociais</h3>
+            <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
               Data · Tipo · Tema · Status · Responsável · Rede · Link / arquivo
             </p>
             <Table>
@@ -443,7 +443,7 @@ export default function IndicadoresPage() {
                 ) : (
                   socialRows.map((row) => (
                   <TableRow key={row.id}>
-                    <TableCell className="whitespace-nowrap text-zinc-600">
+                    <TableCell className="whitespace-nowrap text-zinc-600 dark:text-zinc-400">
                       {row.date === "—" ? "—" : formatDateBr(row.date)}
                     </TableCell>
                     <TableCell>{row.tipo}</TableCell>
@@ -464,13 +464,13 @@ export default function IndicadoresPage() {
                         {row.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-zinc-700">{row.responsavel}</TableCell>
-                    <TableCell className="text-sm text-zinc-600">
+                    <TableCell className="text-zinc-700 dark:text-zinc-300">{row.responsavel}</TableCell>
+                    <TableCell className="text-sm text-zinc-600 dark:text-zinc-400">
                       {row.redeKey ? (
                         <span className="flex items-center gap-2">
                           <SocialRedeFaIcon
                             rede={row.redeKey}
-                            className="w-4 shrink-0 text-center text-base leading-none text-zinc-800"
+                            className="w-4 shrink-0 text-center text-base leading-none text-zinc-800 dark:text-zinc-200"
                           />
                           <span>{row.rede}</span>
                         </span>
@@ -490,17 +490,17 @@ export default function IndicadoresPage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.06 }}
-            className="rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50"
+            className="rounded-3xl border border-zinc-100 bg-white p-6 shadow-card dark:border-zinc-800 dark:bg-zinc-900"
           >
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-zinc-900">Engajamento por rede</h3>
-                <p className="text-sm text-zinc-500">
+                <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Engajamento por rede</h3>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">
                   Evolução nos últimos 4 meses até o mês selecionado (soma de visualizações,
                   curtidas e partilhas por post publicado). Rede por campo ou inferida pelo link.
                 </p>
               </div>
-              <div className="flex flex-wrap gap-3 text-xs text-zinc-600">
+              <div className="flex flex-wrap gap-3 text-xs text-zinc-600 dark:text-zinc-400">
                 <span className="inline-flex items-center gap-1.5">
                   <SocialRedeFaIcon
                     rede="facebook"
@@ -589,14 +589,14 @@ export default function IndicadoresPage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.08 }}
-            className="rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50"
+            className="rounded-3xl border border-zinc-100 bg-white p-6 shadow-card dark:border-zinc-800 dark:bg-zinc-900"
           >
             <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-zinc-900">
+                <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
                   Evolução de seguidores por rede
                 </h3>
-                <p className="text-sm text-zinc-500">
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">
                   Último registo guardado em cada mês por rede; entre atualizações mantém-se o
                   valor anterior (evolução contínua).
                 </p>
@@ -667,10 +667,10 @@ export default function IndicadoresPage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50"
+            className="rounded-3xl border border-zinc-100 bg-white p-6 shadow-card dark:border-zinc-800 dark:bg-zinc-900"
           >
-            <h3 className="text-lg font-semibold text-zinc-900">Panfletagem em campo</h3>
-            <p className="mb-4 text-sm text-zinc-500">
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Panfletagem em campo</h3>
+            <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
               Data · Equipe · Panfletos distribuídos · Locais atendidos · Fotos tiradas · Observações
             </p>
             <Table>
@@ -694,14 +694,14 @@ export default function IndicadoresPage() {
                 ) : (
                   panfletagemRows.map((row) => (
                   <TableRow key={row.key}>
-                    <TableCell className="whitespace-nowrap text-zinc-600">{formatDateBr(row.date)}</TableCell>
+                    <TableCell className="whitespace-nowrap text-zinc-600 dark:text-zinc-400">{formatDateBr(row.date)}</TableCell>
                     <TableCell>{row.equipe}</TableCell>
                     <TableCell className="text-right font-medium tabular-nums">
                       {row.panfletos.toLocaleString("pt-BR")}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">{row.locais}</TableCell>
                     <TableCell className="text-right tabular-nums">{row.fotos}</TableCell>
-                    <TableCell className="text-zinc-600">{row.obs}</TableCell>
+                    <TableCell className="text-zinc-600 dark:text-zinc-400">{row.obs}</TableCell>
                   </TableRow>
                   ))
                 )}
@@ -718,12 +718,12 @@ export default function IndicadoresPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="col-span-12 rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50 lg:col-span-8"
+          className="col-span-12 rounded-3xl border border-zinc-100 bg-white p-6 shadow-card dark:border-zinc-800 dark:bg-zinc-900 lg:col-span-8"
         >
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-zinc-900">Ações por Mês</h3>
-              <p className="text-sm text-zinc-500">
+              <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Ações por Mês</h3>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
                 Concluídas nos últimos 4 meses até o mês selecionado (exceto registos internos —
                 garagem / reuniões)
               </p>
@@ -731,11 +731,11 @@ export default function IndicadoresPage() {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <span className="h-3 w-3 rounded-full bg-accent-gradient" />
-                <span className="text-sm text-zinc-500">Ações</span>
+                <span className="text-sm text-zinc-500 dark:text-zinc-400">Ações</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="h-3 w-3 rounded-full bg-emerald-500" />
-                <span className="text-sm text-zinc-500">Revitalizações</span>
+                <span className="text-sm text-zinc-500 dark:text-zinc-400">Revitalizações</span>
               </div>
             </div>
           </div>
@@ -769,10 +769,10 @@ export default function IndicadoresPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="col-span-12 rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50 lg:col-span-4"
+          className="col-span-12 rounded-3xl border border-zinc-100 bg-white p-6 shadow-card dark:border-zinc-800 dark:bg-zinc-900 lg:col-span-4"
         >
-          <h3 className="text-lg font-semibold text-zinc-900">Distribuição por Subregional</h3>
-          <p className="text-sm text-zinc-500">
+          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Distribuição por Subregional</h3>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
             Ações concluídas no mês selecionado, exceto subregional Interno (garagem / reuniões).
             Subregional nas visitas; nas revitalizações, a partir da subprefeitura do ponto
             viciado.
@@ -825,11 +825,11 @@ export default function IndicadoresPage() {
                         className="h-2.5 w-2.5 rounded-full"
                         style={{ backgroundColor: region.color }}
                       />
-                      <span className="text-sm text-zinc-600">{region.name}</span>
+                      <span className="text-sm text-zinc-600 dark:text-zinc-400">{region.name}</span>
                     </div>
-                    <span className="text-sm font-medium tabular-nums text-zinc-900">
+                    <span className="text-sm font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
                       {"pct" in region ? `${region.pct}%` : ""}
-                      <span className="ml-2 text-zinc-500">({region.value})</span>
+                      <span className="ml-2 text-zinc-500 dark:text-zinc-400">({region.value})</span>
                     </span>
                   </div>
                 ))}

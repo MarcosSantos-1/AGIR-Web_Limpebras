@@ -191,11 +191,11 @@ export function PublishedMetricsSection({ post }: { post: SocialPost }) {
                   value={draftViews}
                   onChange={(e) => setDraftViews(e.target.value)}
                   disabled={saving}
-                  className="h-10 rounded-xl border-zinc-200 bg-white text-sm tabular-nums"
+                  className="h-10 rounded-xl border-zinc-200 bg-white text-sm tabular-nums dark:border-zinc-700 dark:bg-zinc-900"
                   placeholder="0"
                 />
               </label>
-              <label className="flex flex-col gap-1 text-xs text-zinc-500">
+              <label className="flex flex-col gap-1 text-xs text-zinc-500 dark:text-zinc-400">
                 <span className="inline-flex items-center gap-1 font-medium uppercase tracking-wide">
                   <Heart className="h-3 w-3 text-red-500" />
                   Curtidas
@@ -207,7 +207,7 @@ export function PublishedMetricsSection({ post }: { post: SocialPost }) {
                   value={draftCurtidas}
                   onChange={(e) => setDraftCurtidas(e.target.value)}
                   disabled={saving}
-                  className="h-10 rounded-xl border-zinc-200 bg-white text-sm tabular-nums"
+                  className="h-10 rounded-xl border-zinc-200 bg-white text-sm tabular-nums dark:border-zinc-700 dark:bg-zinc-900"
                   placeholder="0"
                 />
               </label>

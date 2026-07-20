@@ -261,7 +261,7 @@ function HistoricoPageBody() {
             type="month"
             value={monthYm}
             onChange={(e) => setMonthYm(e.target.value)}
-            className="h-12 rounded-xl border-0 bg-white px-4 text-sm font-medium shadow-lg shadow-zinc-200/50 focus:outline-none focus:ring-2 focus:ring-[var(--gradient-start)]/20"
+            className="h-12 rounded-xl border-0 bg-white px-4 text-sm font-medium text-zinc-900 shadow-card focus:outline-none focus:ring-2 focus:ring-[var(--gradient-start)]/20 dark:bg-zinc-900 dark:text-zinc-100"
           />
         </label>
         <div className="relative min-w-[220px] flex-1">
@@ -271,11 +271,11 @@ function HistoricoPageBody() {
             placeholder="Buscar por título, local ou responsável..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-12 w-full rounded-xl border-0 bg-white pl-12 pr-4 text-sm shadow-lg shadow-zinc-200/50 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[var(--gradient-start)]/20"
+            className="h-12 w-full rounded-xl border-0 bg-white pl-12 pr-4 text-sm text-zinc-900 shadow-card placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[var(--gradient-start)]/20 dark:bg-zinc-900 dark:text-zinc-100"
           />
         </div>
         <Select value={selectedType} onValueChange={setSelectedType}>
-          <SelectTrigger className="h-12 min-w-[200px] rounded-xl border-0 bg-white px-4 text-sm shadow-lg shadow-zinc-200/50 focus:ring-2 focus:ring-[var(--gradient-start)]/20">
+          <SelectTrigger className="h-12 min-w-[200px] rounded-xl border-0 bg-white px-4 text-sm shadow-card focus:ring-2 focus:ring-[var(--gradient-start)]/20 dark:bg-zinc-900">
             <SelectValue placeholder="Tipo" />
           </SelectTrigger>
           <SelectContent>
@@ -288,7 +288,7 @@ function HistoricoPageBody() {
           </SelectContent>
         </Select>
         <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-          <SelectTrigger className="h-12 min-w-[180px] rounded-xl border-0 bg-white px-4 text-sm shadow-lg shadow-zinc-200/50 focus:ring-2 focus:ring-[var(--gradient-start)]/20">
+          <SelectTrigger className="h-12 min-w-[180px] rounded-xl border-0 bg-white px-4 text-sm shadow-card focus:ring-2 focus:ring-[var(--gradient-start)]/20 dark:bg-zinc-900">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -354,8 +354,8 @@ function HistoricoPageBody() {
       {!historicoReady ? (
         <Skeleton className="mb-8 h-5 w-56 rounded-md" />
       ) : (
-        <p className="mb-8 text-sm text-zinc-600">
-          <span className="font-semibold tabular-nums text-zinc-900">
+        <p className="mb-8 text-sm text-zinc-600 dark:text-zinc-400">
+          <span className="font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
             {visibleRecords.length}
           </span>{" "}
           {visibleRecords.length === 1
@@ -370,7 +370,7 @@ function HistoricoPageBody() {
       ) : (
       <div className="relative">
         {/* Timeline Line */}
-        <div className="absolute left-6 top-0 h-full w-0.5 bg-zinc-200" />
+        <div className="absolute left-6 top-0 h-full w-0.5 bg-zinc-200 dark:bg-zinc-800" />
 
         <div className="space-y-4">
           {filteredRecords.map((record, index) => {
@@ -396,14 +396,14 @@ function HistoricoPageBody() {
               >
                 {/* Timeline Dot */}
                 <div
-                  className="absolute left-4 top-6 flex h-5 w-5 items-center justify-center rounded-full ring-4 ring-white"
+                  className="absolute left-4 top-6 flex h-5 w-5 items-center justify-center rounded-full ring-4 ring-zinc-50 dark:ring-zinc-950"
                   style={{ backgroundColor: serviceTypeColor(record.type) }}
                 >
                   <div className="h-2 w-2 rounded-full bg-white" />
                 </div>
 
                 <div
-                  className={`cursor-pointer rounded-2xl bg-white p-5 shadow-lg shadow-zinc-200/50 transition-all hover:shadow-xl ${
+                  className={`cursor-pointer rounded-2xl border border-zinc-100 bg-white p-5 shadow-card transition-all hover:shadow-card-hover dark:border-zinc-800 dark:bg-zinc-900 ${
                     isExpanded ? "ring-2 ring-[var(--gradient-start)]/30" : ""
                   }`}
                   onClick={() => toggleExpand(record.id)}
@@ -411,7 +411,7 @@ function HistoricoPageBody() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-3">
-                        <h4 className="font-semibold text-zinc-900">{row.title}</h4>
+                        <h4 className="font-semibold text-zinc-900 dark:text-zinc-100">{row.title}</h4>
                         <span className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${status.color}`}>
                           <StatusIcon className={`h-3 w-3 ${status.iconColor}`} />
                           {status.label}
@@ -426,7 +426,7 @@ function HistoricoPageBody() {
                         </p>
                         <SubregionalBadge subregional={record.subregional} />
                       </div>
-                      <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-zinc-500">
+                      <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-zinc-500 dark:text-zinc-400">
                         <span className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
                           {formatDateBr(row.date)}
@@ -454,7 +454,7 @@ function HistoricoPageBody() {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="rounded-lg text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
+                        className="rounded-lg text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
                         aria-label="Editar registro"
                         title="Editar"
                         onClick={(e) => {
@@ -468,7 +468,7 @@ function HistoricoPageBody() {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700"
+                        className="rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/40"
                         aria-label="Excluir registro"
                         title="Excluir"
                         onClick={(e) => void handleDeleteRecord(record, e)}
@@ -477,7 +477,7 @@ function HistoricoPageBody() {
                       </Button>
                       <button
                         type="button"
-                        className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 transition-transform"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 transition-transform dark:bg-zinc-800"
                         aria-label={isExpanded ? "Recolher" : "Expandir"}
                       >
                         <ChevronDown
@@ -494,22 +494,22 @@ function HistoricoPageBody() {
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
-                      className="mt-4 border-t border-zinc-100 pt-4"
+                      className="mt-4 border-t border-zinc-100 pt-4 dark:border-zinc-800"
                     >
                       {record.type === "panfletagem" && "equipe" in record && (
-                        <div className="mb-6 grid gap-4 rounded-xl bg-zinc-50/80 p-4 sm:grid-cols-2">
+                        <div className="mb-6 grid gap-4 rounded-xl bg-zinc-50/80 p-4 dark:bg-zinc-800/50 sm:grid-cols-2">
                           <div className="flex items-start gap-2">
                             <Users className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" />
                             <div>
                               <p className="text-xs font-medium uppercase text-zinc-400">Equipe</p>
-                              <p className="mt-1 text-sm text-zinc-800">{record.equipe}</p>
+                              <p className="mt-1 text-sm text-zinc-800 dark:text-zinc-200">{record.equipe}</p>
                             </div>
                           </div>
                           <div>
                             <p className="text-xs font-medium uppercase text-zinc-400">
                               Panfletos distribuídos
                             </p>
-                            <p className="mt-1 text-sm text-zinc-800">
+                            <p className="mt-1 text-sm text-zinc-800 dark:text-zinc-200">
                               {record.panfletosDistribuidos?.toLocaleString("pt-BR")}
                             </p>
                           </div>
@@ -517,11 +517,11 @@ function HistoricoPageBody() {
                             <p className="text-xs font-medium uppercase text-zinc-400">
                               Locais atendidos
                             </p>
-                            <p className="mt-1 text-sm text-zinc-800">{record.locaisAtendidos}</p>
+                            <p className="mt-1 text-sm text-zinc-800 dark:text-zinc-200">{record.locaisAtendidos}</p>
                           </div>
                           <div>
                             <p className="text-xs font-medium uppercase text-zinc-400">Fotos tiradas</p>
-                            <p className="mt-1 text-sm text-zinc-800">{record.photos}</p>
+                            <p className="mt-1 text-sm text-zinc-800 dark:text-zinc-200">{record.photos}</p>
                           </div>
                         </div>
                       )}
@@ -538,11 +538,11 @@ function HistoricoPageBody() {
                       <div className="grid grid-cols-2 gap-6">
                         <div>
                           <p className="text-xs font-medium uppercase text-zinc-400">O que foi feito</p>
-                          <p className="mt-2 text-sm text-zinc-700">{row.description}</p>
+                          <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300">{row.description}</p>
                         </div>
                         <div>
                           <p className="text-xs font-medium uppercase text-zinc-400">Observações</p>
-                          <p className="mt-2 text-sm text-zinc-700">{row.observations}</p>
+                          <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300">{row.observations}</p>
                         </div>
                       </div>
 
@@ -555,7 +555,7 @@ function HistoricoPageBody() {
                                 <button
                                   key={`ex-${i}`}
                                   type="button"
-                                  className="h-16 w-16 overflow-hidden rounded-lg border border-zinc-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gradient-start)]/40"
+                                  className="h-16 w-16 overflow-hidden rounded-lg border border-zinc-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gradient-start)]/40 dark:border-zinc-700"
                                   onClick={(ev) => {
                                     ev.stopPropagation();
                                     openEvidenceLightbox(
@@ -596,7 +596,7 @@ function HistoricoPageBody() {
                         {row.extraPhotos.length > 0 ? (
                           <button
                             type="button"
-                            className="flex items-center gap-2 rounded-xl bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-200"
+                            className="flex items-center gap-2 rounded-xl bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
                             onClick={(ev) => {
                               ev.stopPropagation();
                               openEvidenceLightbox(
@@ -623,9 +623,9 @@ function HistoricoPageBody() {
       )}
 
       {historicoReady && filteredRecords.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-2xl bg-white py-16 shadow-lg shadow-zinc-200/50">
-          <FileText className="h-12 w-12 text-zinc-300" />
-          <p className="mt-4 text-lg font-medium text-zinc-500">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-zinc-100 bg-white py-16 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
+          <FileText className="h-12 w-12 text-zinc-300 dark:text-zinc-600" />
+          <p className="mt-4 text-lg font-medium text-zinc-500 dark:text-zinc-400">
             Nenhum registro encontrado
           </p>
           <p className="text-sm text-zinc-400">

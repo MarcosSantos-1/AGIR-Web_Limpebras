@@ -141,7 +141,7 @@ export function QuickCalendar({
             type="button"
             aria-label="Mês anterior"
             onClick={() => setMonthAnchor((m) => startOfMonth(subMonths(m, 1)))}
-            className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+            className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -149,7 +149,7 @@ export function QuickCalendar({
             type="button"
             aria-label="Próximo mês"
             onClick={() => setMonthAnchor((m) => startOfMonth(addMonths(m, 1)))}
-            className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+            className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
@@ -193,18 +193,18 @@ export function QuickCalendar({
               className={cn(
                 "relative flex h-9 w-full flex-col items-center justify-center rounded-lg text-sm transition-colors",
                 isToday
-                  ? "bg-accent-gradient font-semibold text-white ring-2 ring-[var(--gradient-start)]/40 ring-offset-1 ring-offset-white"
+                  ? "bg-accent-gradient font-semibold text-white ring-2 ring-[var(--gradient-start)]/40 ring-offset-1 ring-offset-white dark:ring-offset-zinc-900"
                   : isSelected
-                    ? "bg-fuchsia-50 font-semibold text-zinc-900 ring-2 ring-[var(--gradient-accent)]/70"
+                    ? "bg-fuchsia-50 font-semibold text-zinc-900 ring-2 ring-[var(--gradient-accent)]/70 dark:bg-fuchsia-950/40 dark:text-zinc-100"
                     : currentMonth
-                      ? "text-zinc-700 hover:bg-zinc-100"
-                      : "text-zinc-300",
+                      ? "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                      : "text-zinc-300 dark:text-zinc-600",
               )}
             >
               <span
                 className={cn(
                   "leading-none",
-                  holiday && !isToday && "font-bold text-red-600",
+                  holiday && !isToday && "font-bold text-red-600 dark:text-red-400",
                   holiday && isToday && "font-bold text-white",
                 )}
               >
@@ -212,13 +212,13 @@ export function QuickCalendar({
               </span>
               {chk === "complete" ? (
                 <span
-                  className="absolute bottom-0.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-emerald-500 shadow-sm ring-1 ring-white/80"
+                  className="absolute bottom-0.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-emerald-500 shadow-sm ring-1 ring-white/80 dark:ring-zinc-900/80"
                   title="Checklist 100%"
                   aria-hidden
                 />
               ) : chk === "partial" ? (
                 <span
-                  className="absolute bottom-0.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-red-500 shadow-sm ring-1 ring-white/80"
+                  className="absolute bottom-0.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-red-500 shadow-sm ring-1 ring-white/80 dark:ring-zinc-900/80"
                   title="Checklist iniciado e incompleto"
                   aria-hidden
                 />
@@ -233,7 +233,7 @@ export function QuickCalendar({
           Feriados (nacional e São Paulo)
         </p>
         {monthHolidays.length === 0 ? (
-          <p className="rounded-xl bg-zinc-50 p-3 text-xs text-zinc-500 dark:text-zinc-400 dark:text-zinc-500">
+          <p className="rounded-xl bg-zinc-50 p-3 text-xs text-zinc-500 dark:bg-zinc-800/50 dark:text-zinc-400">
             Nenhum feriado neste mês.
           </p>
         ) : (

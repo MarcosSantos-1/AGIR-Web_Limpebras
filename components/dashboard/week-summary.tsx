@@ -14,9 +14,9 @@ import { CheckCircle2, Clock, AlertCircle, Share2, ChevronRight } from "lucide-r
 import Link from "next/link";
 
 const statusConfig = {
-  done: { icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-50" },
-  pending: { icon: Clock, color: "text-amber-500", bg: "bg-amber-50" },
-  urgent: { icon: AlertCircle, color: "text-red-500", bg: "bg-red-50" },
+  done: { icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-950/40" },
+  pending: { icon: Clock, color: "text-amber-500", bg: "bg-amber-50 dark:bg-amber-950/40" },
+  urgent: { icon: AlertCircle, color: "text-red-500", bg: "bg-red-50 dark:bg-red-950/40" },
 };
 
 export function WeekSummary() {
@@ -57,7 +57,7 @@ export function WeekSummary() {
               className={`rounded-2xl p-4 transition-colors ${
                 isToday
                   ? "bg-gradient-to-br from-[var(--gradient-start)]/5 to-[var(--gradient-end)]/5 ring-2 ring-[var(--gradient-start)]/20"
-                  : "bg-zinc-50 hover:bg-zinc-100"
+                  : "bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800/50 dark:hover:bg-zinc-800"
               }`}
             >
             <div className="mb-3 text-center">
@@ -78,7 +78,7 @@ export function WeekSummary() {
                 const inner = (
                   <div
                     className={`rounded-xl ${
-                      isSocial ? "bg-fuchsia-50" : config.bg
+                      isSocial ? "bg-fuchsia-50 dark:bg-fuchsia-950/40" : config.bg
                     } p-2.5 ${
                       task.eventId > 0 || isSocial
                         ? "cursor-pointer transition-shadow hover:shadow-md"

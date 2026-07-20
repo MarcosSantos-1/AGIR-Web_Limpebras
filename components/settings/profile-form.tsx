@@ -115,14 +115,14 @@ export function ProfileForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div
-        className={`${cardRound} bg-white p-6 shadow-lg shadow-zinc-200/50`}
+        className={`${cardRound} border border-zinc-100 bg-white p-6 shadow-card dark:border-zinc-800 dark:bg-zinc-900`}
       >
         {layout === "settings" ? (
-          <h3 className="mb-6 text-lg font-semibold text-zinc-900">
+          <h3 className="mb-6 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
             Informações Pessoais
           </h3>
         ) : (
-          <h3 className="mb-6 text-lg font-semibold text-zinc-900">
+          <h3 className="mb-6 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
             Complete o seu perfil
           </h3>
         )}
@@ -142,9 +142,9 @@ export function ProfileForm({
                 <button
                   type="button"
                   title="Gradiente das iniciais"
-                  className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-lg transition hover:bg-zinc-50"
+                  className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-lg transition hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800"
                 >
-                  <Palette className="h-4 w-4 text-zinc-600" />
+                  <Palette className="h-4 w-4 text-zinc-600 dark:text-zinc-300" />
                 </button>
               </PopoverTrigger>
             </div>
@@ -157,7 +157,7 @@ export function ProfileForm({
                     onClick={() => {
                       applyGradientPreset(g.from, g.to);
                     }}
-                    className={`flex h-10 w-10 rounded-xl ring-offset-2 transition ${
+                    className={`flex h-10 w-10 rounded-xl ring-offset-2 transition dark:ring-offset-zinc-900 ${
                       gradientFrom === g.from && gradientTo === g.to
                         ? "ring-2 ring-[var(--gradient-start)]"
                         : ""
@@ -175,7 +175,7 @@ export function ProfileForm({
           <div className="min-w-0 flex-1 space-y-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="prof-nome" className="text-sm font-medium text-zinc-500">
+                <Label htmlFor="prof-nome" className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
                   Nome
                 </Label>
                 <Input
@@ -183,14 +183,14 @@ export function ProfileForm({
                   required
                   value={nome}
                   onChange={(e) => setNome(e.target.value)}
-                  className="rounded-xl border-0 bg-zinc-100 p-3"
+                  className="rounded-xl border-0 bg-zinc-100 p-3 dark:bg-zinc-800"
                   placeholder="Seu nome"
                   autoComplete="name"
                   disabled={saving || !hydrated}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="prof-cargo" className="text-sm font-medium text-zinc-500">
+                <Label htmlFor="prof-cargo" className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
                   Cargo
                 </Label>
                 <Input
@@ -198,7 +198,7 @@ export function ProfileForm({
                   required
                   value={cargo}
                   onChange={(e) => setCargo(e.target.value)}
-                  className="rounded-xl border-0 bg-zinc-100 p-3"
+                  className="rounded-xl border-0 bg-zinc-100 p-3 dark:bg-zinc-800"
                   placeholder="Ex.: Supervisor"
                   autoComplete="organization-title"
                   disabled={saving || !hydrated}
@@ -206,7 +206,7 @@ export function ProfileForm({
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="prof-email" className="text-sm font-medium text-zinc-500">
+              <Label htmlFor="prof-email" className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
                 E-mail
               </Label>
               <Input
@@ -215,11 +215,11 @@ export function ProfileForm({
                 readOnly
                 value={email}
                 tabIndex={-1}
-                className="cursor-not-allowed rounded-xl border-0 bg-zinc-100/90 p-3 text-zinc-600"
+                className="cursor-not-allowed rounded-xl border-0 bg-zinc-100/90 p-3 text-zinc-600 dark:bg-zinc-800/90 dark:text-zinc-400"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="prof-tel" className="text-sm font-medium text-zinc-500">
+              <Label htmlFor="prof-tel" className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
                 Telefone
               </Label>
               <Input
@@ -232,7 +232,7 @@ export function ProfileForm({
                 onChange={(e) =>
                   setTelefone(formatBrazilPhoneInput(e.target.value))
                 }
-                className="rounded-xl border-0 bg-zinc-100 p-3"
+                className="rounded-xl border-0 bg-zinc-100 p-3 dark:bg-zinc-800"
                 placeholder="(11) 99999-9999"
                 disabled={saving || !hydrated}
               />

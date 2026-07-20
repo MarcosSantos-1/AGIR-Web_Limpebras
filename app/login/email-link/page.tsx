@@ -78,12 +78,12 @@ export default function EmailLinkLoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-zinc-50 via-white to-fuchsia-50/40 px-4">
-      <div className="w-full max-w-md rounded-3xl border border-zinc-100 bg-white p-8 shadow-xl">
-        <h1 className="text-xl font-semibold text-zinc-900">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-zinc-50 via-white to-fuchsia-50/40 px-4 dark:from-zinc-950 dark:via-zinc-950 dark:to-fuchsia-950/30">
+      <div className="w-full max-w-md rounded-3xl border border-zinc-100 bg-white p-8 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
+        <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
           Entrar com link
         </h1>
-        <p className="mt-2 text-sm text-zinc-500">
+        <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
           Depois de entrar, complete seu cadastro no app e defina uma senha na primeira vez —
           assim você consegue acessar de novo na página de login depois de sair.
           Na Firebase Console, ative “Email link (passwordless)” no provedor E-mail e

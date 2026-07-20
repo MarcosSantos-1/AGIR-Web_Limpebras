@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 /** Cartão tipo shadcn para álbum na galeria (imagem + meta). */
 export function GaleriaAlbumSkeletonCard() {
   return (
-    <Card className="h-full overflow-hidden rounded-2xl border-0 py-0 shadow-lg shadow-zinc-200/40 ring-1 ring-zinc-100">
+    <Card className="h-full overflow-hidden rounded-2xl border-0 py-0 shadow-card ring-1 ring-zinc-100 dark:ring-zinc-800">
       <CardContent className="p-0">
         <Skeleton className="aspect-[5/4] w-full max-h-72 rounded-none sm:max-h-80" />
       </CardContent>
@@ -29,7 +29,7 @@ export function GaleriaAlbumSkeletonGrid({ count = 6 }: { count?: number }) {
 
 export function RedesSociaisCardSkeleton() {
   return (
-    <Card className="rounded-3xl border-0 py-0 shadow-lg shadow-zinc-200/50 ring-1 ring-zinc-100">
+    <Card className="rounded-3xl border-0 py-0 shadow-card ring-1 ring-zinc-100 dark:ring-zinc-800">
       <CardHeader className="flex flex-row items-start justify-between gap-3 border-0 px-6 pb-2 pt-6">
         <div className="min-w-0 flex-1 space-y-2">
           <Skeleton className="h-5 w-3/4" />
@@ -49,7 +49,7 @@ export function RedesSociaisCardSkeleton() {
             <Skeleton key={i} className="aspect-square rounded-xl" />
           ))}
         </div>
-        <div className="flex justify-end gap-2 border-t border-zinc-100 pt-4">
+        <div className="flex justify-end gap-2 border-t border-zinc-100 pt-4 dark:border-zinc-800">
           <Skeleton className="h-9 w-24 rounded-lg" />
           <Skeleton className="h-9 w-32 rounded-lg" />
         </div>
@@ -71,11 +71,11 @@ export function RedesSociaisSkeletonGrid({ count = 4 }: { count?: number }) {
 export function HistoricoTimelineSkeleton({ rows = 4 }: { rows?: number }) {
   return (
     <div className="relative space-y-4">
-      <div className="absolute left-6 top-0 h-full w-0.5 bg-zinc-200" />
+      <div className="absolute left-6 top-0 h-full w-0.5 bg-zinc-200 dark:bg-zinc-700" />
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className="relative pl-16">
           <Skeleton className="absolute left-4 top-6 h-5 w-5 rounded-full" />
-          <Card className="rounded-2xl border-0 py-4 shadow-lg shadow-zinc-200/50 ring-1 ring-zinc-100">
+          <Card className="rounded-2xl border-0 py-4 shadow-card ring-1 ring-zinc-100 dark:ring-zinc-800">
             <CardContent className="space-y-3 px-5">
               <div className="flex justify-between gap-3">
                 <div className="min-w-0 flex-1 space-y-2">
@@ -99,7 +99,7 @@ export function HistoricoTimelineSkeleton({ rows = 4 }: { rows?: number }) {
 
 function IndicadoresStatSkeleton() {
   return (
-    <Card className="rounded-2xl border-0 shadow-lg shadow-zinc-200/50 ring-1 ring-zinc-100">
+    <Card className="rounded-2xl border-0 shadow-card ring-1 ring-zinc-100 dark:ring-zinc-800">
       <CardContent className="space-y-3 p-5">
         <div className="flex items-start justify-between">
           <Skeleton className="h-10 w-10 rounded-xl" />
@@ -115,7 +115,7 @@ function IndicadoresStatSkeleton() {
 
 function IndicadoresTableBlockSkeleton({ rows = 5 }: { rows?: number }) {
   return (
-    <Card className="rounded-3xl border-0 shadow-lg shadow-zinc-200/50 ring-1 ring-zinc-100">
+    <Card className="rounded-3xl border-0 shadow-card ring-1 ring-zinc-100 dark:ring-zinc-800">
       <CardContent className="space-y-4 p-6">
         <Skeleton className="h-6 w-64" />
         <Skeleton className="h-4 w-full max-w-lg" />
@@ -132,7 +132,7 @@ function IndicadoresTableBlockSkeleton({ rows = 5 }: { rows?: number }) {
 
 function IndicadoresChartSkeleton({ tall }: { tall?: boolean }) {
   return (
-    <Card className="rounded-3xl border-0 shadow-lg shadow-zinc-200/50 ring-1 ring-zinc-100">
+    <Card className="rounded-3xl border-0 shadow-card ring-1 ring-zinc-100 dark:ring-zinc-800">
       <CardContent className="space-y-4 p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-2">

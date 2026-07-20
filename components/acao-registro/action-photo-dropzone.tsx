@@ -194,8 +194,11 @@ export function ActionPhotoDropzone({
         "rounded-2xl border border-dashed p-4",
         isEmphasis &&
           "border-[var(--gradient-accent)]/30 bg-gradient-to-br from-[var(--gradient-start)]/5 to-[var(--gradient-end)]/5",
-        isAmber && "border-amber-200/80 bg-amber-50/40",
-        !isEmphasis && !isAmber && "border-zinc-200 bg-zinc-50/80",
+        isAmber &&
+          "border-amber-200/80 bg-amber-50/40 dark:border-amber-800/60 dark:bg-amber-950/30",
+        !isEmphasis &&
+          !isAmber &&
+          "border-zinc-200 bg-zinc-50/80 dark:border-zinc-700 dark:bg-zinc-800/50",
         dragOver &&
           (isAmber
             ? "ring-2 ring-amber-300"
@@ -243,11 +246,13 @@ export function ActionPhotoDropzone({
     >
       {mounted ? createPortal(fileInput, document.body) : null}
       <div className="mb-2 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-sm font-medium text-zinc-800">
+        <div className="flex items-center gap-2 text-sm font-medium text-zinc-800 dark:text-zinc-100">
           <Upload
             className={cn(
               "h-4 w-4",
-              isEmphasis ? "text-[var(--gradient-accent)]" : "text-zinc-500",
+              isEmphasis
+                ? "text-[var(--gradient-accent)]"
+                : "text-zinc-500 dark:text-zinc-400",
             )}
           />
           {label}
@@ -256,19 +261,19 @@ export function ActionPhotoDropzone({
       <button
         type="button"
         className={cn(
-          "flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white py-6 text-sm transition",
+          "flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white py-6 text-sm transition dark:border-zinc-700 dark:bg-zinc-900",
           dragOver
-            ? "border-[var(--gradient-start)]/50 bg-zinc-50"
-            : "hover:border-[var(--gradient-start)]/30 hover:bg-zinc-50/80",
+            ? "border-[var(--gradient-start)]/50 bg-zinc-50 dark:bg-zinc-800"
+            : "hover:border-[var(--gradient-start)]/30 hover:bg-zinc-50/80 dark:hover:bg-zinc-800/80",
         )}
         onClick={openFilePicker}
       >
         <ImageIcon className="h-8 w-8 text-zinc-400" aria-hidden />
-        <span className="text-zinc-600">{hint}</span>
+        <span className="text-zinc-600 dark:text-zinc-400">{hint}</span>
         <span className="sr-only">Abrir seletor de ficheiros</span>
       </button>
       {photoDataUrls.length > 0 && (
-        <p className="mt-2 text-xs text-zinc-600">
+        <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
           {orderHint ??
             "Arraste as miniaturas para alterar a ordem (a galeria usa esta ordem)."}
         </p>
@@ -284,7 +289,7 @@ export function ActionPhotoDropzone({
                     ? `${url}-${i}`
                     : `${i}-${url.slice(-32)}`
                 }
-                className="group relative aspect-square overflow-hidden rounded-lg border border-zinc-100"
+                className="group relative aspect-square overflow-hidden rounded-lg border border-zinc-100 dark:border-zinc-800"
                 onDragOver={(e) => {
                   e.preventDefault();
                   e.stopPropagation();

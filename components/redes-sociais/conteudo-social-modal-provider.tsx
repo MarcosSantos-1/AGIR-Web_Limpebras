@@ -136,7 +136,7 @@ function isExistingSocialPhotoVideo(photo: SocialPost["fotos"][number]): boolean
 function ModalHeroHeader({ mode }: { mode: "create" | "edit" }) {
   const edit = mode === "edit";
   return (
-    <div className="shrink-0 border-b border-zinc-100/80 bg-gradient-to-br from-fuchsia-500/8 via-white to-violet-500/10 px-6 py-5 sm:px-10 sm:py-6">
+    <div className="shrink-0 border-b border-zinc-100/80 bg-gradient-to-br from-fuchsia-500/8 via-white to-violet-500/10 px-6 py-5 dark:border-zinc-800 dark:via-zinc-900 sm:px-10 sm:py-6">
       <div className="flex items-start gap-4">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-accent-gradient-br text-white shadow-lg shadow-[var(--gradient-start)]/20">
           <Share2 className="h-6 w-6" />
@@ -145,7 +145,7 @@ function ModalHeroHeader({ mode }: { mode: "create" | "edit" }) {
           <DialogTitle className="text-left text-xl font-semibold tracking-tight">
             {edit ? "Editar conteúdo" : "Novo conteúdo"}
           </DialogTitle>
-          <DialogDescription className="text-left text-sm text-zinc-600">
+          <DialogDescription className="text-left text-sm text-zinc-600 dark:text-zinc-400">
             {edit
               ? "Atualize a fase, o texto e as mídias. Mudanças serão gravadas onde o app registrar os dados."
               : "Redes sociais — defina a fase, o formato e anexe mídias. Campos extras aparecem conforme o status."}
@@ -566,7 +566,7 @@ function ConteudoFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          "!flex w-[min(100vw-1rem,56rem)] max-w-4xl flex-col gap-0 overflow-hidden border-zinc-200/80 p-0 shadow-2xl sm:max-w-4xl",
+          "!flex w-[min(100vw-1rem,56rem)] max-w-4xl flex-col gap-0 overflow-hidden border-zinc-200/80 p-0 shadow-2xl dark:border-zinc-800 sm:max-w-4xl",
           "max-h-[min(92vh,920px)]",
         )}
         showCloseButton
@@ -589,12 +589,12 @@ function ConteudoFormDialog({
           >
             <div className="space-y-5">
               {submitError && (
-                <p className="rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-sm font-medium text-red-700">
+                <p className="rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-sm font-medium text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
                   {submitError}
                 </p>
               )}
-              <div className="rounded-2xl border border-zinc-100 bg-zinc-50/60 p-4 sm:p-5">
-                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-zinc-800">
+              <div className="rounded-2xl border border-zinc-100 bg-zinc-50/60 p-4 dark:border-zinc-800 dark:bg-zinc-800/50 sm:p-5">
+                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
                   <PhaseIcon className="h-4 w-4 text-[var(--gradient-accent)]" />
                   Fase do conteúdo
                 </div>
@@ -612,7 +612,7 @@ function ConteudoFormDialog({
                 >
                   <SelectTrigger
                     id="fase-conteudo"
-                    className="h-11 w-full min-w-0 border-zinc-200 bg-white"
+                    className="h-11 w-full min-w-0 border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900"
                   >
                     <SelectValue placeholder="Fase" />
                   </SelectTrigger>
@@ -634,7 +634,7 @@ function ConteudoFormDialog({
                   <Label htmlFor="tema">Tema / título</Label>
                   <Input
                     id="tema"
-                    className="h-11 w-full min-w-0 border-zinc-200"
+                    className="h-11 w-full min-w-0 border-zinc-200 dark:border-zinc-700 dark:bg-zinc-900"
                     value={tema}
                     onChange={(e) => setTema(e.target.value)}
                     required
@@ -649,7 +649,7 @@ function ConteudoFormDialog({
                       setTipo(v as SocialContentTipo)
                     }
                   >
-                    <SelectTrigger className="h-11 w-full min-w-0 border-zinc-200 bg-white">
+                    <SelectTrigger className="h-11 w-full min-w-0 border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -664,13 +664,13 @@ function ConteudoFormDialog({
                 {fase === "publicado" ? (
                   <div className="space-y-2">
                     <Label>Redes (publicação)</Label>
-                    <div className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-white p-3">
+                    <div className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-900">
                       {REDES_PUBLICACAO.map((r) => {
                         const checked = redePublicacao.includes(r);
                         return (
                           <label
                             key={r}
-                            className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-zinc-50"
+                            className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800"
                           >
                             <Checkbox
                               checked={checked}
@@ -686,7 +686,7 @@ function ConteudoFormDialog({
                               rede={r}
                               className="w-4 text-center text-base leading-none"
                             />
-                            <span className="text-sm font-medium text-zinc-700">
+                            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                               {SOCIAL_PUBLICATION_REDE_LABELS[r]}
                             </span>
                           </label>
@@ -701,7 +701,7 @@ function ConteudoFormDialog({
                   <Label htmlFor="resp">Responsável</Label>
                   <Input
                     id="resp"
-                    className="h-11 w-full min-w-0 border-zinc-200"
+                    className="h-11 w-full min-w-0 border-zinc-200 dark:border-zinc-700 dark:bg-zinc-900"
                     value={responsavel}
                     onChange={(e) => setResponsavel(e.target.value)}
                     placeholder="Nome"
@@ -710,8 +710,8 @@ function ConteudoFormDialog({
               </div>
 
               {fase === "agendado" && (
-                <div className="rounded-2xl border-2 border-amber-200/60 bg-amber-50/40 p-4 sm:p-5">
-                  <p className="mb-3 text-sm font-semibold text-amber-950">
+                <div className="rounded-2xl border-2 border-amber-200/60 bg-amber-50/40 p-4 dark:border-amber-800/50 dark:bg-amber-950/30 sm:p-5">
+                  <p className="mb-3 text-sm font-semibold text-amber-950 dark:text-amber-100">
                     Publicação agendada
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
@@ -744,8 +744,8 @@ function ConteudoFormDialog({
               )}
 
               {fase === "publicado" && (
-                <div className="rounded-2xl border-2 border-emerald-200/60 bg-emerald-50/40 p-4 sm:p-5">
-                  <p className="mb-3 text-sm font-semibold text-emerald-950">
+                <div className="rounded-2xl border-2 border-emerald-200/60 bg-emerald-50/40 p-4 dark:border-emerald-800/50 dark:bg-emerald-950/30 sm:p-5">
+                  <p className="mb-3 text-sm font-semibold text-emerald-950 dark:text-emerald-100">
                     Registro da publicação
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
@@ -777,7 +777,7 @@ function ConteudoFormDialog({
                       <Label htmlFor="link-post">Link do post</Label>
                       <Input
                         id="link-post"
-                        className="h-11 w-full min-w-0 border-zinc-200"
+                        className="h-11 w-full min-w-0 border-zinc-200 dark:border-zinc-700 dark:bg-zinc-900"
                         value={linkPost}
                         onChange={(e) => setLinkPost(e.target.value)}
                         type="url"
@@ -794,7 +794,7 @@ function ConteudoFormDialog({
                   <Label htmlFor="ideia">Ideia e referências</Label>
                   <Textarea
                     id="ideia"
-                    className="min-h-[100px] resize-y border-zinc-200"
+                    className="min-h-[100px] resize-y border-zinc-200 dark:border-zinc-700 dark:bg-zinc-900"
                     value={ideiaTexto}
                     onChange={(e) => setIdeiaTexto(e.target.value)}
                     placeholder="Conceito, referências, público-alvo, duração sugerida…"
@@ -807,7 +807,7 @@ function ConteudoFormDialog({
                   <Label htmlFor="legenda">Legenda / texto (rascunho)</Label>
                   <Textarea
                     id="legenda"
-                    className="min-h-[88px] resize-y border-zinc-200"
+                    className="min-h-[88px] resize-y border-zinc-200 dark:border-zinc-700 dark:bg-zinc-900"
                     value={legenda}
                     onChange={(e) => setLegenda(e.target.value)}
                     placeholder="Rascunho de legenda ou roteiro…"
@@ -820,7 +820,7 @@ function ConteudoFormDialog({
                   <Label htmlFor="link-arq">Arquivo / link de apoio (opcional)</Label>
                   <Input
                     id="link-arq"
-                    className="h-11 w-full min-w-0 border-zinc-200"
+                    className="h-11 w-full min-w-0 border-zinc-200 dark:border-zinc-700 dark:bg-zinc-900"
                     value={linkArquivo}
                     onChange={(e) => setLinkArquivo(e.target.value)}
                     type="url"
@@ -833,7 +833,7 @@ function ConteudoFormDialog({
                 <Label htmlFor="notas">Observações (opcional)</Label>
                 <Textarea
                   id="notas"
-                  className="min-h-[72px] resize-y border-zinc-200"
+                  className="min-h-[72px] resize-y border-zinc-200 dark:border-zinc-700 dark:bg-zinc-900"
                   value={notas}
                   onChange={(e) => setNotas(e.target.value)}
                   placeholder="Equipe, produção, pendências legais…"
@@ -853,7 +853,7 @@ function ConteudoFormDialog({
                         <li
                           key={photo.id}
                           className={cn(
-                            "group relative aspect-square overflow-hidden rounded-lg border border-zinc-100 bg-zinc-100",
+                            "group relative aspect-square overflow-hidden rounded-lg border border-zinc-100 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-800",
                             !photo.url && photo.color,
                           )}
                         >

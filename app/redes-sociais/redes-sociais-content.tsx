@@ -61,15 +61,15 @@ function statusLabel(
 ): { label: string; className: string } {
   switch (s) {
     case "ideia":
-      return { label: "Ideia", className: "bg-violet-100 text-violet-800" };
+      return { label: "Ideia", className: "bg-violet-100 text-violet-800 dark:bg-violet-950/50 dark:text-violet-200" };
     case "rascunho":
-      return { label: "Rascunho", className: "bg-zinc-100 text-zinc-700" };
+      return { label: "Rascunho", className: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300" };
     case "agendado":
-      return { label: "Agendado", className: "bg-amber-100 text-amber-800" };
+      return { label: "Agendado", className: "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200" };
     case "publicado":
-      return { label: "Publicado", className: "bg-emerald-100 text-emerald-800" };
+      return { label: "Publicado", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200" };
     default:
-      return { label: s, className: "bg-zinc-100 text-zinc-700" };
+      return { label: s, className: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300" };
   }
 }
 
@@ -212,7 +212,7 @@ function RedesSociaisPageBody() {
             placeholder="Buscar por tema, legenda, responsável…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-12 w-full rounded-xl border-0 bg-white pl-12 pr-4 text-sm shadow-lg shadow-zinc-200/50 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[var(--gradient-start)]/20"
+            className="h-12 w-full rounded-xl border-0 bg-white pl-12 pr-4 text-sm text-zinc-900 shadow-card placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[var(--gradient-start)]/20 dark:bg-zinc-900 dark:text-zinc-100"
           />
         </div>
         <Button
@@ -234,7 +234,7 @@ function RedesSociaisPageBody() {
             className={`rounded-xl px-4 py-2.5 text-sm font-medium transition-all ${
               selectedFilter === filter.id
                 ? "bg-accent-gradient text-white shadow-lg shadow-[var(--gradient-start)]/25"
-                : "bg-white text-zinc-600 shadow-md hover:bg-zinc-50"
+                : "bg-white text-zinc-600 shadow-md hover:bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
             }`}
           >
             {filter.label}
@@ -261,16 +261,16 @@ function RedesSociaisPageBody() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: setIndex * 0.05 }}
-              className={`rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50 ${
+              className={`rounded-3xl border border-zinc-100 bg-white p-6 shadow-card dark:border-zinc-800 dark:bg-zinc-900 ${
                 isHighlight
-                  ? "ring-2 ring-[var(--gradient-start)]/50 ring-offset-2 ring-offset-zinc-50"
+                  ? "ring-2 ring-[var(--gradient-start)]/50 ring-offset-2 ring-offset-zinc-50 dark:ring-offset-zinc-950"
                   : ""
               }`}
             >
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <h3 className="font-semibold text-zinc-900">{set.tema}</h3>
-                  <p className="mt-1 text-sm text-zinc-500">#{set.id}</p>
+                  <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">{set.tema}</h3>
+                  <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">#{set.id}</p>
                 </div>
                 <span
                   className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium ${st.className}`}
@@ -280,7 +280,7 @@ function RedesSociaisPageBody() {
               </div>
 
               <div className="mb-4 grid gap-3 sm:grid-cols-2">
-                <div className="flex items-start gap-2 text-sm text-zinc-600">
+                <div className="flex items-start gap-2 text-sm text-zinc-600 dark:text-zinc-300">
                   <Calendar className="mt-0.5 h-4 w-4 shrink-0 text-[var(--gradient-accent)]" />
                   <span>
                     <span className="text-xs text-zinc-400">Pauta / data</span>
@@ -288,7 +288,7 @@ function RedesSociaisPageBody() {
                     {formatDateBr(set.date)}
                   </span>
                 </div>
-                <div className="flex items-start gap-2 text-sm text-zinc-600">
+                <div className="flex items-start gap-2 text-sm text-zinc-600 dark:text-zinc-300">
                   <Megaphone className="mt-0.5 h-4 w-4 shrink-0 text-[var(--gradient-accent)]" />
                   <span>
                     <span className="text-xs text-zinc-400">Formato</span>
@@ -298,7 +298,7 @@ function RedesSociaisPageBody() {
                 </div>
                 {set.status === "publicado" ? (
                   <>
-                    <div className="flex items-start gap-2 text-sm text-zinc-600">
+                    <div className="flex items-start gap-2 text-sm text-zinc-600 dark:text-zinc-300">
                       <Share2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--gradient-accent)]" />
                       <span>
                         <span className="text-xs text-zinc-400">Rede</span>
@@ -309,7 +309,7 @@ function RedesSociaisPageBody() {
                     <div className="hidden sm:block" aria-hidden />
                   </>
                 ) : null}
-                <div className="flex items-start gap-2 sm:col-span-2">
+                <div className="flex items-start gap-2 text-sm text-zinc-600 dark:text-zinc-300 sm:col-span-2">
                   <User className="mt-0.5 h-4 w-4 shrink-0 text-[var(--gradient-accent)]" />
                   <span>
                     <span className="text-xs text-zinc-400">Responsável</span>
@@ -320,8 +320,8 @@ function RedesSociaisPageBody() {
               </div>
 
               {set.status === "ideia" && set.ideiaResumo && (
-                <div className="mb-4 rounded-2xl bg-violet-50/80 p-4 text-sm text-zinc-800">
-                  <p className="text-xs font-semibold uppercase text-violet-600">
+                <div className="mb-4 rounded-2xl bg-violet-50/80 p-4 text-sm text-zinc-800 dark:bg-violet-950/40 dark:text-zinc-200">
+                  <p className="text-xs font-semibold uppercase text-violet-600 dark:text-violet-300">
                     Ideia
                   </p>
                   <p className="mt-1 leading-relaxed">{set.ideiaResumo}</p>
@@ -329,8 +329,8 @@ function RedesSociaisPageBody() {
               )}
 
               {set.notasProducao ? (
-                <div className="mb-4 rounded-xl border border-orange-900/40 bg-orange-950/15 px-4 py-3 text-sm text-orange-950">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-orange-950/90">
+                <div className="mb-4 rounded-xl border border-orange-900/40 bg-orange-950/15 px-4 py-3 text-sm text-orange-950 dark:border-orange-500/30 dark:bg-orange-950/30 dark:text-orange-100">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-orange-950/90 dark:text-orange-200/90">
                     Observações
                   </p>
                   <p className="mt-1.5 leading-relaxed">{set.notasProducao}</p>
@@ -342,7 +342,7 @@ function RedesSociaisPageBody() {
                   <p className="text-xs font-semibold uppercase text-zinc-400">
                     Legenda
                   </p>
-                  <p className="mt-1 text-sm leading-relaxed text-zinc-800">
+                  <p className="mt-1 text-sm leading-relaxed text-zinc-800 dark:text-zinc-200">
                     {set.legenda}
                   </p>
                 </div>
@@ -400,7 +400,7 @@ function RedesSociaisPageBody() {
                         <div
                           key={photo.id}
                           className={cn(
-                            "relative aspect-square overflow-hidden rounded-xl ring-1 ring-zinc-100",
+                            "relative aspect-square overflow-hidden rounded-xl ring-1 ring-zinc-100 dark:ring-zinc-800",
                             !photo.url && photo.color,
                           )}
                         >
@@ -455,7 +455,7 @@ function RedesSociaisPageBody() {
                 </div>
               )}
 
-              <div className="mt-2 flex flex-wrap items-center justify-end gap-2 border-t border-zinc-100 pt-4">
+              <div className="mt-2 flex flex-wrap items-center justify-end gap-2 border-t border-zinc-100 pt-4 dark:border-zinc-800">
                 <Button
                   type="button"
                   variant="outline"
@@ -470,7 +470,7 @@ function RedesSociaisPageBody() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="rounded-lg border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                  className="rounded-lg border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:hover:bg-red-950/40"
                   onClick={() => setPostToDelete(set)}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
@@ -506,9 +506,9 @@ function RedesSociaisPageBody() {
       )}
 
       {postsHydrated && filtered.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-3xl bg-white py-16 shadow-lg shadow-zinc-200/50">
-          <Filter className="h-12 w-12 text-zinc-300" />
-          <p className="mt-4 text-lg font-medium text-zinc-500">
+        <div className="flex flex-col items-center justify-center rounded-3xl border border-zinc-100 bg-white py-16 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
+          <Filter className="h-12 w-12 text-zinc-300 dark:text-zinc-600" />
+          <p className="mt-4 text-lg font-medium text-zinc-500 dark:text-zinc-400">
             Nenhum conteúdo encontrado
           </p>
           <p className="text-sm text-zinc-400">Ajuste filtros ou busca</p>
@@ -532,7 +532,7 @@ function RedesSociaisPageBody() {
         <AlertDialogContent className="rounded-2xl sm:max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir este conteúdo?</AlertDialogTitle>
-            <AlertDialogDescription className="text-left text-zinc-600">
+            <AlertDialogDescription className="text-left text-zinc-600 dark:text-zinc-400">
               Tem certeza? O registro será removido e todas as fotos ou vídeos
               guardados no armazenamento (Cloudflare R2) deste cartão também
               serão apagados. Esta ação não pode ser desfeita.

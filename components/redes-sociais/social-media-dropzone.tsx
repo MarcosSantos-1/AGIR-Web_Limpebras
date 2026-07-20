@@ -151,10 +151,10 @@ export function SocialMediaDropzone({
       <label
         htmlFor={inputId}
         className={cn(
-          "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white py-6 text-sm transition",
+          "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white py-6 text-sm transition dark:border-zinc-700 dark:bg-zinc-900",
           dragOver
-            ? "border-[var(--gradient-start)]/50 bg-zinc-50"
-            : "hover:border-[var(--gradient-start)]/30 hover:bg-zinc-50/80",
+            ? "border-[var(--gradient-start)]/50 bg-zinc-50 dark:bg-zinc-800/50"
+            : "hover:border-[var(--gradient-start)]/30 hover:bg-zinc-50/80 dark:hover:bg-zinc-800/50",
         )}
       >
         <input

@@ -60,12 +60,12 @@ export function LoginForm() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-zinc-50 via-white to-fuchsia-50/40 px-4">
-      <div className="w-full max-w-md rounded-3xl border border-zinc-100 bg-white p-8 shadow-xl shadow-zinc-200/60">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-zinc-50 via-white to-fuchsia-50/40 px-4 dark:from-zinc-950 dark:via-zinc-950 dark:to-fuchsia-950/30">
+      <div className="w-full max-w-md rounded-3xl border border-zinc-100 bg-white p-8 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
         <div className="mb-8 text-center">
           <p className="text-sm font-medium uppercase tracking-wide text-[var(--gradient-accent)]">AGIR</p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">Entrar</h1>
-          <p className="mt-2 text-sm text-zinc-500">
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">Entrar</h1>
+          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
             Entre com e-mail e senha. Quem entrou pelo convite em link define a senha ao completar o cadastro no app.
           </p>
         </div>

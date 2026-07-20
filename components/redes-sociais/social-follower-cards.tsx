@@ -128,7 +128,7 @@ function FollowerCard({ rede }: { rede: SocialPublicationRede }) {
         <button
           type="button"
           className={cn(
-            "w-full rounded-2xl bg-gradient-to-br p-[1px] text-left shadow-lg shadow-zinc-200/40 transition hover:shadow-xl hover:shadow-zinc-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gradient-accent)]/40",
+            "w-full rounded-2xl bg-gradient-to-br p-[1px] text-left shadow-card transition hover:shadow-card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gradient-accent)]/40",
             styles.ring,
           )}
         >
@@ -136,7 +136,7 @@ function FollowerCard({ rede }: { rede: SocialPublicationRede }) {
             className={cn(
               "flex h-full flex-col rounded-2xl bg-gradient-to-br p-5",
               styles.accent,
-              "from-white/95 to-white/80 backdrop-blur-sm",
+              "from-white/95 to-white/80 backdrop-blur-sm dark:from-zinc-900/95 dark:to-zinc-900/80",
             )}
           >
             <div className="flex items-start justify-between gap-3">
@@ -148,19 +148,19 @@ function FollowerCard({ rede }: { rede: SocialPublicationRede }) {
               >
                 {ICONS[rede]}
               </div>
-              <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                 Toque para editar
               </span>
             </div>
-            <p className="mt-3 text-xs font-medium text-zinc-500">
+            <p className="mt-3 text-xs font-medium text-zinc-500 dark:text-zinc-400">
               {SOCIAL_PUBLICATION_REDE_LABELS[rede]}
             </p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums text-zinc-900">
+            <p className="mt-1 text-2xl font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
               {n.toLocaleString("pt-BR")}
             </p>
-            <p className="mt-1 text-[11px] text-zinc-500">seguidores</p>
-            <p className="mt-3 border-t border-zinc-200/80 pt-2 text-xs text-zinc-600">
-              <span className="font-medium text-zinc-700">Última atualização:</span>
+            <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">seguidores</p>
+            <p className="mt-3 border-t border-zinc-200/80 pt-2 text-xs text-zinc-600 dark:border-zinc-700 dark:text-zinc-400">
+              <span className="font-medium text-zinc-700 dark:text-zinc-300">Última atualização:</span>
               <br />
               {formatAtualizado(updated)}
             </p>
@@ -214,7 +214,7 @@ export function SocialFollowerCards() {
         {[0, 1, 2].map((i) => (
           <div
             key={i}
-            className="h-[200px] animate-pulse rounded-2xl bg-zinc-200/70 shadow-inner"
+            className="h-[200px] animate-pulse rounded-2xl bg-zinc-200/70 shadow-inner dark:bg-zinc-800/70"
           />
         ))}
       </div>

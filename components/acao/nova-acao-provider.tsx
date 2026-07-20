@@ -249,7 +249,7 @@ const ModalLocationMiniMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-[220px] w-full items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-50 text-sm text-zinc-500">
+      <div className="flex h-[220px] w-full items-center justify-center rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 text-sm text-zinc-500 dark:text-zinc-400 dark:bg-zinc-800/50">
         A carregar mapa…
       </div>
     ),
@@ -276,8 +276,8 @@ function ModalHero({
   return (
     <div
       className={cn(
-        "shrink-0 border-b border-zinc-100/80 bg-gradient-to-br px-6 py-5 sm:px-8",
-        accentClassName ?? "from-[var(--gradient-start)]/8 via-white to-[var(--gradient-end)]/6",
+        "shrink-0 border-b border-zinc-100/80 bg-gradient-to-br px-6 py-5 sm:px-8 dark:border-zinc-800",
+        accentClassName ?? "from-[var(--gradient-start)]/8 via-white to-[var(--gradient-end)]/6 dark:via-zinc-900 dark:from-[var(--gradient-start)]/15 dark:to-[var(--gradient-end)]/10",
       )}
     >
       <div className="flex items-start gap-4">
@@ -294,7 +294,7 @@ function ModalHero({
           <DialogTitle className="text-left text-xl font-semibold tracking-tight">
             {title}
           </DialogTitle>
-          <DialogDescription className="text-left text-sm leading-relaxed text-zinc-600">
+          <DialogDescription className="text-left text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
             {description}
           </DialogDescription>
         </div>
@@ -317,12 +317,12 @@ function SectionBox({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-zinc-100 bg-zinc-50/50 p-5 sm:p-6",
+        "rounded-2xl border border-zinc-100 bg-zinc-50/50 p-5 sm:p-6 dark:border-zinc-800 dark:bg-zinc-800/50",
         className,
       )}
     >
-      <div className="mb-4 flex items-center gap-2.5 text-sm font-semibold text-zinc-800">
-        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[var(--gradient-accent)] shadow-sm ring-1 ring-zinc-100">
+      <div className="mb-4 flex items-center gap-2.5 text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white dark:bg-zinc-900 text-[var(--gradient-accent)] shadow-sm ring-1 ring-zinc-100 dark:ring-zinc-700">
           <Icon className="h-4 w-4" />
         </span>
         {sectionTitle}
@@ -654,7 +654,7 @@ function AcaoVisitaDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          "!flex w-[min(100vw-1rem,56rem)] max-w-4xl flex-col gap-0 overflow-hidden border-zinc-200/80 p-0 shadow-2xl sm:max-w-4xl",
+          "!flex w-[min(100vw-1rem,56rem)] max-w-4xl flex-col gap-0 overflow-hidden border-zinc-200/80 p-0 shadow-2xl sm:max-w-4xl dark:border-zinc-800",
           "max-h-[min(92vh,920px)]",
         )}
         showCloseButton
@@ -826,18 +826,18 @@ function AcaoVisitaDialog({
           >
             <div className="space-y-5">
               {saveError && (
-                <p className="rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-sm font-medium text-red-700">
+                <p className="rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-sm font-medium text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
                   {saveError}
                 </p>
               )}
               {camposErro && (
-                <p className="rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-sm font-medium text-red-700">
+                <p className="rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-sm font-medium text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
                   Preencha tipo de serviço, título, data, local / endereço e
                   subregional.
                 </p>
               )}
               <div className="space-y-3">
-                <Label className="text-sm font-medium text-zinc-700">
+                <Label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                   Situação
                 </Label>
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -854,8 +854,8 @@ function AcaoVisitaDialog({
                     className={cn(
                       "flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition-all",
                       situacao === "agendar"
-                        ? "border-[var(--gradient-start)]/50 bg-gradient-to-br from-[var(--gradient-start)]/5 to-white shadow-md"
-                        : "border-zinc-200 bg-white hover:border-zinc-300",
+                        ? "border-[var(--gradient-start)]/50 bg-gradient-to-br from-[var(--gradient-start)]/5 to-white shadow-md dark:from-fuchsia-950/50 dark:to-zinc-900"
+                        : "border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-600",
                     )}
                   >
                     <span
@@ -863,16 +863,16 @@ function AcaoVisitaDialog({
                         "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
                         situacao === "agendar"
                           ? "bg-accent-gradient-br text-white"
-                          : "bg-zinc-100 text-zinc-500",
+                          : "bg-zinc-100 text-zinc-500 dark:text-zinc-400 dark:bg-zinc-800",
                       )}
                     >
                       <Calendar className="h-5 w-5" />
                     </span>
                     <span>
-                      <span className="block font-semibold text-zinc-900">
+                      <span className="block font-semibold text-zinc-900 dark:text-zinc-100">
                         Agendar
                       </span>
-                      <span className="mt-0.5 block text-xs text-zinc-500">
+                      <span className="mt-0.5 block text-xs text-zinc-500 dark:text-zinc-400">
                         Compromisso planejado — sem necessidade de fotos.
                       </span>
                     </span>
@@ -883,8 +883,8 @@ function AcaoVisitaDialog({
                     className={cn(
                       "flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition-all",
                       situacao === "finalizado"
-                        ? "border-[var(--gradient-start)]/50 bg-gradient-to-br from-[var(--gradient-end)]/5 to-white shadow-md"
-                        : "border-zinc-200 bg-white hover:border-zinc-300",
+                        ? "border-[var(--gradient-start)]/50 bg-gradient-to-br from-[var(--gradient-end)]/5 to-white shadow-md dark:from-fuchsia-950/50 dark:to-zinc-900"
+                        : "border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-600",
                     )}
                   >
                     <span
@@ -892,16 +892,16 @@ function AcaoVisitaDialog({
                         "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
                         situacao === "finalizado"
                           ? "bg-accent-gradient-br text-white"
-                          : "bg-zinc-100 text-zinc-500",
+                          : "bg-zinc-100 text-zinc-500 dark:text-zinc-400 dark:bg-zinc-800",
                       )}
                     >
                       <CheckCircle2 className="h-5 w-5" />
                     </span>
                     <span>
-                      <span className="block font-semibold text-zinc-900">
+                      <span className="block font-semibold text-zinc-900 dark:text-zinc-100">
                         Finalizado
                       </span>
-                      <span className="mt-0.5 block text-xs text-zinc-500">
+                      <span className="mt-0.5 block text-xs text-zinc-500 dark:text-zinc-400">
                         Ação concluída — fotos opcionais por enquanto.
                       </span>
                     </span>
@@ -914,7 +914,7 @@ function AcaoVisitaDialog({
                   <div className="space-y-2">
                     <Label
                       htmlFor="tipo-servico"
-                      className="text-zinc-600"
+                      className="text-zinc-600 dark:text-zinc-400"
                     >
                       Tipo de serviço
                       <RequiredStar />
@@ -931,10 +931,10 @@ function AcaoVisitaDialog({
                       <SelectTrigger
                         id="tipo-servico"
                         className={cn(
-                          "h-11 w-full min-w-0 border-zinc-200 bg-white",
+                          "h-11 w-full min-w-0 border-zinc-200 bg-white dark:bg-zinc-900 dark:border-zinc-700",
                           camposErro &&
                             !tipoServico &&
-                            "border-red-300 ring-1 ring-red-200",
+                            "border-red-300 ring-1 ring-red-200 dark:border-red-700 dark:ring-red-900",
                         )}
                         size="default"
                       >
@@ -952,7 +952,7 @@ function AcaoVisitaDialog({
                   <div className="space-y-2 sm:col-span-2">
                     <Label
                       htmlFor="acao-titulo"
-                      className="text-zinc-600"
+                      className="text-zinc-600 dark:text-zinc-400"
                     >
                       Título / assunto
                       <RequiredStar />
@@ -961,10 +961,10 @@ function AcaoVisitaDialog({
                       id="acao-titulo"
                       name="titulo"
                       className={cn(
-                        "h-11 border-zinc-200",
+                        "h-11 border-zinc-200 dark:border-zinc-700",
                         camposErro &&
                           !tituloAcao.trim() &&
-                          "border-red-300 ring-1 ring-red-200",
+                          "border-red-300 ring-1 ring-red-200 dark:border-red-700 dark:ring-red-900",
                       )}
                       placeholder="Ex.: Orientação no Ecoponto Norte"
                       value={tituloAcao}
@@ -980,7 +980,7 @@ function AcaoVisitaDialog({
                     <div className="min-w-0 flex-1 space-y-2">
                       <Label
                         htmlFor="unidades-panf-acao"
-                        className="text-zinc-600"
+                        className="text-zinc-600 dark:text-zinc-400"
                       >
                         Unidades distribuídas
                       </Label>
@@ -1001,7 +1001,7 @@ function AcaoVisitaDialog({
                         type="number"
                         min={0}
                         placeholder="0"
-                        className="h-11 max-w-xs border-zinc-200"
+                        className="h-11 max-w-xs border-zinc-200 dark:border-zinc-700"
                         value={unidadesPanfletos}
                         onChange={(e) =>
                           setUnidadesPanfletos(
@@ -1017,8 +1017,8 @@ function AcaoVisitaDialog({
                       className={cn(
                         "flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2.5 ring-1",
                         isTipoPanfletagem
-                          ? "bg-amber-50/80 ring-amber-200"
-                          : "bg-white ring-zinc-200",
+                          ? "bg-amber-50/80 ring-amber-200 dark:bg-amber-950/40 dark:ring-amber-800"
+                          : "bg-white dark:bg-zinc-900 ring-zinc-200 dark:ring-zinc-700",
                       )}
                     >
                       <Checkbox
@@ -1047,8 +1047,8 @@ function AcaoVisitaDialog({
                         className={cn(
                           "text-sm font-medium leading-tight",
                           isTipoPanfletagem
-                            ? "cursor-default text-amber-900"
-                            : "cursor-pointer text-zinc-700",
+                            ? "cursor-default text-amber-900 dark:text-amber-200"
+                            : "cursor-pointer text-zinc-700 dark:text-zinc-300",
                         )}
                       >
                         {isTipoPanfletagem
@@ -1058,7 +1058,7 @@ function AcaoVisitaDialog({
                     </div>
                   </div>
                   {isTipoPanfletagem && (
-                    <p className="mt-2 text-xs text-zinc-500">
+                    <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
                       Para o tipo &quot;Panfletagem&quot;, a ação trata
                       exclusivamente de panfletagem; não é possível
                       desativar.
@@ -1072,7 +1072,7 @@ function AcaoVisitaDialog({
                   <div className="space-y-2">
                     <Label
                       htmlFor="acao-data"
-                      className="text-zinc-600"
+                      className="text-zinc-600 dark:text-zinc-400"
                     >
                       Data
                       <RequiredStar />
@@ -1087,7 +1087,7 @@ function AcaoVisitaDialog({
                   <div className="space-y-2">
                     <Label
                       htmlFor="acao-horario"
-                      className="text-zinc-600"
+                      className="text-zinc-600 dark:text-zinc-400"
                     >
                       Horário (opcional)
                     </Label>
@@ -1105,7 +1105,7 @@ function AcaoVisitaDialog({
                           flyTo={localMapFlyTo}
                           onMapClick={handleModalMapPick}
                         />
-                        <p className="text-xs text-zinc-500">
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400">
                           Toque no mapa para definir ou corrigir o ponto; o
                           texto do local atualiza por geocoding reverso. A lupa
                           mantém a pesquisa por endereço e sugestões.
@@ -1114,7 +1114,7 @@ function AcaoVisitaDialog({
                     ) : null}
                     <Label
                       htmlFor="acao-local"
-                      className="text-zinc-600"
+                      className="text-zinc-600 dark:text-zinc-400"
                     >
                       Local / endereço
                       <RequiredStar />
@@ -1132,10 +1132,10 @@ function AcaoVisitaDialog({
                             autoCorrect="off"
                             spellCheck={false}
                             className={cn(
-                              "h-11 border-zinc-200 pr-12",
+                              "h-11 border-zinc-200 dark:border-zinc-700 pr-12",
                               camposErro &&
                                 !localEndereco.trim() &&
-                                "border-red-300 ring-1 ring-red-200",
+                                "border-red-300 ring-1 ring-red-200 dark:border-red-700 dark:ring-red-900",
                             )}
                             placeholder="Rua, número, bairro ou nome do local"
                             value={localEndereco}
@@ -1185,13 +1185,13 @@ function AcaoVisitaDialog({
                         <Command shouldFilter={false}>
                           <CommandList className="max-h-[min(50vh,280px)]">
                             {localGeocodeLoading ? (
-                              <div className="flex items-center justify-center gap-2 py-6 text-sm text-zinc-500">
+                              <div className="flex items-center justify-center gap-2 py-6 text-sm text-zinc-500 dark:text-zinc-400">
                                 <Loader2 className="h-4 w-4 animate-spin" />
                                 A procurar endereços…
                               </div>
                             ) : null}
                             {!localGeocodeLoading && localGeocodeError ? (
-                              <div className="border-b border-zinc-100 px-3 py-3 text-sm text-red-700">
+                              <div className="border-b border-zinc-100 px-3 py-3 text-sm text-red-700 dark:border-zinc-800 dark:text-red-400">
                                 {localGeocodeError}
                               </div>
                             ) : null}
@@ -1240,7 +1240,7 @@ function AcaoVisitaDialog({
                         </Command>
                       </PopoverContent>
                     </Popover>
-                    <p className="text-xs font-medium text-zinc-800 tabular-nums">
+                    <p className="text-xs font-medium text-zinc-800 dark:text-zinc-200 tabular-nums">
                       Lat{" "}
                       {localAddressCoordPreview
                         ? localAddressCoordPreview.lat.toFixed(6)
@@ -1255,14 +1255,14 @@ function AcaoVisitaDialog({
                   <div className="space-y-2 sm:col-span-2">
                     <Label
                       htmlFor="acao-resp"
-                      className="text-zinc-600"
+                      className="text-zinc-600 dark:text-zinc-400"
                     >
                       Responsável
                     </Label>
                     <Input
                       id="acao-resp"
                       name="responsavel"
-                      className="h-11 border-zinc-200"
+                      className="h-11 border-zinc-200 dark:border-zinc-700"
                       placeholder="Nome do agente ou equipe"
                       value={responsavelAcao}
                       onChange={(e) => setResponsavelAcao(e.target.value)}
@@ -1298,7 +1298,7 @@ function AcaoVisitaDialog({
                   <div className="space-y-2">
                     <Label
                       htmlFor="acao-feito"
-                      className="text-zinc-600"
+                      className="text-zinc-600 dark:text-zinc-400"
                     >
                       {situacao === "agendar"
                         ? "O que está previsto"
@@ -1314,13 +1314,13 @@ function AcaoVisitaDialog({
                           ? "Objetivo, materiais, encaminhamentos previstos…"
                           : "Resumo do trabalho realizado, etapas e resultados…"
                       }
-                      className="min-h-[100px] resize-y border-zinc-200"
+                      className="min-h-[100px] resize-y border-zinc-200 dark:border-zinc-700"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label
                       htmlFor="acao-obs"
-                      className="text-zinc-600"
+                      className="text-zinc-600 dark:text-zinc-400"
                     >
                       Observações
                     </Label>
@@ -1330,7 +1330,7 @@ function AcaoVisitaDialog({
                       value={observacoesGerais}
                       onChange={(e) => setObservacoesGerais(e.target.value)}
                       placeholder="Notas, pendências, próximos passos…"
-                      className="min-h-[88px] resize-y border-zinc-200"
+                      className="min-h-[88px] resize-y border-zinc-200 dark:border-zinc-700"
                     />
                   </div>
                 </div>
@@ -1343,15 +1343,15 @@ function AcaoVisitaDialog({
                   value={linksPostagemText}
                   onChange={setLinksPostagemText}
                   hint="Um link por linha. No histórico e na agenda, cada URL aparece como atalho com ícone de abrir em nova página."
-                  textareaClassName="bg-white"
+                  textareaClassName="bg-white dark:bg-zinc-900"
                 />
               )}
 
 
               {situacao === "finalizado" && (
-                <div className="rounded-2xl border-2 border-zinc-200/90 bg-zinc-50/60 p-5 sm:p-6">
-                  <div className="mb-3 flex items-center gap-2.5 text-sm font-semibold text-zinc-800">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-zinc-200/80 text-zinc-700">
+                <div className="rounded-2xl border-2 border-zinc-200/90 bg-zinc-50/60 p-5 sm:p-6 dark:border-zinc-700 dark:bg-zinc-800/50">
+                  <div className="mb-3 flex items-center gap-2.5 text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-zinc-200/80 text-zinc-700 dark:text-zinc-300 dark:bg-zinc-800">
                       <ImagePlus className="h-4 w-4" />
                     </span>
                     Registro fotográfico
@@ -1370,7 +1370,7 @@ function AcaoVisitaDialog({
             </div>
           </div>
           <Separator className="shrink-0" />
-          <DialogFooter className="shrink-0 gap-2 p-4 sm:justify-end sm:px-10 sm:py-5">
+          <DialogFooter className="shrink-0 gap-2 bg-zinc-50/40 p-4 sm:justify-end sm:px-10 sm:py-5 dark:bg-zinc-900/60">
             <Button
               type="button"
               variant="outline"
@@ -1693,7 +1693,7 @@ function RevitalizacaoDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          "!flex w-[min(100vw-1rem,56rem)] max-w-4xl flex-col gap-0 overflow-hidden border-zinc-200/80 p-0 shadow-2xl sm:max-w-4xl",
+          "!flex w-[min(100vw-1rem,56rem)] max-w-4xl flex-col gap-0 overflow-hidden border-zinc-200/80 p-0 shadow-2xl sm:max-w-4xl dark:border-zinc-800",
           "max-h-[min(92vh,920px)]",
         )}
         showCloseButton
@@ -1702,7 +1702,7 @@ function RevitalizacaoDialog({
           icon={RefreshCcw}
           title="Revitalização"
           description="Marque como agendada ou já finalizada; quantificação, links e fotos apenas ao encerrar o trabalho no local."
-          accentClassName="from-blue-500/6 via-white to-violet-500/8"
+          accentClassName="from-blue-500/6 via-white to-violet-500/8 dark:via-zinc-900 dark:from-blue-950/40 dark:to-violet-950/30"
           iconWrapperClassName="bg-gradient-to-br from-blue-500 to-violet-600 shadow-blue-500/20"
         />
         <form
@@ -1860,17 +1860,17 @@ function RevitalizacaoDialog({
           >
             <div className="space-y-5">
               {saveErrorRev && (
-                <p className="rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-sm font-medium text-red-700">
+                <p className="rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-sm font-medium text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
                   {saveErrorRev}
                 </p>
               )}
               {pontoErro && (
-                <p className="rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-sm font-medium text-red-700">
+                <p className="rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-sm font-medium text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
                   Selecione um ponto viciado antes de salvar.
                 </p>
               )}
               <div className="space-y-3">
-                <Label className="text-sm font-medium text-zinc-700">
+                <Label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                   Situação
                 </Label>
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -1887,16 +1887,16 @@ function RevitalizacaoDialog({
                     className={cn(
                       "flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition-all",
                       situacaoRev === "agendar"
-                        ? "border-blue-400/60 bg-blue-500/5 shadow-md"
-                        : "border-zinc-200 bg-white hover:border-zinc-300",
+                        ? "border-blue-400/60 bg-blue-500/5 shadow-md dark:border-blue-500/50 dark:bg-blue-950/40"
+                        : "border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-600",
                     )}
                   >
                     <Calendar className="h-10 w-10 shrink-0 rounded-xl bg-blue-600 p-2 text-white" />
                     <span>
-                      <span className="block font-semibold text-zinc-900">
+                      <span className="block font-semibold text-zinc-900 dark:text-zinc-100">
                         Agendado
                       </span>
-                      <span className="mt-0.5 block text-xs text-zinc-500">
+                      <span className="mt-0.5 block text-xs text-zinc-500 dark:text-zinc-400">
                         Local, data e detalhes previstos; complete os
                         quantitativos ao finalizar no local.
                       </span>
@@ -1908,16 +1908,16 @@ function RevitalizacaoDialog({
                     className={cn(
                       "flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition-all",
                       situacaoRev === "finalizado"
-                        ? "border-violet-400/60 bg-violet-500/6 shadow-md"
-                        : "border-zinc-200 bg-white hover:border-zinc-300",
+                        ? "border-violet-400/60 bg-violet-500/6 shadow-md dark:border-violet-500/50 dark:bg-violet-950/40"
+                        : "border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-600",
                     )}
                   >
                     <CheckCircle2 className="h-10 w-10 shrink-0 rounded-xl bg-gradient-to-br from-blue-600 to-violet-600 p-2 text-white" />
                     <span>
-                      <span className="block font-semibold text-zinc-900">
+                      <span className="block font-semibold text-zinc-900 dark:text-zinc-100">
                         Finalizado
                       </span>
-                      <span className="mt-0.5 block text-xs text-zinc-500">
+                      <span className="mt-0.5 block text-xs text-zinc-500 dark:text-zinc-400">
                         Registrar quantificação, fotos opcionais e links de divulgação.
                       </span>
                     </span>
@@ -1933,7 +1933,7 @@ function RevitalizacaoDialog({
               <SectionBox icon={MapPin} title="Ponto viciado (revitalização)">
                 <div className={cn(fieldGrid(), "items-end gap-4")}>
                   <div className="space-y-2 sm:col-span-1">
-                    <Label className="text-zinc-600">
+                    <Label className="text-zinc-600 dark:text-zinc-400">
                       Ponto viciado
                       <RequiredStar />
                     </Label>
@@ -1951,17 +1951,17 @@ function RevitalizacaoDialog({
                           variant="outline"
                           aria-expanded={pvComboOpen}
                           className={cn(
-                            "h-11 w-full min-w-0 justify-between border-zinc-200 font-normal",
+                            "h-11 w-full min-w-0 justify-between border-zinc-200 font-normal dark:border-zinc-700",
                             pontoErro &&
-                              "border-red-300 ring-1 ring-red-200",
+                              "border-red-300 ring-1 ring-red-200 dark:border-red-700 dark:ring-red-900",
                           )}
                         >
                           {pontoViciadoId ? (
-                            <span className="truncate text-left text-zinc-800">
+                            <span className="truncate text-left text-zinc-800 dark:text-zinc-100">
                               {pontoViciadoId} — {enderecoPonto}
                             </span>
                           ) : (
-                            <span className="text-zinc-500">
+                            <span className="text-zinc-500 dark:text-zinc-400">
                               Busque por ID ou endereço
                             </span>
                           )}
@@ -2034,7 +2034,7 @@ function RevitalizacaoDialog({
                   <div className="space-y-2 sm:col-span-1">
                     <Label
                       htmlFor="sub-rev"
-                      className="text-zinc-600"
+                      className="text-zinc-600 dark:text-zinc-400"
                     >
                       Subprefeitura
                     </Label>
@@ -2044,16 +2044,16 @@ function RevitalizacaoDialog({
                       value={subprefeitura}
                       readOnly
                       placeholder="Selecione um ponto viciado"
-                      className="h-11 cursor-default border-zinc-200 bg-zinc-100/80"
+                      className="h-11 cursor-default border-zinc-200 bg-zinc-100/80 dark:border-zinc-700 dark:bg-zinc-800/50"
                     />
                     {subprefeitura ? (
-                      <p className="mt-1.5 text-xs text-zinc-500">
+                      <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
                         {(() => {
                           const id = subregionalIdFromSubprefeitura(subprefeitura);
                           return id ? (
                             <>
                               Nos Indicadores, contabiliza como{" "}
-                              <span className="font-medium text-zinc-700">
+                              <span className="font-medium text-zinc-700 dark:text-zinc-300">
                                 {subregionalMeta(id).label}
                               </span>
                               .
@@ -2080,35 +2080,35 @@ function RevitalizacaoDialog({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="h-7 text-xs text-zinc-500"
+                        className="h-7 text-xs text-zinc-500 dark:text-zinc-400"
                         onClick={resetNewPontoForm}
                       >
                         Cancelar
                       </Button>
                     </div>
                     {newPontoError && (
-                      <p className="rounded-lg border border-red-200 bg-red-50/80 px-3 py-2 text-xs font-medium text-red-700">
+                      <p className="rounded-lg border border-red-200 bg-red-50/80 px-3 py-2 text-xs font-medium text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
                         {newPontoError}
                       </p>
                     )}
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="space-y-1.5">
-                        <Label className="text-xs text-zinc-600">
+                        <Label className="text-xs text-zinc-600 dark:text-zinc-400">
                           Código <RequiredStar />
                         </Label>
                         <Input
-                          className="h-9 border-zinc-200 text-sm"
+                          className="h-9 border-zinc-200 text-sm dark:border-zinc-700"
                           placeholder="Ex.: CV-001"
                           value={newPontoCodigo}
                           onChange={(e) => setNewPontoCodigo(e.target.value)}
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-xs text-zinc-600">
+                        <Label className="text-xs text-zinc-600 dark:text-zinc-400">
                           Subprefeitura
                         </Label>
                         <Input
-                          className="h-9 border-zinc-200 text-sm"
+                          className="h-9 border-zinc-200 text-sm dark:border-zinc-700"
                           placeholder="Ex.: Capela do Socorro"
                           value={newPontoSubprefeitura}
                           onChange={(e) =>
@@ -2118,12 +2118,12 @@ function RevitalizacaoDialog({
                       </div>
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs text-zinc-600">
+                      <Label className="text-xs text-zinc-600 dark:text-zinc-400">
                         Buscar endereço
                       </Label>
                       <div className="flex gap-2">
                         <Input
-                          className="h-9 flex-1 border-zinc-200 text-sm"
+                          className="h-9 flex-1 border-zinc-200 text-sm dark:border-zinc-700"
                           placeholder="Rua, número, bairro…"
                           value={newPontoSearchQuery}
                           onChange={(e) =>
@@ -2153,11 +2153,11 @@ function RevitalizacaoDialog({
                       </div>
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs text-zinc-600">
+                      <Label className="text-xs text-zinc-600 dark:text-zinc-400">
                         Endereço
                       </Label>
                       <Input
-                        className="h-9 border-zinc-200 text-sm"
+                        className="h-9 border-zinc-200 text-sm dark:border-zinc-700"
                         placeholder="Preenchido pela busca ou clique no mapa"
                         value={newPontoAddress}
                         onChange={(e) => setNewPontoAddress(e.target.value)}
@@ -2173,7 +2173,7 @@ function RevitalizacaoDialog({
                       flyTo={newPontoMapFlyTo}
                       onMapClick={handleNewPontoMapClick}
                     />
-                    <p className="text-[10px] text-zinc-500">
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400">
                       Clique no mapa para ajustar a localização exata.
                     </p>
                     <Button
@@ -2198,7 +2198,7 @@ function RevitalizacaoDialog({
               <SectionBox icon={Calendar} title="Quando">
                 <div className={fieldGrid()}>
                   <div className="space-y-2">
-                    <Label htmlFor="data-revitalizacao" className="text-zinc-600">
+                    <Label htmlFor="data-revitalizacao" className="text-zinc-600 dark:text-zinc-400">
                       Data da revitalização
                       <RequiredStar />
                     </Label>
@@ -2209,7 +2209,7 @@ function RevitalizacaoDialog({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="rev-horario" className="text-zinc-600">
+                    <Label htmlFor="rev-horario" className="text-zinc-600 dark:text-zinc-400">
                       Horário (opcional)
                     </Label>
                     <TimePickerField
@@ -2231,7 +2231,7 @@ function RevitalizacaoDialog({
               >
                 <div className="grid gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="rev-feito" className="text-zinc-600">
+                    <Label htmlFor="rev-feito" className="text-zinc-600 dark:text-zinc-400">
                       {situacaoRev === "agendar"
                         ? "O que está previsto"
                         : "O que foi feito"}
@@ -2246,11 +2246,11 @@ function RevitalizacaoDialog({
                           ? "Objetivo, materiais, encaminhamentos previstos…"
                           : "Resumo do trabalho realizado, etapas e resultados…"
                       }
-                      className="min-h-[100px] resize-y border-zinc-200"
+                      className="min-h-[100px] resize-y border-zinc-200 dark:border-zinc-700"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="rev-obs" className="text-zinc-600">
+                    <Label htmlFor="rev-obs" className="text-zinc-600 dark:text-zinc-400">
                       Observações
                     </Label>
                     <Textarea
@@ -2259,7 +2259,7 @@ function RevitalizacaoDialog({
                       value={observacoesGeraisRev}
                       onChange={(e) => setObservacoesGeraisRev(e.target.value)}
                       placeholder="Notas, pendências, próximos passos…"
-                      className="min-h-[88px] resize-y border-zinc-200"
+                      className="min-h-[88px] resize-y border-zinc-200 dark:border-zinc-700"
                     />
                   </div>
                 </div>
@@ -2272,7 +2272,7 @@ function RevitalizacaoDialog({
                       <div className="space-y-2">
                         <Label
                           htmlFor="q-volume"
-                          className="text-zinc-600"
+                          className="text-zinc-600 dark:text-zinc-400"
                         >
                           Volume retirado (m³)
                         </Label>
@@ -2283,7 +2283,7 @@ function RevitalizacaoDialog({
                           min={0}
                           step="0.01"
                           placeholder="0"
-                          className="h-11 border-zinc-200"
+                          className="h-11 border-zinc-200 dark:border-zinc-700"
                           value={volumeRev}
                           onChange={(e) => setVolumeRev(e.target.value)}
                         />
@@ -2291,7 +2291,7 @@ function RevitalizacaoDialog({
                       <div className="space-y-2">
                         <Label
                           htmlFor="q-kg"
-                          className="text-zinc-600"
+                          className="text-zinc-600 dark:text-zinc-400"
                         >
                           Resíduos (kg)
                         </Label>
@@ -2302,7 +2302,7 @@ function RevitalizacaoDialog({
                           min={0}
                           step="0.1"
                           placeholder="0"
-                          className="h-11 border-zinc-200"
+                          className="h-11 border-zinc-200 dark:border-zinc-700"
                           value={kgRev}
                           onChange={(e) => setKgRev(e.target.value)}
                         />
@@ -2314,7 +2314,7 @@ function RevitalizacaoDialog({
                     <div className="space-y-2">
                       <Label
                         htmlFor="eq-num"
-                        className="text-zinc-600"
+                        className="text-zinc-600 dark:text-zinc-400"
                       >
                         Número de pessoas
                       </Label>
@@ -2324,22 +2324,22 @@ function RevitalizacaoDialog({
                         type="number"
                         min={1}
                         placeholder="0"
-                        className="h-11 max-w-xs border-zinc-200"
+                        className="h-11 max-w-xs border-zinc-200 dark:border-zinc-700"
                         value={equipeRev}
                         onChange={(e) => setEquipeRev(e.target.value)}
                       />
                     </div>
                   </SectionBox>
 
-                  <div className="flex flex-col gap-4 rounded-2xl border border-zinc-100 bg-zinc-50/50 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6">
+                  <div className="flex flex-col gap-4 rounded-2xl border border-zinc-100 bg-zinc-50/50 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6 dark:border-zinc-800 dark:bg-zinc-800/50">
                     <div className="space-y-2">
-                      <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-zinc-800">
+                      <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-zinc-800 dark:text-zinc-100">
                         <Megaphone className="h-4 w-4 text-blue-600" />
                         Panfletagem
                       </div>
                       <Label
                         htmlFor="panf-q"
-                        className="text-zinc-600"
+                        className="text-zinc-600 dark:text-zinc-400"
                       >
                         Unidades distribuídas
                       </Label>
@@ -2358,7 +2358,7 @@ function RevitalizacaoDialog({
                         type="number"
                         min={0}
                         placeholder="0"
-                        className="h-11 w-44 border-zinc-200"
+                        className="h-11 w-44 border-zinc-200 dark:border-zinc-700"
                         value={unidadesPanfletos}
                         onChange={(e) =>
                           setUnidadesPanfletos(
@@ -2368,7 +2368,7 @@ function RevitalizacaoDialog({
                         disabled={!panfletagemRealizada}
                       />
                     </div>
-                    <div className="flex items-center gap-2.5 rounded-xl bg-white px-3 py-2.5 ring-1 ring-zinc-200">
+                    <div className="flex items-center gap-2.5 rounded-xl bg-white dark:bg-zinc-900 px-3 py-2.5 ring-1 ring-zinc-200 dark:ring-zinc-700">
                       <input
                         type="hidden"
                         name="panfletagemFeita"
@@ -2387,7 +2387,7 @@ function RevitalizacaoDialog({
                       />
                       <Label
                         htmlFor="panf-feita"
-                        className="cursor-pointer text-sm font-medium leading-tight text-zinc-700"
+                        className="cursor-pointer text-sm font-medium leading-tight text-zinc-700 dark:text-zinc-300"
                       >
                         Panfletagem realizada
                       </Label>
@@ -2400,7 +2400,7 @@ function RevitalizacaoDialog({
                     value={linksPostagemText}
                     onChange={setLinksPostagemText}
                     hint="Um link por linha. No histórico e na agenda, cada URL aparece como atalho com ícone de abrir em nova página."
-                    textareaClassName="bg-white"
+                    textareaClassName="bg-white dark:bg-zinc-900"
                   />
 
                   <ActionPhotoDropzone
@@ -2417,7 +2417,7 @@ function RevitalizacaoDialog({
             </div>
           </div>
           <Separator className="shrink-0" />
-          <DialogFooter className="shrink-0 gap-2 p-4 sm:justify-end sm:px-10 sm:py-5">
+          <DialogFooter className="shrink-0 gap-2 bg-zinc-50/40 p-4 sm:justify-end sm:px-10 sm:py-5 dark:bg-zinc-900/60">
             <Button
               type="button"
               variant="outline"

@@ -74,10 +74,10 @@ const eventTypes = [
 ];
 
 const statusOptions = [
-  { id: "pendente", label: "Pendente", icon: Clock, color: "text-amber-600 bg-amber-100" },
-  { id: "concluido", label: "Concluído", icon: CheckCircle2, color: "text-emerald-600 bg-emerald-100" },
-  { id: "reagendado", label: "Reagendado", icon: RotateCcw, color: "text-blue-600 bg-blue-100" },
-  { id: "cancelado", label: "Cancelado", icon: XCircle, color: "text-red-600 bg-red-100" },
+  { id: "pendente", label: "Pendente", icon: Clock, color: "text-amber-600 bg-amber-100 dark:text-amber-400 dark:bg-amber-950/40" },
+  { id: "concluido", label: "Concluído", icon: CheckCircle2, color: "text-emerald-600 bg-emerald-100 dark:text-emerald-400 dark:bg-emerald-950/40" },
+  { id: "reagendado", label: "Reagendado", icon: RotateCcw, color: "text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-950/40" },
+  { id: "cancelado", label: "Cancelado", icon: XCircle, color: "text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-950/40" },
 ];
 
 const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -363,8 +363,8 @@ function AgendaPageContent() {
             onClick={() => setSelectedType(type.id)}
             className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all ${
               selectedType === type.id
-                ? "bg-zinc-900 text-white"
-                : "bg-white text-zinc-600 shadow-sm hover:bg-zinc-50"
+                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                : "bg-white text-zinc-600 shadow-sm hover:bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800"
             }`}
           >
             <span
@@ -378,7 +378,7 @@ function AgendaPageContent() {
 
       {/* Week Navigation */}
       {viewMode === "week" && (
-        <div className="mb-6 flex items-center justify-between rounded-2xl bg-white p-4 shadow-lg shadow-zinc-200/50">
+        <div className="mb-6 flex items-center justify-between rounded-2xl border border-zinc-100 bg-white p-4 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
           <button
             type="button"
             onClick={() => {
@@ -386,7 +386,7 @@ function AgendaPageContent() {
               newDate.setDate(newDate.getDate() - 7);
               setSelectedDate(newDate);
             }}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -406,19 +406,19 @@ function AgendaPageContent() {
                   className={`flex flex-col items-center rounded-xl px-4 py-2 transition-all ${
                     isTodayCell
                       ? "bg-accent-gradient-br text-white"
-                      : "hover:bg-zinc-100"
+                      : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
                   }`}
                 >
                   <span
                     className={`text-xs font-medium ${
-                      isTodayCell ? "text-white/80" : "text-zinc-400"
+                      isTodayCell ? "text-white/80" : "text-zinc-400 dark:text-zinc-500"
                     }`}
                   >
                     {weekDays[index]}
                   </span>
                   <span
                     className={`mt-1 text-xl font-semibold ${
-                      isTodayCell ? "text-white" : "text-zinc-900"
+                      isTodayCell ? "text-white" : "text-zinc-900 dark:text-zinc-100"
                     }`}
                   >
                     {date.getDate()}
@@ -438,7 +438,7 @@ function AgendaPageContent() {
               newDate.setDate(newDate.getDate() + 7);
               setSelectedDate(newDate);
             }}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
           >
             <ChevronRight className="h-5 w-5" />
           </button>
@@ -447,7 +447,7 @@ function AgendaPageContent() {
 
       {/* Month Navigation */}
       {viewMode === "month" && (
-        <div className="mb-6 flex items-center justify-between rounded-2xl bg-white p-4 shadow-lg shadow-zinc-200/50">
+        <div className="mb-6 flex items-center justify-between rounded-2xl border border-zinc-100 bg-white p-4 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
           <button
             type="button"
             onClick={() => {
@@ -455,11 +455,11 @@ function AgendaPageContent() {
               d.setMonth(d.getMonth() - 1);
               setSelectedDate(d);
             }}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
-          <h2 className="text-lg font-semibold capitalize text-zinc-900">
+          <h2 className="text-lg font-semibold capitalize text-zinc-900 dark:text-zinc-100">
             {monthLabel}
           </h2>
           <button
@@ -469,7 +469,7 @@ function AgendaPageContent() {
               d.setMonth(d.getMonth() + 1);
               setSelectedDate(d);
             }}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
           >
             <ChevronRight className="h-5 w-5" />
           </button>
@@ -492,17 +492,17 @@ function AgendaPageContent() {
                 transition={{ delay: index * 0.05 }}
                 className={`min-h-[400px] rounded-2xl p-4 ${
                   isToday
-                    ? "bg-gradient-to-br from-[var(--gradient-start)]/5 to-[var(--gradient-end)]/5 ring-2 ring-[var(--gradient-start)]/20"
-                    : "bg-white shadow-lg shadow-zinc-200/50"
+                    ? "bg-gradient-to-br from-[var(--gradient-start)]/5 to-[var(--gradient-end)]/5 ring-2 ring-[var(--gradient-start)]/20 dark:from-[var(--gradient-start)]/10 dark:to-[var(--gradient-end)]/10"
+                    : "border border-zinc-100 bg-white shadow-card dark:border-zinc-800 dark:bg-zinc-900"
                 }`}
               >
                 <div className="mb-3 text-center">
-                  <p className="text-xs font-medium uppercase text-zinc-400">
+                  <p className="text-xs font-medium uppercase text-zinc-400 dark:text-zinc-500">
                     {weekDays[index]}
                   </p>
                   <p
                     className={`text-xl font-semibold ${
-                      isToday ? "text-[var(--gradient-accent)]" : "text-zinc-900"
+                      isToday ? "text-[var(--gradient-accent)]" : "text-zinc-900 dark:text-zinc-100"
                     }`}
                   >
                     {date.getDate()}
@@ -530,9 +530,9 @@ function AgendaPageContent() {
                             goToEventInList(event.id, event.date);
                           }
                         }}
-                        className={`cursor-pointer rounded-xl bg-white p-3 shadow-sm transition-all hover:shadow-md ${
+                        className={`cursor-pointer rounded-xl bg-white p-3 shadow-sm transition-all hover:shadow-md dark:bg-zinc-800 ${
                           isHighlight
-                            ? "ring-2 ring-[var(--gradient-start)]/50 ring-offset-1 ring-offset-white"
+                            ? "ring-2 ring-[var(--gradient-start)]/50 ring-offset-1 ring-offset-white dark:ring-offset-zinc-900"
                             : ""
                         }`}
                       >
@@ -545,11 +545,11 @@ function AgendaPageContent() {
                               ),
                             }}
                           />
-                          <span className="text-[10px] font-medium text-zinc-500">
+                          <span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
                             {event.time}
                           </span>
                         </div>
-                        <p className="text-sm font-medium text-zinc-900 line-clamp-2">
+                        <p className="text-sm font-medium text-zinc-900 line-clamp-2 dark:text-zinc-100">
                           {event.title}
                         </p>
                         <div className="mt-1 flex flex-wrap items-center gap-1.5">
@@ -568,14 +568,14 @@ function AgendaPageContent() {
                           />
                         </div>
                         <div className="mt-2 flex items-center gap-1">
-                          <StatusIcon className={`h-3 w-3 ${statusConfig.color.split(" ")[0]}`} />
-                          <span className="text-[10px] text-zinc-500">
+                          <StatusIcon className={`h-3 w-3 ${statusConfig.color.split(" ").filter((c) => c.includes("text-")).join(" ")}`} />
+                          <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
                             {statusConfig.label}
                           </span>
                         </div>
                         {event.type === "panfletagem" &&
                           "panfletosDistribuidos" in event && (
-                            <p className="mt-1.5 line-clamp-2 text-[10px] leading-tight text-zinc-500">
+                            <p className="mt-1.5 line-clamp-2 text-[10px] leading-tight text-zinc-500 dark:text-zinc-400">
                               {event.panfletosDistribuidos} panfletos ·{" "}
                               {event.locaisAtendidos}
                             </p>
@@ -597,25 +597,25 @@ function AgendaPageContent() {
                           router.push(`/redes-sociais?content=${sp.id}`);
                         }
                       }}
-                      className="cursor-pointer rounded-xl bg-fuchsia-50 p-3 shadow-sm transition-all hover:shadow-md"
+                      className="cursor-pointer rounded-xl bg-fuchsia-50 p-3 shadow-sm transition-all hover:shadow-md dark:bg-fuchsia-950/40"
                     >
                       <div className="mb-2 flex items-center gap-2">
                         <Share2 className="h-3 w-3 text-fuchsia-500" />
-                        <span className="text-[10px] font-medium text-fuchsia-600">
+                        <span className="text-[10px] font-medium text-fuchsia-600 dark:text-fuchsia-400">
                           Redes Sociais
                         </span>
                       </div>
-                      <p className="text-sm font-medium text-zinc-900 line-clamp-2">
+                      <p className="text-sm font-medium text-zinc-900 line-clamp-2 dark:text-zinc-100">
                         {sp.title}
                       </p>
-                      <span className="mt-1 text-[10px] font-medium text-fuchsia-500">
+                      <span className="mt-1 text-[10px] font-medium text-fuchsia-500 dark:text-fuchsia-400">
                         {sp.status === "publicado" ? "Publicado" : "Agendado"}
                       </span>
                     </div>
                   ))}
                   {dayEvents.length === 0 &&
                     socialItemsForDate(dateStr).length === 0 && (
-                      <p className="py-8 text-center text-xs text-zinc-400">
+                      <p className="py-8 text-center text-xs text-zinc-400 dark:text-zinc-500">
                         Sem eventos
                       </p>
                     )}
@@ -628,8 +628,8 @@ function AgendaPageContent() {
 
       {/* Month View */}
       {viewMode === "month" && (
-        <div className="overflow-x-auto rounded-2xl bg-white p-4 shadow-lg shadow-zinc-200/50">
-          <div className="mb-2 grid grid-cols-7 gap-1 text-center text-xs font-semibold uppercase tracking-wide text-zinc-400">
+        <div className="overflow-x-auto rounded-2xl border border-zinc-100 bg-white p-4 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="mb-2 grid grid-cols-7 gap-1 text-center text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
             {weekDays.map((d) => (
               <div key={d} className="py-2">
                 {d}
@@ -644,7 +644,7 @@ function AgendaPageContent() {
                     return (
                       <div
                         key={`empty-${ri}-${ci}`}
-                        className="min-h-[120px] rounded-xl bg-zinc-50/50"
+                        className="min-h-[120px] rounded-xl bg-zinc-50/50 dark:bg-zinc-800/50"
                       />
                     );
                   }
@@ -654,15 +654,15 @@ function AgendaPageContent() {
                   return (
                     <div
                       key={dateStr}
-                      className={`min-h-[120px] rounded-xl border border-zinc-100 p-2 ${
+                      className={`min-h-[120px] rounded-xl border border-zinc-100 p-2 dark:border-zinc-800 ${
                         isTodayCell
-                          ? "bg-gradient-to-br from-[var(--gradient-start)]/5 to-[var(--gradient-end)]/5 ring-2 ring-[var(--gradient-start)]/25"
-                          : "bg-white"
+                          ? "bg-gradient-to-br from-[var(--gradient-start)]/5 to-[var(--gradient-end)]/5 ring-2 ring-[var(--gradient-start)]/25 dark:from-[var(--gradient-start)]/10 dark:to-[var(--gradient-end)]/10"
+                          : "bg-white dark:bg-zinc-900"
                       }`}
                     >
                       <p
                         className={`text-sm font-semibold ${
-                          isTodayCell ? "text-[var(--gradient-accent)]" : "text-zinc-900"
+                          isTodayCell ? "text-[var(--gradient-accent)]" : "text-zinc-900 dark:text-zinc-100"
                         }`}
                       >
                         {date.getDate()}
@@ -685,7 +685,7 @@ function AgendaPageContent() {
                                   goToEventInList(event.id, event.date);
                                 }
                               }}
-                              className={`cursor-pointer rounded-md border border-zinc-100 bg-zinc-50/80 px-1.5 py-0.5 text-[10px] font-medium text-zinc-800 ${
+                              className={`cursor-pointer rounded-md border border-zinc-100 bg-zinc-50/80 px-1.5 py-0.5 text-[10px] font-medium text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-200 ${
                                 isHighlight
                                   ? "ring-2 ring-[var(--gradient-start)]/50 ring-offset-1"
                                   : ""
@@ -705,7 +705,7 @@ function AgendaPageContent() {
                               </div>
                               <div className="mt-0.5 flex flex-wrap items-center gap-1">
                                 <span
-                                  className="truncate text-[9px] font-medium text-zinc-600"
+                                  className="truncate text-[9px] font-medium text-zinc-600 dark:text-zinc-400"
                                   style={{
                                     color: serviceTypeColor(event.type),
                                   }}
@@ -721,7 +721,7 @@ function AgendaPageContent() {
                               </div>
                               {event.type === "panfletagem" &&
                                 "panfletosDistribuidos" in event && (
-                                  <p className="mt-0.5 line-clamp-2 text-[9px] font-normal leading-tight text-zinc-500">
+                                  <p className="mt-0.5 line-clamp-2 text-[9px] font-normal leading-tight text-zinc-500 dark:text-zinc-400">
                                     {event.panfletosDistribuidos} panfletos
                                   </p>
                                 )}
@@ -742,7 +742,7 @@ function AgendaPageContent() {
                                 router.push(`/redes-sociais?content=${sp.id}`);
                               }
                             }}
-                            className="cursor-pointer rounded-md border border-fuchsia-100 bg-fuchsia-50/80 px-1.5 py-0.5 text-[10px] font-medium text-zinc-800"
+                            className="cursor-pointer rounded-md border border-fuchsia-100 bg-fuchsia-50/80 px-1.5 py-0.5 text-[10px] font-medium text-zinc-800 dark:border-fuchsia-900/50 dark:bg-fuchsia-950/40 dark:text-zinc-200"
                             title={sp.title}
                           >
                             <div className="flex items-center gap-0.5 truncate">
@@ -753,7 +753,7 @@ function AgendaPageContent() {
                         ))}
                         {dayEvents.length === 0 &&
                           socialItemsForDate(dateStr).length === 0 && (
-                            <p className="pt-1 text-[10px] text-zinc-300">—</p>
+                            <p className="pt-1 text-[10px] text-zinc-300 dark:text-zinc-600">—</p>
                           )}
                       </div>
                     </div>
@@ -766,9 +766,9 @@ function AgendaPageContent() {
       )}
 
       {viewMode === "list" && (
-        <div className="mb-4 flex flex-wrap items-end gap-4 rounded-2xl bg-white p-4 shadow-lg shadow-zinc-200/50">
+        <div className="mb-4 flex flex-wrap items-end gap-4 rounded-2xl border border-zinc-100 bg-white p-4 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
           <div className="min-w-[200px] flex-1 max-w-xs">
-            <span className="mb-1 block text-xs font-medium text-zinc-500">
+            <span className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
               Status
             </span>
             <Select
@@ -777,7 +777,7 @@ function AgendaPageContent() {
                 setListStatusFilter(v as "all" | AgendaEventStatus)
               }
             >
-              <SelectTrigger className="h-10 w-full rounded-xl border-zinc-200 bg-zinc-50 shadow-sm">
+              <SelectTrigger className="h-10 w-full rounded-xl border-zinc-200 bg-zinc-50 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -791,7 +791,7 @@ function AgendaPageContent() {
             </Select>
           </div>
           <div>
-            <span className="mb-1 block text-xs font-medium text-zinc-500">
+            <span className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
               Data
             </span>
             <div className="flex flex-wrap items-center gap-2">
@@ -828,7 +828,7 @@ function AgendaPageContent() {
                 p.date !== "—" &&
                 (!listDateFilter || p.date === listDateFilter),
             ).length === 0 && (
-              <p className="py-8 text-center text-sm text-zinc-500">
+              <p className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
                 Nenhum evento com os filtros atuais.
               </p>
             )}
@@ -851,7 +851,7 @@ function AgendaPageContent() {
                 onClick={() =>
                   router.push(`/redes-sociais?content=${sp.id}`)
                 }
-                className="cursor-pointer rounded-2xl border border-fuchsia-100 bg-fuchsia-50/60 p-5 shadow-lg shadow-zinc-200/50 transition-all hover:shadow-xl"
+                className="cursor-pointer rounded-2xl border border-fuchsia-100 bg-fuchsia-50/60 p-5 shadow-card transition-all hover:shadow-card-hover dark:border-fuchsia-900/50 dark:bg-fuchsia-950/40"
               >
                 <div className="flex items-start gap-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent-gradient-br text-white">
@@ -859,14 +859,14 @@ function AgendaPageContent() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h4 className="font-semibold text-zinc-900">
+                      <h4 className="font-semibold text-zinc-900 dark:text-zinc-100">
                         {sp.tipo}: {sp.tema}
                       </h4>
-                      <span className="rounded-full bg-fuchsia-100 px-2 py-0.5 text-xs font-medium text-fuchsia-700">
+                      <span className="rounded-full bg-fuchsia-100 px-2 py-0.5 text-xs font-medium text-fuchsia-700 dark:bg-fuchsia-950/60 dark:text-fuchsia-300">
                         {sp.status === "publicado" ? "Publicado" : "Agendado"}
                       </span>
                     </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-zinc-500">
+                    <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-zinc-500 dark:text-zinc-400">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
                         {formatDateBr(sp.date)}
@@ -905,11 +905,11 @@ function AgendaPageContent() {
                       return event.id;
                     });
                   }}
-                  className={`cursor-pointer rounded-2xl bg-white p-5 shadow-lg shadow-zinc-200/50 transition-all hover:shadow-xl ${
+                  className={`cursor-pointer rounded-2xl border border-zinc-100 bg-white p-5 shadow-card transition-all hover:shadow-card-hover dark:border-zinc-800 dark:bg-zinc-900 ${
                     isHighlight
-                      ? "ring-2 ring-[var(--gradient-start)]/50 ring-offset-2 ring-offset-zinc-50"
+                      ? "ring-2 ring-[var(--gradient-start)]/50 ring-offset-2 ring-offset-zinc-50 dark:ring-offset-zinc-950"
                       : isListSelected
-                        ? "ring-2 ring-zinc-300 ring-offset-2"
+                        ? "ring-2 ring-zinc-300 ring-offset-2 dark:ring-zinc-600"
                         : ""
                   }`}
                 >
@@ -925,7 +925,7 @@ function AgendaPageContent() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 pr-2">
-                          <h4 className="font-semibold text-zinc-900">
+                          <h4 className="font-semibold text-zinc-900 dark:text-zinc-100">
                             {event.title}
                           </h4>
                           <span
@@ -947,7 +947,7 @@ function AgendaPageContent() {
                             uppercase={false}
                           />
                         </div>
-                        <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-zinc-500">
+                        <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-zinc-500 dark:text-zinc-400">
                           <span className="flex items-center gap-1">
                             <Clock className="h-4 w-4" />
                             {formatDateBr(event.date)} • {agendaClockLabel(event)}
@@ -964,37 +964,37 @@ function AgendaPageContent() {
                         {event.type === "panfletagem" &&
                           "equipe" in event &&
                           event.equipe && (
-                            <div className="mt-4 grid gap-3 rounded-xl bg-zinc-50/80 p-4 text-sm text-zinc-600 sm:grid-cols-2">
+                            <div className="mt-4 grid gap-3 rounded-xl bg-zinc-50/80 p-4 text-sm text-zinc-600 dark:bg-zinc-800/50 dark:text-zinc-400 sm:grid-cols-2">
                               <div className="flex items-start gap-2">
                                 <Users className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" />
                                 <div>
-                                  <p className="text-xs font-medium uppercase text-zinc-400">
+                                  <p className="text-xs font-medium uppercase text-zinc-400 dark:text-zinc-500">
                                     Equipe
                                   </p>
-                                  <p className="text-zinc-800">{event.equipe}</p>
+                                  <p className="text-zinc-800 dark:text-zinc-200">{event.equipe}</p>
                                 </div>
                               </div>
                               <div>
-                                <p className="text-xs font-medium uppercase text-zinc-400">
+                                <p className="text-xs font-medium uppercase text-zinc-400 dark:text-zinc-500">
                                   Panfletos distribuídos
                                 </p>
-                                <p className="text-zinc-800">
+                                <p className="text-zinc-800 dark:text-zinc-200">
                                   {event.panfletosDistribuidos?.toLocaleString("pt-BR")}
                                 </p>
                               </div>
                               <div className="sm:col-span-2">
-                                <p className="text-xs font-medium uppercase text-zinc-400">
+                                <p className="text-xs font-medium uppercase text-zinc-400 dark:text-zinc-500">
                                   Locais atendidos
                                 </p>
-                                <p className="text-zinc-800">{event.locaisAtendidos}</p>
+                                <p className="text-zinc-800 dark:text-zinc-200">{event.locaisAtendidos}</p>
                               </div>
                               <div className="flex items-start gap-2">
                                 <Image className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" />
                                 <div>
-                                  <p className="text-xs font-medium uppercase text-zinc-400">
+                                  <p className="text-xs font-medium uppercase text-zinc-400 dark:text-zinc-500">
                                     Fotos tiradas
                                   </p>
-                                  <p className="text-zinc-800">{event.fotosTiradas}</p>
+                                  <p className="text-zinc-800 dark:text-zinc-200">{event.fotosTiradas}</p>
                                 </div>
                               </div>
                             </div>
@@ -1008,8 +1008,8 @@ function AgendaPageContent() {
                           </div>
                         )}
                         {event.status === "concluido" && event.completionDescription && (
-                          <p className="mt-2 text-sm text-zinc-700">
-                            <span className="font-medium text-zinc-600">Registro: </span>
+                          <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300">
+                            <span className="font-medium text-zinc-600 dark:text-zinc-400">Registro: </span>
                             {event.completionDescription}
                           </p>
                         )}
@@ -1019,7 +1019,7 @@ function AgendaPageContent() {
                               {event.completionPhotoDataUrls.map((url, i) => (
                                 <div
                                   key={`p-${event.id}-${i}`}
-                                  className="h-16 w-16 overflow-hidden rounded-lg border border-zinc-100"
+                                  className="h-16 w-16 overflow-hidden rounded-lg border border-zinc-100 dark:border-zinc-800"
                                 >
                                   <EvidenceMediaThumb
                                     url={url}
@@ -1030,20 +1030,20 @@ function AgendaPageContent() {
                             </div>
                           )}
                         {event.observations && (
-                          <p className="mt-2 text-sm text-zinc-400">
+                          <p className="mt-2 text-sm text-zinc-400 dark:text-zinc-500">
                             {event.observations}
                           </p>
                         )}
                         {isListSelected && (
                           <div
-                            className="mt-4 space-y-3 border-t border-zinc-100 pt-4"
+                            className="mt-4 space-y-3 border-t border-zinc-100 pt-4 dark:border-zinc-800"
                             onClick={(e) => e.stopPropagation()}
                           >
                             {!listStatusPickerOpen ? (
                               <Button
                                 type="button"
                                 variant="outline"
-                                className="rounded-xl border-zinc-200 text-zinc-800 hover:bg-zinc-50"
+                                className="rounded-xl border-zinc-200 text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
                                 onClick={() => setListStatusPickerOpen(true)}
                               >
                                 <Pencil className="mr-2 h-4 w-4" />
@@ -1051,7 +1051,7 @@ function AgendaPageContent() {
                               </Button>
                             ) : (
                               <div className="space-y-2">
-                                <p className="text-xs font-medium text-zinc-500">
+                                <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
                                   Escolha o status
                                 </p>
                                 <div className="flex flex-wrap gap-2">
@@ -1089,13 +1089,13 @@ function AgendaPageContent() {
                                         className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-[var(--gradient-start)]/30 ${
                                           isCurrent
                                             ? "ring-2 ring-[var(--gradient-start)]/40 " + s.color
-                                            : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                                            : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
                                         }`}
                                       >
                                         <SIcon className="h-3.5 w-3.5" />
                                         {s.label}
                                         {isCurrent && (
-                                          <span className="text-[10px] font-normal text-zinc-500">
+                                          <span className="text-[10px] font-normal text-zinc-500 dark:text-zinc-400">
                                             (atual)
                                           </span>
                                         )}
@@ -1107,7 +1107,7 @@ function AgendaPageContent() {
                                   type="button"
                                   variant="ghost"
                                   size="sm"
-                                  className="h-8 text-zinc-500"
+                                  className="h-8 text-zinc-500 dark:text-zinc-400"
                                   onClick={() => setListStatusPickerOpen(false)}
                                 >
                                   Voltar
@@ -1122,7 +1122,7 @@ function AgendaPageContent() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="h-9 w-9 shrink-0 rounded-xl text-zinc-400 hover:bg-red-50 hover:text-red-600"
+                      className="h-9 w-9 shrink-0 rounded-xl text-zinc-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40 dark:hover:text-red-400"
                       aria-label="Remover da agenda"
                       title="Remover da agenda"
                       onClick={(e) => {
@@ -1148,7 +1148,7 @@ function AgendaPageContent() {
         <AlertDialogContent className="rounded-2xl sm:max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle>Remover da agenda?</AlertDialogTitle>
-            <AlertDialogDescription className="text-left text-zinc-600">
+            <AlertDialogDescription className="text-left text-zinc-600 dark:text-zinc-400">
               {eventToDelete
                 ? `Tem certeza que deseja excluir permanentemente “${eventToDelete.title}”? Se existir registro no histórico vinculado, ele também será removido. Esta ação não pode ser desfeita.`
                 : "Tem certeza que deseja excluir este item?"}

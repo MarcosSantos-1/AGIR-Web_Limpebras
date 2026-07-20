@@ -59,44 +59,45 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
+  /* Page = zinc-950; elevated surfaces = zinc-900 (dashboard card pattern) */
+  --background: oklch(0.141 0.005 286); /* ~zinc-950 */
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
+  --card: oklch(0.21 0.006 286); /* ~zinc-900 */
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
+  --popover: oklch(0.21 0.006 286);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
+  --primary: oklch(0.75 0.18 310);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.274 0.006 286); /* ~zinc-800 */
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
+  --muted: oklch(0.274 0.006 286);
+  --muted-foreground: oklch(0.708 0.01 286);
+  --accent: oklch(0.274 0.006 286);
   --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
+  --destructive: oklch(0.55 0.2 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.274 0.006 286); /* ~zinc-800 */
+  --input: oklch(0.274 0.006 286);
+  --ring: oklch(0.55 0.18 310);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
+  --sidebar: oklch(0.141 0.005 286); /* ~zinc-950 */
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-primary: oklch(0.75 0.18 310);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.274 0.006 286);
   --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
+  --sidebar-border: oklch(0.274 0.006 286);
+  --sidebar-ring: oklch(0.55 0.18 310);
 
-  /* Dark mode keeps the gradient accent — only surfaces shift */
-  --surface: oklch(0.20 0.005 286);
-  --surface-muted: oklch(0.17 0.005 286);
-  --surface-soft: oklch(0.24 0.008 286);
-  --surface-border: oklch(0.30 0.008 286);
+  /* Dark mode keeps the gradient accent — surfaces match zinc-900 cards */
+  --surface: oklch(0.21 0.006 286); /* zinc-900 */
+  --surface-muted: oklch(0.17 0.005 286); /* between 950 and 900 */
+  --surface-soft: oklch(0.274 0.006 286); /* zinc-800 */
+  --surface-border: oklch(0.37 0.01 286); /* zinc-700 */
   --text-primary: oklch(0.96 0.005 286);
   --text-muted: oklch(0.72 0.012 286);
   --text-soft: oklch(0.58 0.012 286);
@@ -198,8 +199,16 @@
   border-radius: 4px;
 }
 
+.dark ::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+}
+
 ::-webkit-scrollbar-thumb:hover {
   background: #a1a1aa;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #52525b;
 }
 
 /* Smooth transitions */

@@ -82,7 +82,7 @@ const OperationalMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-[min(60vh,560px)] min-h-[520px] w-full items-center justify-center rounded-3xl bg-zinc-100 text-sm text-zinc-500">
+      <div className="flex h-[min(60vh,560px)] min-h-[520px] w-full items-center justify-center rounded-3xl bg-zinc-100 text-sm text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
         Carregando mapa…
       </div>
     ),
@@ -522,7 +522,7 @@ export default function MapaPage() {
           transition={{ delay: 0.1 }}
           className="relative flex min-h-0 flex-1 flex-col gap-3"
         >
-          <div className="relative min-h-[520px] flex-1 overflow-hidden rounded-3xl bg-zinc-200 shadow-lg">
+          <div className="relative min-h-[520px] flex-1 overflow-hidden rounded-3xl bg-zinc-200 shadow-lg dark:bg-zinc-800">
             <div className="absolute inset-0 z-0 h-full w-full min-h-[520px]">
               <OperationalMap
                 baseLayer={mapBase}
@@ -539,7 +539,7 @@ export default function MapaPage() {
 
             {pickPvLocationMode ? (
               <div className="pointer-events-none absolute bottom-36 left-1/2 z-[1001] max-w-[min(100vw-3rem,24rem)] -translate-x-1/2">
-                <p className="pointer-events-none rounded-xl border border-[var(--gradient-start)]/40 bg-[var(--gradient-start)]/15 px-4 py-2 text-center text-xs font-medium text-[#7a0867] backdrop-blur-sm">
+                <p className="pointer-events-none rounded-xl border border-[var(--gradient-start)]/40 bg-[var(--gradient-start)]/15 px-4 py-2 text-center text-xs font-medium text-[#7a0867] backdrop-blur-sm dark:border-[var(--gradient-start)]/50 dark:bg-zinc-900/90 dark:text-pink-200">
                   {reverseGeoLoading
                     ? "A obter o endereço (logradouro e bairro)…"
                     : "Toque no mapa para criar o ponto."}
@@ -551,14 +551,14 @@ export default function MapaPage() {
               <div className="pointer-events-auto w-full space-y-1">
                 <form
                   onSubmit={(e) => void handleAddressSearch(e)}
-                  className="flex gap-1.5 rounded-xl border border-zinc-200/80 bg-white/95 p-1 shadow-md backdrop-blur-sm"
+                  className="flex gap-1.5 rounded-xl border border-zinc-200/80 bg-white/95 p-1 shadow-md backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-900/95"
                 >
                   <Input
                     value={addressQuery}
                     onChange={(e) => setAddressQuery(e.target.value)}
                     placeholder="Pesquisar endereço (SP, Brasil)…"
                     aria-label="Pesquisar endereço"
-                    className="h-10 flex-1 border-0 bg-transparent text-sm shadow-none focus-visible:ring-0"
+                    className="h-10 flex-1 border-0 bg-transparent text-sm text-zinc-900 shadow-none focus-visible:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500"
                     disabled={geocodeLoading}
                     autoComplete="street-address"
                   />
@@ -566,7 +566,7 @@ export default function MapaPage() {
                     type="submit"
                     size="icon"
                     variant="secondary"
-                    className="h-10 w-10 shrink-0 rounded-lg"
+                    className="h-10 w-10 shrink-0 rounded-lg dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
                     disabled={geocodeLoading}
                     aria-label="Pesquisar"
                   >
@@ -578,17 +578,17 @@ export default function MapaPage() {
                   </Button>
                 </form>
                 {geocodeError ? (
-                  <p className="rounded-lg bg-red-50 px-2 py-1.5 text-xs text-red-700">
+                  <p className="rounded-lg bg-red-50 px-2 py-1.5 text-xs text-red-700 dark:bg-red-950/50 dark:text-red-300">
                     {geocodeError}
                   </p>
                 ) : null}
                 {geocodeAlternatives && geocodeAlternatives.length > 0 ? (
-                  <ul className="max-h-48 overflow-y-auto rounded-lg border border-zinc-200/80 bg-white/98 text-left text-xs shadow-md">
+                  <ul className="max-h-48 overflow-y-auto rounded-lg border border-zinc-200/80 bg-white/98 text-left text-xs shadow-md dark:border-zinc-700 dark:bg-zinc-900/98">
                     {geocodeAlternatives.map((hit, idx) => (
                       <li key={`${hit.lat}-${hit.lng}-${idx}`}>
                         <button
                           type="button"
-                          className="w-full px-3 py-2 text-left text-zinc-700 hover:bg-zinc-100"
+                          className="w-full px-3 py-2 text-left text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
                           onClick={() => applyGeocodeHit(hit)}
                         >
                           {hit.formatted_address}
@@ -603,7 +603,7 @@ export default function MapaPage() {
                     href="https://www.google.com/maps"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="underline hover:text-zinc-600"
+                    className="underline hover:text-zinc-600 dark:hover:text-zinc-300"
                   >
                     Google
                   </a>
@@ -616,21 +616,21 @@ export default function MapaPage() {
                     type="button"
                     size="icon"
                     variant="secondary"
-                    className="pointer-events-auto h-11 w-11 shrink-0 rounded-xl border border-zinc-200/80 bg-white/95 shadow-md backdrop-blur-sm hover:bg-white"
+                    className="pointer-events-auto h-11 w-11 shrink-0 rounded-xl border border-zinc-200/80 bg-white/95 shadow-md backdrop-blur-sm hover:bg-white dark:border-zinc-700 dark:bg-zinc-900/95 dark:hover:bg-zinc-800"
                     aria-label="Camadas — tipos de ponto"
                     title="Camadas — tipos de ponto"
                   >
-                    <Layers className="h-5 w-5 text-zinc-700" />
+                    <Layers className="h-5 w-5 text-zinc-700 dark:text-zinc-300" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent
                   align="start"
                   side="right"
                   sideOffset={8}
-                  className="z-[1100] w-72 space-y-4 p-5 shadow-lg shadow-zinc-200/50"
+                  className="z-[1100] w-72 space-y-4 border-zinc-200 bg-white p-5 shadow-card dark:border-zinc-800 dark:bg-zinc-900"
                 >
-                  <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-                    <h3 className="font-semibold text-zinc-900">
+                  <div className="flex items-center justify-between border-b border-zinc-100 pb-3 dark:border-zinc-800">
+                    <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
                       Tipos de Ponto
                     </h3>
                     <Layers className="h-4 w-4 text-zinc-400" />
@@ -645,7 +645,7 @@ export default function MapaPage() {
                           onClick={() => toggleType(type.id)}
                           className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-all ${
                             isSelected
-                              ? "bg-zinc-100"
+                              ? "bg-zinc-100 dark:bg-zinc-800"
                               : "opacity-50 hover:opacity-75"
                           }`}
                         >
@@ -657,11 +657,11 @@ export default function MapaPage() {
                               aria-hidden
                             />
                           </div>
-                          <span className="text-sm font-medium text-zinc-700">
+                          <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                             {type.label}
                           </span>
                           <div
-                            className={`ml-auto h-4 w-4 rounded-full border-2 ${isSelected ? "border-[var(--gradient-start)] bg-[var(--gradient-start)]" : "border-zinc-300"}`}
+                            className={`ml-auto h-4 w-4 rounded-full border-2 ${isSelected ? "border-[var(--gradient-start)] bg-[var(--gradient-start)]" : "border-zinc-300 dark:border-zinc-600"}`}
                           >
                             {isSelected && (
                               <svg
@@ -684,17 +684,17 @@ export default function MapaPage() {
             </div>
 
             <div className="pointer-events-none absolute right-4 top-4 z-[1000] flex flex-col items-end gap-2">
-              <div className="pointer-events-auto rounded-xl bg-white/90 px-4 py-2 shadow-md backdrop-blur-sm">
-                <span className="text-sm font-semibold text-zinc-900">
+              <div className="pointer-events-auto rounded-xl bg-white/90 px-4 py-2 shadow-md backdrop-blur-sm dark:bg-zinc-900/90">
+                <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   {visibleCount}
                 </span>
-                <span className="ml-1 text-sm text-zinc-500">
+                <span className="ml-1 text-sm text-zinc-500 dark:text-zinc-400">
                   pontos visíveis
                 </span>
               </div>
 
               <div
-                className="pointer-events-auto flex items-center overflow-hidden rounded-full border border-zinc-200/80 bg-white/95 p-0.5 shadow-md backdrop-blur-sm"
+                className="pointer-events-auto flex items-center overflow-hidden rounded-full border border-zinc-200/80 bg-white/95 p-0.5 shadow-md backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-900/95"
                 role="group"
                 aria-label="Tipo de mapa de fundo"
               >
@@ -706,8 +706,8 @@ export default function MapaPage() {
                   className={cn(
                     "rounded-full px-3 py-2 text-lg leading-none transition",
                     mapBase === "carto"
-                      ? "bg-zinc-900 text-white shadow-sm"
-                      : "text-zinc-500 hover:bg-zinc-100",
+                      ? "bg-zinc-900 text-white shadow-sm dark:bg-zinc-100 dark:text-zinc-900"
+                      : "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800",
                   )}
                 >
                   <span role="img" aria-label="Mapa de ruas">
@@ -722,8 +722,8 @@ export default function MapaPage() {
                   className={cn(
                     "rounded-full px-3 py-2 text-lg leading-none transition",
                     mapBase === "satellite"
-                      ? "bg-zinc-900 text-white shadow-sm"
-                      : "text-zinc-500 hover:bg-zinc-100",
+                      ? "bg-zinc-900 text-white shadow-sm dark:bg-zinc-100 dark:text-zinc-900"
+                      : "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800",
                   )}
                 >
                   <span role="img" aria-label="Satélite">
@@ -734,8 +734,8 @@ export default function MapaPage() {
             </div>
 
             <div className="pointer-events-none absolute bottom-4 left-4 z-[1000]">
-              <div className="pointer-events-auto rounded-xl bg-white/90 p-3 shadow-md backdrop-blur-sm">
-                <p className="mb-2 text-xs font-semibold text-zinc-500">
+              <div className="pointer-events-auto rounded-xl bg-white/90 p-3 shadow-md backdrop-blur-sm dark:bg-zinc-900/90">
+                <p className="mb-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                   LEGENDA
                 </p>
                 <div className="flex max-w-sm flex-wrap gap-3">
@@ -744,7 +744,9 @@ export default function MapaPage() {
                       <span
                         className={`h-3 w-3 rounded-full ${type.color}`}
                       />
-                      <span className="text-xs text-zinc-600">{type.label}</span>
+                      <span className="text-xs text-zinc-600 dark:text-zinc-300">
+                        {type.label}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -784,7 +786,7 @@ export default function MapaPage() {
             animate={{ opacity: 1, x: 0 }}
             className="w-80 shrink-0"
           >
-            <div className="rounded-2xl bg-white p-5 shadow-lg shadow-zinc-200/50">
+            <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
               <div className="mb-4 flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div
@@ -801,10 +803,10 @@ export default function MapaPage() {
                     >
                       {getTypeConfig(selectedItem.type).label}
                     </span>
-                    <h3 className="font-semibold text-zinc-900">
+                    <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
                       {selectedItem.title}
                     </h3>
-                    <p className="text-xs font-medium text-zinc-500">
+                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
                       {selectedItem.id}
                     </p>
                   </div>
@@ -812,16 +814,18 @@ export default function MapaPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedId(null)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
 
-              <div className="space-y-3 border-t border-zinc-100 pt-4">
+              <div className="space-y-3 border-t border-zinc-100 pt-4 dark:border-zinc-800">
                 <div className="flex items-start gap-3 text-sm">
                   <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" />
-                  <span className="text-zinc-600">{selectedItem.address}</span>
+                  <span className="text-zinc-600 dark:text-zinc-300">
+                    {selectedItem.address}
+                  </span>
                 </div>
                 {"subregional" in selectedItem &&
                 selectedItem.subregional ? (
@@ -834,7 +838,7 @@ export default function MapaPage() {
                 !("subregional" in selectedItem && selectedItem.subregional) ? (
                   <div className="flex items-center gap-3 text-sm">
                     <Layers className="h-4 w-4 shrink-0 text-zinc-400" />
-                    <span className="text-zinc-600">
+                    <span className="text-zinc-600 dark:text-zinc-300">
                       Subregional: {selectedItem.subprefeitura}
                     </span>
                   </div>
@@ -843,7 +847,7 @@ export default function MapaPage() {
                 selectedItem.serviceDateTimeBr ? (
                   <div className="flex items-center gap-3 text-sm">
                     <Clock className="h-4 w-4 shrink-0 text-zinc-400" />
-                    <span className="text-zinc-600">
+                    <span className="text-zinc-600 dark:text-zinc-300">
                       {selectedItem.serviceDateTimeBr}
                     </span>
                   </div>
@@ -851,7 +855,7 @@ export default function MapaPage() {
                 {selectedItem.lastAction ? (
                   <div className="flex items-center gap-3 text-sm">
                     <Clock className="h-4 w-4 shrink-0 text-zinc-400" />
-                    <span className="text-zinc-600">
+                    <span className="text-zinc-600 dark:text-zinc-300">
                       Última ação: {formatDateBr(selectedItem.lastAction)}
                     </span>
                   </div>
@@ -862,7 +866,7 @@ export default function MapaPage() {
                   selectedItem.integrantes.length > 0 ? (
                     <div className="flex gap-3 text-sm">
                       <Users className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" />
-                      <ul className="flex flex-col gap-1 text-zinc-600">
+                      <ul className="flex flex-col gap-1 text-zinc-600 dark:text-zinc-300">
                         {selectedItem.integrantes.map((nome) => (
                           <li key={nome}>{nome}</li>
                         ))}
@@ -871,7 +875,7 @@ export default function MapaPage() {
                   ) : selectedItem.responsible ? (
                     <div className="flex items-baseline gap-3 text-sm">
                       <User className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" />
-                      <span className="text-zinc-600">
+                      <span className="text-zinc-600 dark:text-zinc-300">
                         {selectedItem.responsible}{" "}
                         <span className="text-zinc-400">(responsável)</span>
                       </span>
@@ -880,17 +884,17 @@ export default function MapaPage() {
                 ) : selectedItem.responsible ? (
                   <div className="flex items-center gap-3 text-sm">
                     <User className="h-4 w-4 shrink-0 text-zinc-400" />
-                    <span className="text-zinc-600">
+                    <span className="text-zinc-600 dark:text-zinc-300">
                       {selectedItem.responsible}
                     </span>
                   </div>
                 ) : null}
                 {selectedItem.detailLines &&
                   selectedItem.detailLines.length > 0 && (
-                    <ul className="space-y-2 border-t border-zinc-100 pt-3 text-sm text-zinc-600">
+                    <ul className="space-y-2 border-t border-zinc-100 pt-3 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-300">
                       {selectedItem.detailLines.map((d) => (
                         <li key={`${d.label}-${d.value}`}>
-                          <span className="font-medium text-zinc-700">
+                          <span className="font-medium text-zinc-700 dark:text-zinc-200">
                             {d.label}:
                           </span>{" "}
                           {d.value}
@@ -903,7 +907,7 @@ export default function MapaPage() {
               {"agendaNumericId" in selectedItem &&
               selectedItem.agendaNumericId != null &&
               selectedItem.agendaMonthYm ? (
-                <div className="mt-4 flex justify-center border-t border-zinc-100 pt-4">
+                <div className="mt-4 flex justify-center border-t border-zinc-100 pt-4 dark:border-zinc-800">
                   <Button
                     asChild
                     type="button"
@@ -919,14 +923,14 @@ export default function MapaPage() {
               ) : null}
 
               {selectedItem.recurrent && selectedItem.occurrences > 0 && (
-                <div className="mt-4 rounded-xl bg-red-50 p-3">
+                <div className="mt-4 rounded-xl bg-red-50 p-3 dark:bg-red-950/40">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4 text-red-500" />
-                    <span className="text-sm font-medium text-red-700">
+                    <span className="text-sm font-medium text-red-700 dark:text-red-300">
                       Ponto recorrente
                     </span>
                   </div>
-                  <p className="mt-1 text-xs text-red-600">
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">
                     {selectedItem.occurrences} ocorrência(s) registrada(s)
                   </p>
                 </div>
@@ -935,7 +939,7 @@ export default function MapaPage() {
               {firebasePvDocId &&
               selectedItem.type === "ponto-viciado" &&
               !pickPvLocationMode ? (
-                <div className="mt-4 flex flex-wrap gap-2 border-t border-zinc-100 pt-4">
+                <div className="mt-4 flex flex-wrap gap-2 border-t border-zinc-100 pt-4 dark:border-zinc-800">
                   <Button
                     type="button"
                     variant="secondary"
@@ -948,7 +952,7 @@ export default function MapaPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="flex-1 rounded-xl border-red-200 text-red-700 hover:bg-red-50"
+                    className="flex-1 rounded-xl border-red-200 text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/40"
                     onClick={() => setPvDeleteOpen(true)}
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
@@ -1026,12 +1030,12 @@ export default function MapaPage() {
               className="space-y-1.5 sm:col-span-1"
             />
             {addPvPosition ? (
-              <p className="text-xs tabular-nums text-zinc-600">
+              <p className="text-xs tabular-nums text-zinc-600 dark:text-zinc-300">
                 Lat {addPvPosition[0].toFixed(5)}, Lng{" "}
                 {addPvPosition[1].toFixed(5)}
               </p>
             ) : (
-              <p className="text-xs text-amber-800">
+              <p className="text-xs text-amber-800 dark:text-amber-300">
                 A posição deve vir do toque no mapa ao criar o ponto.
               </p>
             )}

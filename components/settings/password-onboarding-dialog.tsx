@@ -68,12 +68,12 @@ export function PasswordOnboardingDialog() {
         </DialogDescription>
         <form
           onSubmit={handleSubmit}
-          className="rounded-2xl bg-white p-6 shadow-lg shadow-zinc-200/50"
+          className="rounded-2xl border border-zinc-100 bg-white p-6 shadow-card dark:border-zinc-800 dark:bg-zinc-900"
         >
-          <h3 className="text-lg font-semibold text-zinc-900">
+          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
             Defina sua senha
           </h3>
-          <p className="mt-2 text-sm text-zinc-600">
+          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
             Você entrou pelo convite por link. Para acessar de novo depois de{" "}
             <strong>sair</strong>, use este e-mail e a senha que criar aqui.
           </p>

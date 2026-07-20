@@ -49,7 +49,7 @@ export function SubregionalSelectField({
 
   return (
     <div className={cn("space-y-2 sm:col-span-2", className)}>
-      <Label htmlFor={id} className="text-zinc-600">
+      <Label htmlFor={id} className="text-zinc-600 dark:text-zinc-400">
         Subregional
         {labelSuffix}
       </Label>
@@ -61,8 +61,8 @@ export function SubregionalSelectField({
         <SelectTrigger
           id={id}
           className={cn(
-            "h-11 w-full min-w-0 border-zinc-200 bg-white",
-            error && "border-red-300 ring-1 ring-red-200",
+            "h-11 w-full min-w-0 border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900",
+            error && "border-red-300 ring-1 ring-red-200 dark:border-red-700 dark:ring-red-900",
           )}
           size="default"
         >
@@ -78,8 +78,12 @@ export function SubregionalSelectField({
                 />
                 {showAbbrevPrefix ? (
                   <>
-                    <span className="font-medium text-zinc-800">{s.abbrev}</span>
-                    <span className="text-zinc-600">— {s.label}</span>
+                    <span className="font-medium text-zinc-800 dark:text-zinc-100">
+                      {s.abbrev}
+                    </span>
+                    <span className="text-zinc-600 dark:text-zinc-400">
+                      — {s.label}
+                    </span>
                   </>
                 ) : (
                   s.label
@@ -90,7 +94,7 @@ export function SubregionalSelectField({
         </SelectContent>
       </Select>
       {!hideFooterText ? (
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
           Usada na distribuição por região nos Indicadores; &quot;Interno&quot; para
           reuniões e atividades na garagem.
         </p>

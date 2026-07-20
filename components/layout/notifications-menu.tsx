@@ -130,10 +130,10 @@ export function NotificationsMenu() {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 transition-colors hover:bg-zinc-200"
+          className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700"
           aria-label="Notificações"
         >
-          <Bell className="h-5 w-5 text-zinc-600" />
+          <Bell className="h-5 w-5 text-zinc-600 dark:text-zinc-300" />
           {showBadge && (
             <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent-gradient px-0.5 text-[10px] font-semibold text-white">
               {badge}
@@ -145,15 +145,15 @@ export function NotificationsMenu() {
         align="end"
         className="w-[min(100vw-1.5rem,22rem)] rounded-xl p-0 pl-2 pr-3"
       >
-        <div className="flex items-start justify-between gap-2 border-b border-zinc-100 py-2 pl-0 pr-1">
-          <DropdownMenuLabel className="mb-0 p-0 text-base font-semibold text-zinc-900">
+        <div className="flex items-start justify-between gap-2 border-b border-zinc-100 py-2 pl-0 pr-1 dark:border-zinc-800">
+          <DropdownMenuLabel className="mb-0 p-0 text-base font-semibold text-zinc-900 dark:text-zinc-100">
             Notificações
           </DropdownMenuLabel>
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="h-9 w-9 shrink-0 border-0 text-zinc-500 shadow-none hover:bg-zinc-100 hover:text-zinc-800"
+            className="h-9 w-9 shrink-0 border-0 text-zinc-500 shadow-none hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
             disabled={
               !user?.uid ||
               allNotifications.length === 0
@@ -166,7 +166,7 @@ export function NotificationsMenu() {
         </div>
         <div className="max-h-[min(24rem,50vh)] overflow-y-auto py-1 pl-2">
           {visibleItems.length === 0 ? (
-            <p className="px-3 py-6 text-center text-sm text-zinc-500">
+            <p className="px-3 py-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
               {emptyBecauseCleared
                 ? "Estás em dia. Novas entradas aparecem assim que forem criadas."
                 : "Nenhuma notificação para mostrar (com o filtro da tua conta)."}
@@ -180,24 +180,24 @@ export function NotificationsMenu() {
                     aria-hidden
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                       {item.accent.categoryLabel}
                     </p>
-                    <p className="truncate font-medium text-zinc-900">
+                    <p className="truncate font-medium text-zinc-900 dark:text-zinc-100">
                       {item.title}
                     </p>
                     {item.subtitle ? (
-                      <p className="truncate text-xs text-zinc-500">
+                      <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
                         {item.subtitle}
                       </p>
                     ) : null}
-                    <p className="mt-0.5 text-xs text-zinc-600">
+                    <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">
                       <span className="font-medium">{item.statusLabel}</span>
                       {item.actorFirstName ? (
                         <>
                           {" "}
                           ·{" "}
-                          <span className="font-bold text-zinc-800">
+                          <span className="font-bold text-zinc-800 dark:text-zinc-200">
                             {item.actorFirstName}
                           </span>
                         </>
@@ -212,7 +212,7 @@ export function NotificationsMenu() {
                   <DropdownMenuItem
                     key={item.id}
                     asChild
-                    className={`cursor-pointer gap-2 rounded-lg px-3 py-2.5 focus:bg-zinc-50 ${item.accent.borderClass} border-l-[3px]`}
+                    className={`cursor-pointer gap-2 rounded-lg px-3 py-2.5 focus:bg-zinc-50 dark:focus:bg-zinc-800/50 ${item.accent.borderClass} border-l-[3px]`}
                   >
                     <Link href={item.href} className="flex items-start gap-2">
                       {inner}

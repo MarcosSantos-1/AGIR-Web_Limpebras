@@ -164,7 +164,7 @@ function GaleriaPageBody() {
             type="month"
             value={monthYm}
             onChange={(e) => setMonthYm(e.target.value)}
-            className="h-10 rounded-xl border-0 bg-white px-3 text-sm font-medium shadow-md shadow-zinc-200/50 focus:outline-none focus:ring-2 focus:ring-[var(--gradient-start)]/20"
+            className="h-10 rounded-xl border-0 bg-white px-3 text-sm font-medium text-zinc-900 shadow-card focus:outline-none focus:ring-2 focus:ring-[var(--gradient-start)]/20 dark:bg-zinc-900 dark:text-zinc-100"
           />
         </label>
         <div className="relative min-w-[240px] flex-1">
@@ -174,7 +174,7 @@ function GaleriaPageBody() {
             placeholder="Endereço, nome do serviço, ID do registo, ID de revitalização…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-10 w-full rounded-xl border-0 bg-white py-2 pl-9 pr-3 text-sm shadow-md shadow-zinc-200/50 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[var(--gradient-start)]/20"
+            className="h-10 w-full rounded-xl border-0 bg-white py-2 pl-9 pr-3 text-sm text-zinc-900 shadow-card placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[var(--gradient-start)]/20 dark:bg-zinc-900 dark:text-zinc-100"
           />
         </div>
       </div>
@@ -188,7 +188,7 @@ function GaleriaPageBody() {
             className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
               selectedType === filter.id
                 ? "bg-accent-gradient text-white shadow-md shadow-[var(--gradient-start)]/20"
-                : "bg-white text-zinc-600 shadow-sm ring-1 ring-zinc-200/80 hover:bg-zinc-50"
+                : "bg-white text-zinc-600 shadow-sm ring-1 ring-zinc-200/80 hover:bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-300 dark:ring-zinc-700 dark:hover:bg-zinc-800"
             }`}
           >
             {filter.label}
@@ -210,9 +210,9 @@ function GaleriaPageBody() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: (setIndex % 6) * 0.03 }}
-              className="relative flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-lg shadow-zinc-200/40 ring-1 ring-zinc-100"
+              className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-zinc-100 bg-white shadow-card ring-1 ring-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:ring-zinc-800"
             >
-              <div className="relative max-h-[min(52vh,420px)] shrink-0 bg-zinc-100">
+              <div className="relative max-h-[min(52vh,420px)] shrink-0 bg-zinc-100 dark:bg-zinc-800">
                 <Button
                   type="button"
                   variant="secondary"
@@ -269,12 +269,12 @@ function GaleriaPageBody() {
                       </button>
                     </div>
                     {album.photoUrls.length > 2 ? (
-                      <div className="flex gap-1 overflow-x-auto border-t border-zinc-200/90 bg-zinc-50/95 px-1.5 py-1.5">
+                      <div className="flex gap-1 overflow-x-auto border-t border-zinc-200/90 bg-zinc-50/95 px-1.5 py-1.5 dark:border-zinc-700 dark:bg-zinc-800/50">
                         {album.photoUrls.slice(2).map((url, idx) => (
                           <button
                             key={`${album.id}-x-${idx}`}
                             type="button"
-                            className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md ring-1 ring-zinc-200/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gradient-start)]/45 sm:h-14 sm:w-14"
+                            className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md ring-1 ring-zinc-200/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gradient-start)]/45 dark:ring-zinc-700 sm:h-14 sm:w-14"
                             onClick={() => openLightbox(album, idx + 2)}
                           >
                             <EvidenceMediaThumb
@@ -294,7 +294,7 @@ function GaleriaPageBody() {
                       <button
                         key={`${album.id}-s-${idx}`}
                         type="button"
-                        className="relative h-48 max-h-56 w-[82%] shrink-0 snap-center overflow-hidden rounded-lg bg-zinc-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gradient-start)]/45 sm:h-52 sm:w-[78%]"
+                        className="relative h-48 max-h-56 w-[82%] shrink-0 snap-center overflow-hidden rounded-lg bg-zinc-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gradient-start)]/45 dark:bg-zinc-700 sm:h-52 sm:w-[78%]"
                         onClick={() => openLightbox(album, idx)}
                       >
                         <EvidenceMediaThumb
@@ -308,10 +308,10 @@ function GaleriaPageBody() {
               </div>
 
               <div className="flex flex-1 flex-col space-y-1 px-2.5 py-2 pr-14">
-                <h3 className="line-clamp-2 pr-8 text-xs font-semibold leading-snug text-zinc-900 sm:text-sm">
+                <h3 className="line-clamp-2 pr-8 text-xs font-semibold leading-snug text-zinc-900 sm:text-sm dark:text-zinc-100">
                   {album.title}
                 </h3>
-                <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-zinc-500 sm:text-xs">
+                <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-zinc-500 sm:text-xs dark:text-zinc-400">
                   <span
                     className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold text-white sm:text-[10px]"
                     style={{ backgroundColor: serviceTypeColor(album.serviceType) }}
@@ -324,7 +324,7 @@ function GaleriaPageBody() {
                       {album.location}
                     </span>
                   </span>
-                  <span className="text-zinc-300">·</span>
+                  <span className="text-zinc-300 dark:text-zinc-600">·</span>
                   <span className="inline-flex items-center gap-0.5 tabular-nums">
                     <Calendar className="h-3 w-3 shrink-0 opacity-80" />
                     {formatDateBr(album.date)}
@@ -358,9 +358,9 @@ function GaleriaPageBody() {
       )}
 
       {galleryReady && filteredAlbums.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-2xl bg-white py-16 shadow-lg shadow-zinc-200/50">
-          <Filter className="h-12 w-12 text-zinc-300" />
-          <p className="mt-4 text-center text-lg font-medium text-zinc-500">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-zinc-100 bg-white py-16 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
+          <Filter className="h-12 w-12 text-zinc-300 dark:text-zinc-600" />
+          <p className="mt-4 text-center text-lg font-medium text-zinc-500 dark:text-zinc-400">
             Nenhum serviço com fotos encontrado
           </p>
           <p className="mt-1 max-w-md text-center text-sm text-zinc-400">

@@ -116,7 +116,7 @@ export function EquipaAcessoSection() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-3xl border border-zinc-100 bg-zinc-50/50 p-4 text-sm text-zinc-600">
+      <div className="rounded-3xl border border-zinc-100 bg-zinc-50/50 p-4 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-400">
         <p>
           Todos os utilizadores autenticados podem gerir nomes na lista de
           equipas. Os contactos com conta no app também entram nos
@@ -125,9 +125,9 @@ export function EquipaAcessoSection() {
         </p>
       </div>
 
-      <div className="rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50">
-        <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-zinc-900">
-          <Mail className="h-5 w-5 text-zinc-500" />
+      <div className="rounded-3xl border border-zinc-100 bg-white p-6 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
+        <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+          <Mail className="h-5 w-5 text-zinc-500 dark:text-zinc-400" />
           Convidar por e-mail (link mágico)
         </h3>
         <form onSubmit={handleInvite} className="flex flex-col gap-3 sm:flex-row sm:items-end">
@@ -139,7 +139,7 @@ export function EquipaAcessoSection() {
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
               placeholder="novo.colega@empresa.gov.br"
-              className="h-11 rounded-xl"
+              className="h-11 rounded-xl dark:bg-zinc-900"
               disabled={busyInvite}
             />
           </div>
@@ -152,16 +152,16 @@ export function EquipaAcessoSection() {
           </Button>
         </form>
         {inviteMsg && (
-          <p className="mt-3 text-sm text-zinc-600">{inviteMsg}</p>
+          <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">{inviteMsg}</p>
         )}
       </div>
 
-      <div className="rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50">
-        <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-zinc-900">
-          <UserPlus className="h-5 w-5 text-zinc-500" />
+      <div className="rounded-3xl border border-zinc-100 bg-white p-6 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
+        <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+          <UserPlus className="h-5 w-5 text-zinc-500 dark:text-zinc-400" />
           Nomes na lista de equipas
         </h3>
-        <p className="mb-4 text-sm text-zinc-500">
+        <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
           Apenas etiquetas para escolher nos modais — não concede acesso ao app.
           Quem tiver conta aparece também na tabela abaixo.
         </p>
@@ -170,16 +170,16 @@ export function EquipaAcessoSection() {
             value={novoNome}
             onChange={(e) => setNovoNome(e.target.value)}
             placeholder="Nome para adicionar às equipas nos modais"
-            className="h-11 flex-1 rounded-xl"
+            className="h-11 flex-1 rounded-xl dark:bg-zinc-900"
             disabled={busyInt}
           />
           <Button type="submit" disabled={busyInt} className="h-11 rounded-xl">
             Adicionar
           </Button>
         </form>
-        <ul className="divide-y divide-zinc-100 rounded-xl border border-zinc-100">
+        <ul className="divide-y divide-zinc-100 rounded-xl border border-zinc-100 dark:divide-zinc-800 dark:border-zinc-800">
           {integrantes.length === 0 ? (
-            <li className="px-4 py-6 text-center text-sm text-zinc-500">
+            <li className="px-4 py-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
               Nenhum nome na lista — adicione ou aguarde colegas preencherem o
               perfil.
             </li>
@@ -189,12 +189,12 @@ export function EquipaAcessoSection() {
                 key={i.id}
                 className="flex items-center justify-between gap-2 px-4 py-3"
               >
-                <span className="font-medium text-zinc-900">{i.nome}</span>
+                <span className="font-medium text-zinc-900 dark:text-zinc-100">{i.nome}</span>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="shrink-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                  className="shrink-0 text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/40"
                   onClick={() => void handleRemove(i.id, i.nome)}
                   disabled={busyInt}
                   aria-label={`Remover ${i.nome}`}
@@ -207,9 +207,9 @@ export function EquipaAcessoSection() {
         </ul>
       </div>
 
-      <div className="rounded-3xl bg-white p-6 shadow-lg shadow-zinc-200/50">
+      <div className="rounded-3xl border border-zinc-100 bg-white p-6 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
         <div className="mb-4 flex items-center justify-between gap-2">
-          <h3 className="text-lg font-semibold text-zinc-900">
+          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
             Contas com acesso ao app
           </h3>
           <Button
@@ -223,16 +223,16 @@ export function EquipaAcessoSection() {
             Actualizar
           </Button>
         </div>
-        <p className="mb-4 text-sm text-zinc-500">
+        <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
           Utilizadores com perfil em{" "}
-          <code className="rounded bg-zinc-100 px-1">users/*</code>. Estes
+          <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">users/*</code>. Estes
           nomes surgem nos modais ao montar a equipa, juntamente com a lista
           acima.
         </p>
-        <div className="overflow-x-auto rounded-xl border border-zinc-100">
+        <div className="overflow-x-auto rounded-xl border border-zinc-100 dark:border-zinc-800">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-zinc-100 bg-zinc-50/80 text-left text-zinc-600">
+              <tr className="border-b border-zinc-100 bg-zinc-50/80 text-left text-zinc-600 dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-400">
                 <th className="p-3 font-medium">Nome</th>
                 <th className="p-3 font-medium">E-mail</th>
               </tr>
@@ -240,17 +240,17 @@ export function EquipaAcessoSection() {
             <tbody>
               {directoryRows.length === 0 ? (
                 <tr>
-                  <td colSpan={2} className="p-6 text-center text-zinc-500">
+                  <td colSpan={2} className="p-6 text-center text-zinc-500 dark:text-zinc-400">
                     {loadingDir ? "A carregar…" : "Sem perfis registados."}
                   </td>
                 </tr>
               ) : (
                 directoryRows.map(({ row, display, email }) => (
-                  <tr key={row.uid} className="border-b border-zinc-50">
-                    <td className="p-3 text-zinc-900">
+                  <tr key={row.uid} className="border-b border-zinc-50 dark:border-zinc-800/60">
+                    <td className="p-3 text-zinc-900 dark:text-zinc-100">
                       {display ?? "—"}
                     </td>
-                    <td className="p-3 text-zinc-600">
+                    <td className="p-3 text-zinc-600 dark:text-zinc-400">
                       {email ?? "—"}
                     </td>
                   </tr>

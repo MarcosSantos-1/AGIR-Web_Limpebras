@@ -35,11 +35,11 @@ export function PostLinksDisplay({
   return (
     <div
       className={cn(
-        "rounded-xl bg-zinc-50/80 p-4 sm:col-span-2",
+        "rounded-xl bg-zinc-50/80 p-4 sm:col-span-2 dark:bg-zinc-800/50",
         className,
       )}
     >
-      <p className="text-xs font-medium uppercase text-zinc-400">
+      <p className="text-xs font-medium uppercase text-zinc-400 dark:text-zinc-500">
         Links de postagem
       </p>
       <ul className="mt-2 space-y-2">
@@ -81,9 +81,9 @@ export function LinksPostagemEditor({
   textareaClassName,
 }: EditorProps) {
   return (
-    <div className="rounded-2xl border border-zinc-100 bg-zinc-50/50 p-5 sm:p-6">
-      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-800">
-        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[var(--gradient-accent)] shadow-sm ring-1 ring-zinc-100">
+    <div className="rounded-2xl border border-zinc-100 bg-zinc-50/50 p-5 sm:p-6 dark:border-zinc-800 dark:bg-zinc-800/50">
+      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[var(--gradient-accent)] shadow-sm ring-1 ring-zinc-100 dark:bg-zinc-900 dark:ring-zinc-700">
           <ExternalLink className="h-4 w-4" />
         </span>
         Links de postagem (opcional)
@@ -99,11 +99,13 @@ export function LinksPostagemEditor({
         placeholder="https://instagram.com/...&#10;https://facebook.com/..."
         rows={4}
         className={cn(
-          "resize-y border-zinc-200 font-mono text-sm",
+          "resize-y border-zinc-200 font-mono text-sm dark:border-zinc-700",
           textareaClassName,
         )}
       />
-      <p className="mt-2 text-xs leading-relaxed text-zinc-500">{hint}</p>
+      <p className="mt-2 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+        {hint}
+      </p>
     </div>
   );
 }

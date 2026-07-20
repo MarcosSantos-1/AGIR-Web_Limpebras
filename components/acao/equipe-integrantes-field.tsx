@@ -98,14 +98,14 @@ function SortableIntegranteRow({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-2 py-2 shadow-sm",
+        "flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-2 py-2 shadow-sm dark:border-zinc-700 dark:bg-zinc-900",
         isDragging && "z-10 opacity-90 ring-2 ring-[var(--gradient-accent)]/25",
       )}
     >
       <button
         type="button"
         className={cn(
-          "touch-none rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-600",
+          "touch-none rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300",
           disabled && "pointer-events-none opacity-40",
         )}
         aria-label="Arrastar para reordenar"
@@ -218,15 +218,17 @@ export function EquipeIntegrantesField({
   return (
     <div
       key={fieldKey}
-      className="rounded-2xl border border-zinc-100 bg-zinc-50/50 px-5 py-4"
+      className="rounded-2xl border border-zinc-100 bg-zinc-50/50 px-5 py-4 dark:border-zinc-800 dark:bg-zinc-800/50"
     >
       <div className="mb-4 flex items-start gap-2.5">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-[var(--gradient-accent)] shadow-sm ring-1 ring-zinc-100">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-[var(--gradient-accent)] shadow-sm ring-1 ring-zinc-100 dark:bg-zinc-900 dark:ring-zinc-700">
           <Users className="h-4 w-4" />
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-semibold text-zinc-800">Integrantes</h3>
-          <p className="mt-0.5 text-xs text-zinc-500">
+          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+            Integrantes
+          </h3>
+          <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
             Opcional — arraste para reordenar.
             {value.length > 0 ? ` (${value.length})` : ""}
           </p>
@@ -248,7 +250,7 @@ export function EquipeIntegrantesField({
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-10 rounded-xl border-zinc-200 bg-white"
+                  className="h-10 rounded-xl border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900"
                   disabled={disabled}
                 >
                   <Plus className="mr-1.5 h-4 w-4" />
@@ -261,7 +263,10 @@ export function EquipeIntegrantesField({
               >
                 {pickerMode === "other" ? (
                   <div className="space-y-2 p-3">
-                    <Label htmlFor="equipe-outro" className="text-zinc-600">
+                    <Label
+                      htmlFor="equipe-outro"
+                      className="text-zinc-600 dark:text-zinc-400"
+                    >
                       Nome livre
                     </Label>
                     <Input
@@ -269,7 +274,7 @@ export function EquipeIntegrantesField({
                       value={outroNome}
                       onChange={(e) => setOutroNome(e.target.value)}
                       placeholder="Ex.: Maria Silva"
-                      className="h-10 border-zinc-200"
+                      className="h-10 border-zinc-200 dark:border-zinc-700"
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault();
@@ -375,7 +380,7 @@ export function EquipeIntegrantesField({
               </SortableContext>
             </DndContext>
           ) : (
-            <p className="text-sm text-zinc-500">
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
               Nenhum integrante indicado. Opcional — útil para panfletagem e
               relatórios.
             </p>

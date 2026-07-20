@@ -215,7 +215,7 @@ export function DailyChecklist({
       </div>
 
       {showAddRow && (
-        <div id="daily-checklist-add" className="mb-4 rounded-2xl border border-zinc-200 bg-zinc-50/90 p-3">
+        <div id="daily-checklist-add" className="mb-4 rounded-2xl border border-zinc-200 bg-zinc-50/90 p-3 dark:border-zinc-700 dark:bg-zinc-800/50">
           <p className="mb-2 text-xs font-medium text-zinc-600 dark:text-zinc-300">Nova tarefa</p>
           <div className="flex gap-2">
             <Input
@@ -228,7 +228,7 @@ export function DailyChecklist({
                 }
               }}
               placeholder="Ex.: conferir rota na manhã"
-              className="h-10 flex-1 border-zinc-200 bg-white"
+              className="h-10 flex-1 border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900"
             />
             <Button
               type="button"
@@ -241,7 +241,7 @@ export function DailyChecklist({
         </div>
       )}
 
-      <div className="mb-4 h-2 overflow-hidden rounded-full bg-zinc-100">
+      <div className="mb-4 h-2 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
@@ -254,7 +254,7 @@ export function DailyChecklist({
         {items.map((task) => (
           <div
             key={task.id}
-            className="group flex items-center gap-2 rounded-xl p-2 transition-colors hover:bg-zinc-50/80"
+            className="group flex items-center gap-2 rounded-xl p-2 transition-colors hover:bg-zinc-50/80 dark:hover:bg-zinc-800"
           >
             <button
               type="button"
@@ -265,7 +265,7 @@ export function DailyChecklist({
                 className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors ${
                   task.done
                     ? "bg-accent-gradient"
-                    : "border-2 border-zinc-300"
+                    : "border-2 border-zinc-300 dark:border-zinc-600"
                 }`}
               >
                 {task.done ? (
@@ -276,7 +276,7 @@ export function DailyChecklist({
               </div>
               <span
                 className={`min-w-0 flex-1 text-sm leading-snug ${
-                  task.done ? "text-zinc-400 line-through" : "text-zinc-700 dark:text-zinc-300"
+                  task.done ? "text-zinc-400 line-through dark:text-zinc-500" : "text-zinc-700 dark:text-zinc-300"
                 }`}
               >
                 {task.title}
@@ -287,7 +287,7 @@ export function DailyChecklist({
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-zinc-500 hover:bg-zinc-200/70 hover:text-zinc-800 dark:text-zinc-200"
+                className="h-8 w-8 text-zinc-500 hover:bg-zinc-200/70 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
                 onClick={(e) => {
                   e.stopPropagation();
                   openEdit(task);
@@ -300,7 +300,7 @@ export function DailyChecklist({
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-red-500/85 hover:bg-red-50 hover:text-red-600"
+                className="h-8 w-8 text-red-500/85 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
                 onClick={(e) => {
                   e.stopPropagation();
                   confirmDeleteOpen(task.id);
@@ -352,7 +352,7 @@ export function DailyChecklist({
                   saveEdit();
                 }
               }}
-              className="h-11 border-zinc-200"
+              className="h-11 border-zinc-200 dark:border-zinc-700 dark:bg-zinc-900"
               placeholder="Texto da tarefa"
             />
           </div>
@@ -385,7 +385,7 @@ export function DailyChecklist({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-xl border-zinc-200">
+            <AlertDialogCancel className="rounded-xl border-zinc-200 dark:border-zinc-700">
               Voltar
             </AlertDialogCancel>
             <Button
