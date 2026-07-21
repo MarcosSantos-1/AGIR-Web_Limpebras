@@ -20,6 +20,8 @@ import {
   Users,
   History,
   Recycle,
+  Copy,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,6 +64,13 @@ import {
   type MapaStatus,
 } from "@/lib/map-features";
 import { SubregionalSelectField } from "@/components/forms/subregional-select-field";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   subregionalIdFromSubprefeitura,
   subregionalMeta,
@@ -141,6 +150,11 @@ const pointTypes = [
   },
 ] as const;
 
+/** Tipos exibidos na legenda (sem núcleo — só camadas). */
+const legendPointTypes = pointTypes.filter(
+  (t) => t.id !== "nucleo-habitacional",
+);
+
 const pvStatusVisual: Record<
   MapaStatus,
   { color: string; textColor: string; label: string }
@@ -182,6 +196,130 @@ const DEFAULT_MAP_LAYER_TYPES = [
 type MapItem = MapDisplayPoint | MapPolygon;
 
 type GeocodeHit = { lat: number; lng: number; formatted_address: string };
+
+type MapSearchMode =
+  | "endereco"
+  | "acoes"
+  | "nucleos"
+  | "pontos-viciados";
+
+type CatalogSearchHit = {
+  id: string;
+  label: string;
+  subtitle: string;
+  lat: number;
+  lng: number;
+  /** Camada a garantir visível ao selecionar. */
+  ensureLayer?: string;
+};
+
+const SEARCH_MODE_OPTIONS: {
+  id: MapSearchMode;
+  label: string;
+  placeholder: string;
+}[] = [
+  {
+    id: "endereco",
+    label: "Endereço",
+    placeholder: "Pesquisar endereço (SP, Brasil)…",
+  },
+  {
+    id: "acoes",
+    label: "Ações",
+    placeholder: "Buscar ação, evento ou panfletagem…",
+  },
+  {
+    id: "nucleos",
+    label: "Núcleos",
+    placeholder: "Buscar núcleo habitacional…",
+  },
+  {
+    id: "pontos-viciados",
+    label: "Pontos viciados",
+    placeholder: "Buscar código ou endereço do ponto…",
+  },
+];
+
+function polygonCentroid(poly: MapPolygon): [number, number] {
+  const n = poly.positions.length;
+  if (n === 0) return [0, 0];
+  let lat = 0;
+  let lng = 0;
+  for (const [a, b] of poly.positions) {
+    lat += a;
+    lng += b;
+  }
+  return [lat / n, lng / n];
+}
+
+function matchCatalogText(
+  q: string,
+  ...parts: (string | undefined | null)[]
+): boolean {
+  return parts.some((p) => (p ?? "").toLowerCase().includes(q));
+}
+
+function searchMapCatalog(
+  mode: Exclude<MapSearchMode, "endereco">,
+  query: string,
+  markers: MapDisplayPoint[],
+  polygons: MapPolygon[],
+): CatalogSearchHit[] {
+  const q = query.trim().toLowerCase();
+  if (q.length < 1) return [];
+
+  if (mode === "pontos-viciados") {
+    return markers
+      .filter((m) => m.type === "ponto-viciado")
+      .filter((m) => matchCatalogText(q, m.id, m.title, m.address, m.subprefeitura))
+      .slice(0, 40)
+      .map((m) => ({
+        id: m.id,
+        label: m.id,
+        subtitle: m.address,
+        lat: m.position[0],
+        lng: m.position[1],
+        ensureLayer: "ponto-viciado",
+      }));
+  }
+
+  if (mode === "acoes") {
+    return markers
+      .filter(
+        (m) =>
+          m.type === "servico-acao-ambiental" ||
+          m.type === "servico-evento" ||
+          m.type === "servico-panfletagem",
+      )
+      .filter((m) => matchCatalogText(q, m.id, m.title, m.address, m.responsible))
+      .slice(0, 40)
+      .map((m) => ({
+        id: m.id,
+        label: m.title,
+        subtitle: m.address,
+        lat: m.position[0],
+        lng: m.position[1],
+        ensureLayer: m.type,
+      }));
+  }
+
+  // nucleos
+  return polygons
+    .filter((p) => p.type === "nucleo-habitacional")
+    .filter((p) => matchCatalogText(q, p.id, p.title, p.address))
+    .slice(0, 40)
+    .map((p) => {
+      const [lat, lng] = polygonCentroid(p);
+      return {
+        id: p.id,
+        label: p.title,
+        subtitle: p.address,
+        lat,
+        lng,
+        ensureLayer: "nucleo-habitacional",
+      };
+    });
+}
 
 function reservedCodigosForPv(
   customEntries: CustomPontoViciadoEntry[],
@@ -240,12 +378,21 @@ function MapaPageContent() {
   ]);
   const [typesPopoverOpen, setTypesPopoverOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [coordsCopied, setCoordsCopied] = useState(false);
+
+  useEffect(() => {
+    setCoordsCopied(false);
+  }, [selectedId]);
   const [mapBase, setMapBase] = useState<"carto" | "satellite">("carto");
   const [addressQuery, setAddressQuery] = useState("");
+  const [searchMode, setSearchMode] = useState<MapSearchMode>("endereco");
   const [geocodeLoading, setGeocodeLoading] = useState(false);
   const [geocodeError, setGeocodeError] = useState<string | null>(null);
   const [geocodeAlternatives, setGeocodeAlternatives] = useState<
     GeocodeHit[] | null
+  >(null);
+  const [catalogAlternatives, setCatalogAlternatives] = useState<
+    CatalogSearchHit[] | null
   >(null);
   const [flyTo, setFlyTo] = useState<OperationalMapFlyTo | null>(null);
   const [searchPin, setSearchPin] = useState<{
@@ -261,6 +408,8 @@ function MapaPageContent() {
   >(null);
   const [addPvCodigo, setAddPvCodigo] = useState("");
   const [addPvEndereco, setAddPvEndereco] = useState("");
+  /** Endereço geocodificado completo (clique no mapa) — só exibição. */
+  const [addPvGeocodedLocation, setAddPvGeocodedLocation] = useState("");
   const [addPvSubregionalId, setAddPvSubregionalId] = useState<
     SubregionalId | ""
   >("");
@@ -371,7 +520,7 @@ function MapaPageContent() {
         );
         return true;
       }
-      setAddPvEndereco(payload.results[0]!.formatted_address);
+      setAddPvGeocodedLocation(payload.results[0]!.formatted_address);
       return true;
     } catch {
       toast.error("Falha ao obter o endereço. Tente de novo ou preencha à mão.");
@@ -383,6 +532,7 @@ function MapaPageContent() {
     setEditingFirestoreDocId(null);
     setAddPvCodigo("");
     setAddPvEndereco("");
+    setAddPvGeocodedLocation("");
     setAddPvSubregionalId("");
     setAddPvPosition(null);
     setPickPvLocationMode(false);
@@ -411,6 +561,7 @@ function MapaPageContent() {
       setAddPvSubregionalId("");
       setPvSubregionalErro(false);
       setAddPvEndereco("");
+      setAddPvGeocodedLocation("");
       setEditingFirestoreDocId(null);
       await reverseGeocodeAndFill(lat, lng);
       setAddPvOpen(true);
@@ -436,6 +587,7 @@ function MapaPageContent() {
     setEditingFirestoreDocId(fb);
     setAddPvCodigo(item.id);
     setAddPvEndereco(item.address ?? "");
+    setAddPvGeocodedLocation("");
     setAddPvSubregionalId(
       subregionalIdFromSubprefeitura(item.subprefeitura ?? "") ?? "",
     );
@@ -540,21 +692,66 @@ function MapaPageContent() {
       nonce: flyNonceRef.current,
     });
     setGeocodeAlternatives(null);
+    setCatalogAlternatives(null);
     setGeocodeError(null);
     setSearchPin({ lat: hit.lat, lng: hit.lng });
     toast.success(hit.formatted_address);
   };
 
-  const handleAddressSearch = async (e?: FormEvent) => {
+  const applyCatalogHit = (hit: CatalogSearchHit) => {
+    if (hit.ensureLayer) {
+      setSelectedTypes((prev) =>
+        prev.includes(hit.ensureLayer!)
+          ? prev
+          : [...prev, hit.ensureLayer!],
+      );
+    }
+    flyNonceRef.current += 1;
+    setFlyTo({
+      lat: hit.lat,
+      lng: hit.lng,
+      zoom: 17,
+      nonce: flyNonceRef.current,
+    });
+    setSelectedId(hit.id);
+    setSearchPin(null);
+    setGeocodeAlternatives(null);
+    setCatalogAlternatives(null);
+    setGeocodeError(null);
+    toast.success(hit.label);
+  };
+
+  const handleMapSearch = async (e?: FormEvent) => {
     e?.preventDefault();
     const q = addressQuery.trim();
     if (!q) {
-      setGeocodeError("Indique um endereço.");
+      setGeocodeError(
+        searchMode === "endereco"
+          ? "Indique um endereço."
+          : "Indique um termo para buscar.",
+      );
       return;
     }
     setGeocodeError(null);
     setGeocodeAlternatives(null);
+    setCatalogAlternatives(null);
     setSearchPin(null);
+
+    if (searchMode !== "endereco") {
+      const hits = searchMapCatalog(
+        searchMode,
+        q,
+        allMarkers,
+        MAPA_POLYGONS,
+      );
+      if (hits.length === 0) {
+        setGeocodeError("Nenhum resultado. Tente outro termo.");
+        return;
+      }
+      setCatalogAlternatives(hits);
+      return;
+    }
+
     setGeocodeLoading(true);
     try {
       const res = await fetch("/api/geocode", {
@@ -621,20 +818,49 @@ function MapaPageContent() {
               </div>
             ) : null}
 
-            <div className="pointer-events-none absolute left-4 top-4 z-20 flex w-[min(100%-2rem,20rem)] max-w-sm flex-col items-start gap-2">
+            <div className="pointer-events-none absolute left-4 top-4 z-20 flex w-[min(100%-2rem,26rem)] max-w-md flex-col items-start gap-2">
               <div className="pointer-events-auto w-full space-y-1">
                 <form
-                  onSubmit={(e) => void handleAddressSearch(e)}
+                  onSubmit={(e) => void handleMapSearch(e)}
                   className="flex gap-1.5 rounded-xl border border-zinc-200/80 bg-white/95 p-1 shadow-md backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-900/95"
                 >
+                  <Select
+                    value={searchMode}
+                    onValueChange={(v) => {
+                      setSearchMode(v as MapSearchMode);
+                      setGeocodeError(null);
+                      setGeocodeAlternatives(null);
+                      setCatalogAlternatives(null);
+                      setSearchPin(null);
+                    }}
+                  >
+                    <SelectTrigger
+                      aria-label="Tipo de busca"
+                      className="h-10 w-[7.5rem] shrink-0 border-0 bg-zinc-100 px-2 text-xs font-medium shadow-none focus:ring-0 dark:bg-zinc-800 dark:text-zinc-200"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SEARCH_MODE_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.id} value={opt.id}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Input
                     value={addressQuery}
                     onChange={(e) => setAddressQuery(e.target.value)}
-                    placeholder="Pesquisar endereço (SP, Brasil)…"
-                    aria-label="Pesquisar endereço"
-                    className="h-10 flex-1 border-0 bg-transparent text-sm text-zinc-900 shadow-none focus-visible:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                    placeholder={
+                      SEARCH_MODE_OPTIONS.find((o) => o.id === searchMode)
+                        ?.placeholder ?? "Pesquisar…"
+                    }
+                    aria-label="Pesquisar no mapa"
+                    className="h-10 min-w-0 flex-1 border-0 bg-transparent text-sm text-zinc-900 shadow-none focus-visible:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500"
                     disabled={geocodeLoading}
-                    autoComplete="street-address"
+                    autoComplete={
+                      searchMode === "endereco" ? "street-address" : "off"
+                    }
                   />
                   <Button
                     type="submit"
@@ -671,17 +897,41 @@ function MapaPageContent() {
                     ))}
                   </ul>
                 ) : null}
-                <p className="text-left text-[10px] leading-tight text-zinc-400">
-                  Localização ©{" "}
-                  <a
-                    href="https://www.google.com/maps"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline hover:text-zinc-600 dark:hover:text-zinc-300"
-                  >
-                    Google
-                  </a>
-                </p>
+                {catalogAlternatives && catalogAlternatives.length > 0 ? (
+                  <ul className="max-h-56 overflow-y-auto rounded-lg border border-zinc-200/80 bg-white/98 text-left text-xs shadow-md dark:border-zinc-700 dark:bg-zinc-900/98">
+                    {catalogAlternatives.map((hit) => (
+                      <li key={hit.id}>
+                        <button
+                          type="button"
+                          className="w-full px-3 py-2 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                          onClick={() => applyCatalogHit(hit)}
+                        >
+                          <span className="block font-medium text-zinc-800 dark:text-zinc-100">
+                            {hit.label}
+                          </span>
+                          {hit.subtitle ? (
+                            <span className="mt-0.5 block text-zinc-500 dark:text-zinc-400">
+                              {hit.subtitle}
+                            </span>
+                          ) : null}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {searchMode === "endereco" ? (
+                  <p className="text-left text-[10px] leading-tight text-zinc-400">
+                    Localização ©{" "}
+                    <a
+                      href="https://www.google.com/maps"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline hover:text-zinc-600 dark:hover:text-zinc-300"
+                    >
+                      Google
+                    </a>
+                  </p>
+                ) : null}
               </div>
 
               <Popover open={typesPopoverOpen} onOpenChange={setTypesPopoverOpen}>
@@ -813,7 +1063,7 @@ function MapaPageContent() {
                   LEGENDA
                 </p>
                 <div className="flex max-w-sm flex-wrap gap-3">
-                  {pointTypes.map((type) => (
+                  {legendPointTypes.map((type) => (
                     <div key={type.id} className="flex items-center gap-1.5">
                       <span
                         className={`h-3 w-3 rounded-full ${type.color}`}
@@ -892,6 +1142,41 @@ function MapaPageContent() {
                           <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
                             {selectedItem.id}
                           </p>
+                          {"position" in selectedItem &&
+                          selectedItem.position ? (
+                            <button
+                              type="button"
+                              title="Clique para copiar coordenadas"
+                              className="mt-0.5 flex items-center gap-1 text-xs font-medium tabular-nums text-zinc-500 transition-colors hover:text-[var(--gradient-accent)] dark:text-zinc-400 dark:hover:text-fuchsia-300"
+                              onClick={() => {
+                                const [lat, lng] = selectedItem.position;
+                                const text = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                                void navigator.clipboard
+                                  .writeText(text)
+                                  .then(() => {
+                                    setCoordsCopied(true);
+                                    toast.success("Coordenadas copiadas");
+                                    window.setTimeout(
+                                      () => setCoordsCopied(false),
+                                      1500,
+                                    );
+                                  })
+                                  .catch(() => {
+                                    toast.error("Não foi possível copiar");
+                                  });
+                              }}
+                            >
+                              {coordsCopied ? (
+                                <Check className="h-3 w-3 shrink-0" />
+                              ) : (
+                                <Copy className="h-3 w-3 shrink-0 opacity-70" />
+                              )}
+                              <span>
+                                {selectedItem.position[0].toFixed(6)},{" "}
+                                {selectedItem.position[1].toFixed(6)}
+                              </span>
+                            </button>
+                          ) : null}
                         </div>
                       </>
                     );
@@ -1113,9 +1398,9 @@ function MapaPageContent() {
                 : "Novo ponto viciado"}
             </DialogTitle>
             <DialogDescription>
-              <strong>Código</strong> e <strong>subregional</strong> são
-              obrigatórios. O <strong>endereço</strong> é preenchido
-              automaticamente pelo toque no mapa (somente leitura).
+              <strong>Código</strong>, <strong>endereço</strong> (nome do local)
+              e <strong>subregional</strong> são obrigatórios. A localização
+              geográfica vem do toque no mapa.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3 py-2">
@@ -1135,14 +1420,35 @@ function MapaPageContent() {
               <Input
                 id="pv-endereco"
                 value={addPvEndereco}
-                placeholder="Preenchido ao tocar no mapa"
+                onChange={(e) => setAddPvEndereco(e.target.value)}
+                placeholder="Ex.: Rua A x Rua B, ou ponto de referência"
                 autoComplete="street-address"
-                readOnly
-                disabled
-                tabIndex={-1}
-                className="disabled:cursor-not-allowed disabled:opacity-80"
+                disabled={pvSaving}
               />
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                Nome do local no ponto (cruzamento, referência, etc.).
+              </p>
             </div>
+            {addPvGeocodedLocation || addPvPosition ? (
+              <div className="flex items-start gap-2.5 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-800/50">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[var(--gradient-accent)]" />
+                <div className="min-w-0 space-y-0.5">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                    Localização
+                  </p>
+                  <p className="text-sm text-zinc-700 dark:text-zinc-200">
+                    {addPvGeocodedLocation ||
+                      (addPvPosition
+                        ? `${addPvPosition[0].toFixed(5)}, ${addPvPosition[1].toFixed(5)}`
+                        : "—")}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-amber-800 dark:text-amber-300">
+                A posição deve vir do toque no mapa ao criar o ponto.
+              </p>
+            )}
             <SubregionalSelectField
               id="pv-subregional"
               value={addPvSubregionalId}
@@ -1163,16 +1469,6 @@ function MapaPageContent() {
               }
               className="space-y-1.5 sm:col-span-1"
             />
-            {addPvPosition ? (
-              <p className="text-xs tabular-nums text-zinc-600 dark:text-zinc-300">
-                Lat {addPvPosition[0].toFixed(5)}, Lng{" "}
-                {addPvPosition[1].toFixed(5)}
-              </p>
-            ) : (
-              <p className="text-xs text-amber-800 dark:text-amber-300">
-                A posição deve vir do toque no mapa ao criar o ponto.
-              </p>
-            )}
           </div>
           <DialogFooter>
             <Button

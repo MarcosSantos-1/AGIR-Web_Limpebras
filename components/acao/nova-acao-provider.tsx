@@ -246,20 +246,31 @@ function parseLinks(text: string): string[] {
 
 type LocalGeocodeHit = { lat: number; lng: number; formatted_address: string };
 
-const ModalLocationMiniMap = dynamic(
-  () =>
-    import("@/components/acao/modal-location-mini-map").then(
-      (m) => m.ModalLocationMiniMap,
-    ),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-[220px] w-full items-center justify-center rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 text-sm text-zinc-500 dark:text-zinc-400 dark:bg-zinc-800/50">
-        A carregar mapa…
-      </div>
-    ),
-  },
-);
+async function loadModalLocationMiniMap() {
+  try {
+    const m = await import("@/components/acao/modal-location-mini-map");
+    return m.ModalLocationMiniMap;
+  } catch (err) {
+    // Turbopack/HMR: chunk antigo após rebuild — um reload limpa a referência.
+    const isChunkError =
+      err instanceof Error &&
+      (err.name === "ChunkLoadError" ||
+        /Loading chunk|Failed to load chunk/i.test(err.message));
+    if (isChunkError && typeof window !== "undefined") {
+      window.location.reload();
+    }
+    throw err;
+  }
+}
+
+const ModalLocationMiniMap = dynamic(() => loadModalLocationMiniMap(), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[220px] w-full items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-50 text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-400">
+      A carregar mapa…
+    </div>
+  ),
+});
 
 function fieldGrid() {
   return "grid gap-4 sm:grid-cols-2";
@@ -1478,7 +1489,8 @@ function RevitalizacaoDialog({
       if (hit) {
         setNewPontoLat(hit.lat);
         setNewPontoLng(hit.lng);
-        if (!newPontoAddress) setNewPontoAddress(hit.formatted_address);
+        // Persiste o endereço geocodificado completo no campo de busca
+        setNewPontoSearchQuery(hit.formatted_address);
         newPontoFlyNonce.current += 1;
         setNewPontoMapFlyTo({
           lat: hit.lat,
@@ -1492,7 +1504,7 @@ function RevitalizacaoDialog({
     } finally {
       setNewPontoSearching(false);
     }
-  }, [newPontoSearchQuery, newPontoAddress]);
+  }, [newPontoSearchQuery]);
 
   const handleNewPontoMapClick = React.useCallback(
     async (lat: number, lng: number) => {
@@ -1515,7 +1527,7 @@ function RevitalizacaoDialog({
           results?: { formatted_address: string }[];
         };
         const addr = data.results?.[0]?.formatted_address;
-        if (addr) setNewPontoAddress(addr);
+        if (addr) setNewPontoSearchQuery(addr);
       } catch {
         /* silently fail */
       }
@@ -1538,6 +1550,13 @@ function RevitalizacaoDialog({
       setNewPontoError("Selecione a subprefeitura.");
       return;
     }
+    const enderecoNome = newPontoAddress.trim();
+    if (!enderecoNome) {
+      setNewPontoError(
+        "Informe o endereço (nome do local, cruzamento ou referência).",
+      );
+      return;
+    }
     if (newPontoLat == null || newPontoLng == null) {
       setNewPontoError("Busque ou clique no mapa para definir a localização.");
       return;
@@ -1546,7 +1565,7 @@ function RevitalizacaoDialog({
     try {
       await addPontoViciado({
         codigo,
-        address: newPontoAddress.trim() || "Sem endereço",
+        address: enderecoNome,
         subprefeitura: subregionalMeta(newPontoSubregionalId).label,
         lat: newPontoLat,
         lng: newPontoLng,
@@ -2137,12 +2156,27 @@ function RevitalizacaoDialog({
                     </div>
                     <div className="space-y-1.5">
                       <Label className="text-xs text-zinc-600 dark:text-zinc-400">
+                        Endereço <RequiredStar />
+                      </Label>
+                      <Input
+                        className="h-9 border-zinc-200 text-sm dark:border-zinc-700"
+                        placeholder="Ex.: Rua A x Rua B, ou ponto de referência"
+                        value={newPontoAddress}
+                        onChange={(e) => setNewPontoAddress(e.target.value)}
+                        disabled={newPontoSaving}
+                      />
+                      <p className="text-[10px] text-zinc-500 dark:text-zinc-400">
+                        Nome do local no ponto (cruzamento, referência, etc.).
+                      </p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-zinc-600 dark:text-zinc-400">
                         Buscar endereço
                       </Label>
                       <div className="flex gap-2">
                         <Input
                           className="h-9 flex-1 border-zinc-200 text-sm dark:border-zinc-700"
-                          placeholder="Rua, número, bairro…"
+                          placeholder="Rua, número, bairro… (localização no mapa)"
                           value={newPontoSearchQuery}
                           onChange={(e) =>
                             setNewPontoSearchQuery(e.target.value)
@@ -2153,13 +2187,14 @@ function RevitalizacaoDialog({
                               void handleNewPontoSearch();
                             }
                           }}
+                          disabled={newPontoSaving}
                         />
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
                           className="h-9 shrink-0 rounded-lg"
-                          disabled={newPontoSearching}
+                          disabled={newPontoSearching || newPontoSaving}
                           onClick={() => void handleNewPontoSearch()}
                         >
                           {newPontoSearching ? (
@@ -2169,19 +2204,10 @@ function RevitalizacaoDialog({
                           )}
                         </Button>
                       </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-zinc-600 dark:text-zinc-400">
-                        Endereço
-                      </Label>
-                      <Input
-                        className="h-9 border-zinc-200 text-sm dark:border-zinc-700 disabled:cursor-not-allowed disabled:opacity-80"
-                        placeholder="Preenchido pela busca ou clique no mapa"
-                        value={newPontoAddress}
-                        readOnly
-                        disabled
-                        tabIndex={-1}
-                      />
+                      <p className="text-[10px] text-zinc-500 dark:text-zinc-400">
+                        Localização geográfica — após buscar ou clicar no mapa,
+                        o endereço completo fica aqui.
+                      </p>
                     </div>
                     <ModalLocationMiniMap
                       className="!min-h-[180px]"
