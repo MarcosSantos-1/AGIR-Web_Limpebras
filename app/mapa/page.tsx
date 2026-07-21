@@ -1114,9 +1114,8 @@ function MapaPageContent() {
             </DialogTitle>
             <DialogDescription>
               <strong>Código</strong> e <strong>subregional</strong> são
-              obrigatórios. Após tocar no mapa, tentamos montar{" "}
-              <strong>logradouro, número e bairro</strong> a partir do Google —
-              ajuste o texto se precisar.
+              obrigatórios. O <strong>endereço</strong> é preenchido
+              automaticamente pelo toque no mapa (somente leitura).
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3 py-2">
@@ -1136,10 +1135,12 @@ function MapaPageContent() {
               <Input
                 id="pv-endereco"
                 value={addPvEndereco}
-                onChange={(e) => setAddPvEndereco(e.target.value)}
-                placeholder="Rua, número — bairro"
+                placeholder="Preenchido ao tocar no mapa"
                 autoComplete="street-address"
-                disabled={pvSaving}
+                readOnly
+                disabled
+                tabIndex={-1}
+                className="disabled:cursor-not-allowed disabled:opacity-80"
               />
             </div>
             <SubregionalSelectField

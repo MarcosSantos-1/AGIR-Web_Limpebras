@@ -22,6 +22,8 @@ type Props = {
   error?: boolean;
   disabled?: boolean;
   className?: string;
+  /** Rótulo do campo (padrão: Subregional). */
+  label?: string;
   /** Asterisco / texto após o rótulo (ex. obrigatório). */
   labelSuffix?: ReactNode;
   /** Excluir opções (ex.: sem &quot;Interno&quot; no mapa). */
@@ -39,6 +41,7 @@ export function SubregionalSelectField({
   error,
   disabled,
   className,
+  label = "Subregional",
   labelSuffix,
   excludeIds,
   hideFooterText,
@@ -50,7 +53,7 @@ export function SubregionalSelectField({
   return (
     <div className={cn("space-y-2 sm:col-span-2", className)}>
       <Label htmlFor={id} className="text-zinc-600 dark:text-zinc-400">
-        Subregional
+        {label}
         {labelSuffix}
       </Label>
       <Select
@@ -66,7 +69,7 @@ export function SubregionalSelectField({
           )}
           size="default"
         >
-          <SelectValue placeholder="Selecione a subregional" />
+          <SelectValue placeholder={`Selecione a ${label.toLowerCase()}`} />
         </SelectTrigger>
         <SelectContent>
           {options.map((s) => (

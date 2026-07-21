@@ -1436,7 +1436,9 @@ function RevitalizacaoDialog({
   const [addingNewPonto, setAddingNewPonto] = React.useState(false);
   const [newPontoCodigo, setNewPontoCodigo] = React.useState("");
   const [newPontoAddress, setNewPontoAddress] = React.useState("");
-  const [newPontoSubprefeitura, setNewPontoSubprefeitura] = React.useState("");
+  const [newPontoSubregionalId, setNewPontoSubregionalId] = React.useState<
+    SubregionalId | ""
+  >("");
   const [newPontoLat, setNewPontoLat] = React.useState<number | null>(null);
   const [newPontoLng, setNewPontoLng] = React.useState<number | null>(null);
   const [newPontoSaving, setNewPontoSaving] = React.useState(false);
@@ -1451,7 +1453,7 @@ function RevitalizacaoDialog({
     setAddingNewPonto(false);
     setNewPontoCodigo("");
     setNewPontoAddress("");
-    setNewPontoSubprefeitura("");
+    setNewPontoSubregionalId("");
     setNewPontoLat(null);
     setNewPontoLng(null);
     setNewPontoError(null);
@@ -1532,6 +1534,10 @@ function RevitalizacaoDialog({
       setNewPontoError("Já existe um ponto com este código.");
       return;
     }
+    if (!newPontoSubregionalId) {
+      setNewPontoError("Selecione a subprefeitura.");
+      return;
+    }
     if (newPontoLat == null || newPontoLng == null) {
       setNewPontoError("Busque ou clique no mapa para definir a localização.");
       return;
@@ -1541,7 +1547,7 @@ function RevitalizacaoDialog({
       await addPontoViciado({
         codigo,
         address: newPontoAddress.trim() || "Sem endereço",
-        subprefeitura: newPontoSubprefeitura.trim(),
+        subprefeitura: subregionalMeta(newPontoSubregionalId).label,
         lat: newPontoLat,
         lng: newPontoLng,
         createdByUid: user?.uid,
@@ -1558,7 +1564,7 @@ function RevitalizacaoDialog({
   }, [
     newPontoCodigo,
     newPontoAddress,
-    newPontoSubprefeitura,
+    newPontoSubregionalId,
     newPontoLat,
     newPontoLng,
     pontosVicioFormOptions,
@@ -2111,19 +2117,23 @@ function RevitalizacaoDialog({
                           onChange={(e) => setNewPontoCodigo(e.target.value)}
                         />
                       </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs text-zinc-600 dark:text-zinc-400">
-                          Subprefeitura
-                        </Label>
-                        <Input
-                          className="h-9 border-zinc-200 text-sm dark:border-zinc-700"
-                          placeholder="Ex.: Capela do Socorro"
-                          value={newPontoSubprefeitura}
-                          onChange={(e) =>
-                            setNewPontoSubprefeitura(e.target.value)
-                          }
-                        />
-                      </div>
+                      <SubregionalSelectField
+                        id="new-ponto-subprefeitura"
+                        label="Subprefeitura"
+                        value={newPontoSubregionalId}
+                        onChange={setNewPontoSubregionalId}
+                        disabled={newPontoSaving}
+                        excludeIds={["interno"]}
+                        hideFooterText
+                        showAbbrevPrefix
+                        labelSuffix={
+                          <>
+                            {" "}
+                            <RequiredStar />
+                          </>
+                        }
+                        className="space-y-1.5 sm:col-span-1 [&_label]:text-xs"
+                      />
                     </div>
                     <div className="space-y-1.5">
                       <Label className="text-xs text-zinc-600 dark:text-zinc-400">
@@ -2165,10 +2175,12 @@ function RevitalizacaoDialog({
                         Endereço
                       </Label>
                       <Input
-                        className="h-9 border-zinc-200 text-sm dark:border-zinc-700"
+                        className="h-9 border-zinc-200 text-sm dark:border-zinc-700 disabled:cursor-not-allowed disabled:opacity-80"
                         placeholder="Preenchido pela busca ou clique no mapa"
                         value={newPontoAddress}
-                        onChange={(e) => setNewPontoAddress(e.target.value)}
+                        readOnly
+                        disabled
+                        tabIndex={-1}
                       />
                     </div>
                     <ModalLocationMiniMap
