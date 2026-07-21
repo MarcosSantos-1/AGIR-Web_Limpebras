@@ -3,7 +3,7 @@
 import { AppShell } from "@/components/layout/app-shell";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
-import { useState, useMemo, useRef, FormEvent } from "react";
+import { useState, useMemo, useRef, useEffect, FormEvent } from "react";
 import Link from "next/link";
 import {
   Plus,
@@ -18,6 +18,8 @@ import {
   Loader2,
   Pencil,
   Users,
+  History,
+  Recycle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +59,7 @@ import {
   allStaticMapMarkerIds,
   type MapDisplayPoint,
   type MapPolygon,
+  type MapaStatus,
 } from "@/lib/map-features";
 import { SubregionalSelectField } from "@/components/forms/subregional-select-field";
 import {
@@ -75,6 +78,10 @@ import type {
 import { formatDateBr, cn } from "@/lib/utils";
 import { SubregionalBadge } from "@/components/subregional-badge";
 import { toast } from "sonner";
+import { useNovaAcao } from "@/components/acao/nova-acao-provider";
+import { subscribeHistoryRecords } from "@/lib/firestore/history";
+import type { HistoryRecordDoc } from "@/data/history-records";
+import { buildPontoViciadoHistoryIndex } from "@/lib/map/ponto-viciado-history";
 
 const OperationalMap = dynamic(
   () =>
@@ -95,44 +102,75 @@ const pointTypes = [
     label: "Ecoponto",
     faClass: "fa-solid fa-recycle",
     color: "bg-zinc-500",
-    textColor: "text-zinc-600",
+    textColor: "text-zinc-600 dark:text-zinc-400",
   },
   {
     id: "servico-acao-ambiental",
     label: "Ação ambiental (realizada)",
     faClass: "fa-solid fa-leaf",
     color: "bg-emerald-600",
-    textColor: "text-emerald-600",
+    textColor: "text-emerald-600 dark:text-emerald-400",
   },
   {
     id: "servico-evento",
     label: "Evento (realizado)",
     faClass: "fa-solid fa-calendar-days",
     color: "bg-violet-600",
-    textColor: "text-violet-600",
+    textColor: "text-violet-600 dark:text-violet-400",
   },
   {
     id: "servico-panfletagem",
     label: "Panfletagem (realizada)",
     faClass: "fa-solid fa-bullhorn",
     color: "bg-blue-600",
-    textColor: "text-blue-600",
+    textColor: "text-blue-600 dark:text-blue-400",
   },
   {
     id: "ponto-viciado",
     label: "Ponto Viciado",
     faClass: "fa-solid fa-trash-can",
     color: "bg-red-500",
-    textColor: "text-red-500",
+    textColor: "text-red-500 dark:text-red-400",
   },
   {
     id: "nucleo-habitacional",
     label: "Núcleo habitacional",
     faClass: "fa-solid fa-house-chimney",
     color: "bg-amber-500",
-    textColor: "text-amber-500",
+    textColor: "text-amber-500 dark:text-amber-400",
   },
 ] as const;
+
+const pvStatusVisual: Record<
+  MapaStatus,
+  { color: string; textColor: string; label: string }
+> = {
+  ativo: {
+    color: "bg-red-500",
+    textColor: "text-red-500 dark:text-red-400",
+    label: "Ponto Viciado",
+  },
+  inativo: {
+    color: "bg-zinc-500",
+    textColor: "text-zinc-500 dark:text-zinc-400",
+    label: "Ponto Viciado (inativo)",
+  },
+  resolvido: {
+    color: "bg-emerald-600",
+    textColor: "text-emerald-600 dark:text-emerald-400",
+    label: "Ponto Viciado (revitalizado)",
+  },
+  "em-andamento": {
+    color: "bg-amber-500",
+    textColor: "text-amber-500 dark:text-amber-400",
+    label: "Ponto Viciado",
+  },
+  recorrente: {
+    color: "bg-red-500",
+    textColor: "text-red-500 dark:text-red-400",
+    label: "Ponto Viciado",
+  },
+};
 
 const DEFAULT_MAP_LAYER_TYPES = [
   "ecoponto",
@@ -163,8 +201,18 @@ function reservedCodigosForPv(
 }
 
 export default function MapaPage() {
+  return (
+    <AppShell title="Mapa Operacional" subtitle="Visualização territorial">
+      <MapaPageContent />
+    </AppShell>
+  );
+}
+
+/** Conteúdo dentro do AppShell — precisa do NovaAcaoProvider para o CTA Revitalização. */
+function MapaPageContent() {
   const { user } = useAuth();
   const { events: agendaEvents } = useAgendaEvents();
+  const { openModal } = useNovaAcao();
   const {
     customPontosViciados,
     customPontoEntries,
@@ -172,6 +220,20 @@ export default function MapaPage() {
     updatePontoViciado,
     deletePontoViciadoByCodigo,
   } = useCustomPontosViciados();
+
+  const [historyRecords, setHistoryRecords] = useState<HistoryRecordDoc[]>([]);
+
+  useEffect(() => {
+    return subscribeHistoryRecords(
+      (list) => setHistoryRecords(list),
+      () => setHistoryRecords([]),
+    );
+  }, []);
+
+  const pvHistoryByCodigo = useMemo(
+    () => buildPontoViciadoHistoryIndex(historyRecords, agendaEvents),
+    [historyRecords, agendaEvents],
+  );
 
   const [selectedTypes, setSelectedTypes] = useState<string[]>([
     ...DEFAULT_MAP_LAYER_TYPES,
@@ -246,6 +308,7 @@ export default function MapaPage() {
         position: p.position,
         recurrent: p.recurrent,
         occurrences: p.occurrences,
+        status: p.status,
       })),
     [filteredMarkers],
   );
@@ -270,8 +333,18 @@ export default function MapaPage() {
     );
   };
 
-  const getTypeConfig = (type: string) => {
-    return pointTypes.find((t) => t.id === type) ?? pointTypes[0];
+  const getTypeConfig = (type: string, status?: MapaStatus) => {
+    const base = pointTypes.find((t) => t.id === type) ?? pointTypes[0];
+    if (type === "ponto-viciado" && status) {
+      const vis = pvStatusVisual[status] ?? pvStatusVisual.ativo;
+      return {
+        ...base,
+        color: vis.color,
+        textColor: vis.textColor,
+        label: vis.label,
+      };
+    }
+    return base;
   };
 
   async function reverseGeocodeAndFill(lat: number, lng: number) {
@@ -514,15 +587,16 @@ export default function MapaPage() {
   };
 
   return (
-    <AppShell title="Mapa Operacional" subtitle="Visualização territorial">
+    <>
       <div className="flex gap-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="relative flex min-h-0 flex-1 flex-col gap-3"
+          className="relative z-0 flex min-h-0 flex-1 flex-col gap-3"
         >
-          <div className="relative min-h-[520px] flex-1 overflow-hidden rounded-3xl bg-zinc-200 shadow-lg dark:bg-zinc-800">
+          {/* isolate: z-index dos overlays fica local e não cobre modais (Dialog z-50+) */}
+          <div className="relative z-0 isolate min-h-[520px] flex-1 overflow-hidden rounded-3xl bg-zinc-200 shadow-lg dark:bg-zinc-800">
             <div className="absolute inset-0 z-0 h-full w-full min-h-[520px]">
               <OperationalMap
                 baseLayer={mapBase}
@@ -538,7 +612,7 @@ export default function MapaPage() {
             </div>
 
             {pickPvLocationMode ? (
-              <div className="pointer-events-none absolute bottom-36 left-1/2 z-[1001] max-w-[min(100vw-3rem,24rem)] -translate-x-1/2">
+              <div className="pointer-events-none absolute bottom-36 left-1/2 z-30 max-w-[min(100vw-3rem,24rem)] -translate-x-1/2">
                 <p className="pointer-events-none rounded-xl border border-[var(--gradient-start)]/40 bg-[var(--gradient-start)]/15 px-4 py-2 text-center text-xs font-medium text-[#7a0867] backdrop-blur-sm dark:border-[var(--gradient-start)]/50 dark:bg-zinc-900/90 dark:text-pink-200">
                   {reverseGeoLoading
                     ? "A obter o endereço (logradouro e bairro)…"
@@ -547,7 +621,7 @@ export default function MapaPage() {
               </div>
             ) : null}
 
-            <div className="pointer-events-none absolute left-4 top-4 z-[1000] flex w-[min(100%-2rem,20rem)] max-w-sm flex-col items-start gap-2">
+            <div className="pointer-events-none absolute left-4 top-4 z-20 flex w-[min(100%-2rem,20rem)] max-w-sm flex-col items-start gap-2">
               <div className="pointer-events-auto w-full space-y-1">
                 <form
                   onSubmit={(e) => void handleAddressSearch(e)}
@@ -627,7 +701,7 @@ export default function MapaPage() {
                   align="start"
                   side="right"
                   sideOffset={8}
-                  className="z-[1100] w-72 space-y-4 border-zinc-200 bg-white p-5 shadow-card dark:border-zinc-800 dark:bg-zinc-900"
+                  className="z-50 w-72 space-y-4 border-zinc-200 bg-white p-5 shadow-card dark:border-zinc-800 dark:bg-zinc-900"
                 >
                   <div className="flex items-center justify-between border-b border-zinc-100 pb-3 dark:border-zinc-800">
                     <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
@@ -683,7 +757,7 @@ export default function MapaPage() {
               </Popover>
             </div>
 
-            <div className="pointer-events-none absolute right-4 top-4 z-[1000] flex flex-col items-end gap-2">
+            <div className="pointer-events-none absolute right-4 top-4 z-20 flex flex-col items-end gap-2">
               <div className="pointer-events-auto rounded-xl bg-white/90 px-4 py-2 shadow-md backdrop-blur-sm dark:bg-zinc-900/90">
                 <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   {visibleCount}
@@ -733,7 +807,7 @@ export default function MapaPage() {
               </div>
             </div>
 
-            <div className="pointer-events-none absolute bottom-4 left-4 z-[1000]">
+            <div className="pointer-events-none absolute bottom-4 left-4 z-20">
               <div className="pointer-events-auto rounded-xl bg-white/90 p-3 shadow-md backdrop-blur-sm dark:bg-zinc-900/90">
                 <p className="mb-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                   LEGENDA
@@ -789,27 +863,39 @@ export default function MapaPage() {
             <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
               <div className="mb-4 flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-xl ${getTypeConfig(selectedItem.type).color}`}
-                  >
-                    <i
-                      className={`${getTypeConfig(selectedItem.type).faClass} text-lg text-white`}
-                      aria-hidden
-                    />
-                  </div>
-                  <div>
-                    <span
-                      className={`text-xs font-medium ${getTypeConfig(selectedItem.type).textColor}`}
-                    >
-                      {getTypeConfig(selectedItem.type).label}
-                    </span>
-                    <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
-                      {selectedItem.title}
-                    </h3>
-                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                      {selectedItem.id}
-                    </p>
-                  </div>
+                  {(() => {
+                    const cfg = getTypeConfig(
+                      selectedItem.type,
+                      "status" in selectedItem
+                        ? selectedItem.status
+                        : undefined,
+                    );
+                    return (
+                      <>
+                        <div
+                          className={`flex h-10 w-10 items-center justify-center rounded-xl ${cfg.color}`}
+                        >
+                          <i
+                            className={`${cfg.faClass} text-lg text-white`}
+                            aria-hidden
+                          />
+                        </div>
+                        <div>
+                          <span
+                            className={`text-xs font-medium ${cfg.textColor}`}
+                          >
+                            {cfg.label}
+                          </span>
+                          <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
+                            {selectedItem.title}
+                          </h3>
+                          <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                            {selectedItem.id}
+                          </p>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
                 <button
                   type="button"
@@ -904,25 +990,72 @@ export default function MapaPage() {
                   )}
               </div>
 
-              {"agendaNumericId" in selectedItem &&
-              selectedItem.agendaNumericId != null &&
-              selectedItem.agendaMonthYm ? (
-                <div className="mt-4 flex justify-center border-t border-zinc-100 pt-4 dark:border-zinc-800">
-                  <Button
-                    asChild
-                    type="button"
-                    className="rounded-xl bg-orange-500 px-8 text-white hover:bg-orange-600"
-                  >
-                    <Link
-                      href={`/historico?ym=${encodeURIComponent(selectedItem.agendaMonthYm)}&agendaId=${selectedItem.agendaNumericId}`}
-                    >
-                      Histórico
-                    </Link>
-                  </Button>
-                </div>
-              ) : null}
+              {(() => {
+                const isPv = selectedItem.type === "ponto-viciado";
+                const pvHist = isPv
+                  ? pvHistoryByCodigo.get(selectedItem.id.toUpperCase())
+                  : undefined;
+                const serviceHist =
+                  "agendaNumericId" in selectedItem &&
+                  selectedItem.agendaNumericId != null &&
+                  selectedItem.agendaMonthYm
+                    ? {
+                        agendaNumericId: selectedItem.agendaNumericId,
+                        agendaMonthYm: selectedItem.agendaMonthYm,
+                      }
+                    : null;
+                const histLink = pvHist ?? serviceHist;
 
-              {selectedItem.recurrent && selectedItem.occurrences > 0 && (
+                if (!histLink && !isPv) return null;
+
+                return (
+                  <div className="mt-4 flex flex-col gap-2 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+                    {histLink ? (
+                      <Button
+                        asChild
+                        type="button"
+                        className="w-full rounded-xl bg-orange-500 text-white hover:bg-orange-600"
+                      >
+                        <Link
+                          href={`/historico?ym=${encodeURIComponent(histLink.agendaMonthYm)}&agendaId=${histLink.agendaNumericId}`}
+                        >
+                          <History className="mr-2 h-4 w-4" />
+                          Histórico
+                        </Link>
+                      </Button>
+                    ) : null}
+                    {isPv ? (
+                      <Button
+                        type="button"
+                        className="w-full rounded-xl bg-accent-gradient text-white shadow-sm"
+                        onClick={() =>
+                          openModal("revitalizacao", {
+                            pontoViciadoId: selectedItem.id,
+                          })
+                        }
+                      >
+                        <Recycle className="mr-2 h-4 w-4" />
+                        Revitalização
+                      </Button>
+                    ) : null}
+                  </div>
+                );
+              })()}
+
+              {selectedItem.type === "ponto-viciado" &&
+              selectedItem.occurrences > 0 ? (
+                <div className="mt-4 rounded-xl bg-red-50 p-3 dark:bg-red-950/40">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-red-500" />
+                    <span className="text-sm font-medium text-red-700 dark:text-red-300">
+                      Limpezas registradas
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                    {selectedItem.occurrences} limpeza(s) no catálogo
+                  </p>
+                </div>
+              ) : selectedItem.recurrent && selectedItem.occurrences > 0 ? (
                 <div className="mt-4 rounded-xl bg-red-50 p-3 dark:bg-red-950/40">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4 text-red-500" />
@@ -934,7 +1067,7 @@ export default function MapaPage() {
                     {selectedItem.occurrences} ocorrência(s) registrada(s)
                   </p>
                 </div>
-              )}
+              ) : null}
 
               {firebasePvDocId &&
               selectedItem.type === "ponto-viciado" &&
@@ -972,7 +1105,7 @@ export default function MapaPage() {
           if (!open) resetPvModal();
         }}
       >
-        <DialogContent className="z-[1200] sm:max-w-md">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
               {editingFirestoreDocId
@@ -1095,6 +1228,6 @@ export default function MapaPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </AppShell>
+    </>
   );
 }

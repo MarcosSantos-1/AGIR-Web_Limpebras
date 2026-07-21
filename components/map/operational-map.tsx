@@ -22,6 +22,8 @@ export type OperationalMapPoint = {
   position: [number, number];
   recurrent: boolean;
   occurrences: number;
+  /** Status do ponto (usado para cor de ponto-viciado). */
+  status?: "ativo" | "inativo" | "resolvido" | "em-andamento" | "recorrente";
 };
 
 const typeHex: Record<string, string> = {
@@ -31,6 +33,14 @@ const typeHex: Record<string, string> = {
   "servico-acao-ambiental": "#059669",
   "servico-evento": "#7c3aed",
   "servico-panfletagem": "#2563eb",
+};
+
+const pvStatusHex: Record<string, string> = {
+  ativo: "#ef4444",
+  inativo: "#71717a",
+  resolvido: "#059669",
+  "em-andamento": "#f59e0b",
+  recorrente: "#ef4444",
 };
 
 /** Font Awesome 6 (solid), branco — requer `@fortawesome/fontawesome-free/css/all.min.css` no layout. */
@@ -53,9 +63,13 @@ function makeDivIcon(
   type: string,
   selected: boolean,
   recurrent: boolean,
-  occurrences: number
+  occurrences: number,
+  status?: OperationalMapPoint["status"],
 ) {
-  const fill = typeHex[type] ?? "#71717a";
+  const fill =
+    type === "ponto-viciado" && status
+      ? (pvStatusHex[status] ?? typeHex[type])
+      : (typeHex[type] ?? "#71717a");
   const size = selected ? 44 : 40;
   const border = "4px solid #ffffff";
   const shadow = "0 10px 15px -3px rgba(0,0,0,0.2)";
@@ -269,13 +283,14 @@ export function OperationalMap({
 
       {points.map((p) => (
         <Marker
-          key={`${p.id}-${selectedId === p.id ? "1" : "0"}`}
+          key={`${p.id}-${selectedId === p.id ? "1" : "0"}-${p.status ?? ""}`}
           position={p.position}
           icon={makeDivIcon(
             p.type,
             selectedId === p.id,
             p.recurrent,
-            p.occurrences
+            p.occurrences,
+            p.status,
           )}
           eventHandlers={{
             click: () => onSelectId(p.id),

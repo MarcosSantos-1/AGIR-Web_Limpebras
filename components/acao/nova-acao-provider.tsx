@@ -114,9 +114,14 @@ function scrollModalFormToTop(container: HTMLDivElement | null) {
 
 export type NovaAcaoTipo = "acao-visita" | "revitalizacao";
 
+export type OpenModalOpts = {
+  /** Pré-seleciona o ponto no formulário de revitalização. */
+  pontoViciadoId?: string;
+};
+
 export type NovaAcaoUIMode =
   | { kind: "none" }
-  | { kind: "nova"; tipo: NovaAcaoTipo }
+  | { kind: "nova"; tipo: NovaAcaoTipo; pontoViciadoId?: string }
   | {
       kind: "edit";
       id: number;
@@ -130,7 +135,7 @@ type NovaAcaoContextValue = {
   mode: NovaAcaoUIMode;
   /** só criação — compatível com telas antigas */
   open: NovaAcaoTipo | null;
-  openModal: (t: NovaAcaoTipo) => void;
+  openModal: (t: NovaAcaoTipo, opts?: OpenModalOpts) => void;
   /** Abre o mesmo formulário Nova Ação / Revitalização com dados já salvos no Firestore. */
   openAgendaEventForEdit: (
     id: number,
@@ -1408,11 +1413,14 @@ function RevitalizacaoDialog({
   onOpenChange,
   initialEvent,
   preferFinalizado,
+  preferredPontoViciadoId,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   initialEvent: AgendaEvent | null;
   preferFinalizado?: boolean;
+  /** Pré-seleção ao abrir em modo "nova" (ex.: sidebar do mapa). */
+  preferredPontoViciadoId?: string;
 }) {
   const { pontosVicioFormOptions, addPontoViciado } = useCustomPontosViciados();
   const [situacaoRev, setSituacaoRev] = React.useState<
@@ -1580,7 +1588,7 @@ function RevitalizacaoDialog({
     if (!open) return;
     if (!initialEvent) {
       setSituacaoRev("agendar");
-      setPontoViciadoId("");
+      setPontoViciadoId(preferredPontoViciadoId?.trim() ?? "");
       setPvComboOpen(false);
       setPvSearch("");
       setRevFotoUrls((prev) => {
@@ -1667,7 +1675,7 @@ function RevitalizacaoDialog({
     const un = typeof p === "number" ? String(p) : "";
     setUnidadesPanfletos(un);
     setPanfletagemRealizada(!!un && Number.parseFloat(un) > 0);
-  }, [open, initialEvent?.id, preferFinalizado]);
+  }, [open, initialEvent?.id, preferFinalizado, preferredPontoViciadoId]);
 
   React.useEffect(() => {
     if (pontoViciadoId) setPontoErro(false);
@@ -2520,6 +2528,11 @@ function NovaAcaoModals({
   const openAsFinalizado =
     ui.kind === "edit" && !!ui.openAsFinalizado;
 
+  const preferredPontoViciadoId =
+    ui.kind === "nova" && ui.tipo === "revitalizacao"
+      ? ui.pontoViciadoId
+      : undefined;
+
   return (
     <>
       <AcaoVisitaDialog
@@ -2537,6 +2550,7 @@ function NovaAcaoModals({
         }}
         initialEvent={initialRev}
         preferFinalizado={openAsFinalizado}
+        preferredPontoViciadoId={preferredPontoViciadoId}
       />
     </>
   );
@@ -2551,7 +2565,14 @@ export function NovaAcaoProvider({ children }: { children: React.ReactNode }) {
     () => ({
       mode: ui,
       open: legacyOpen,
-      openModal: (t) => setUi({ kind: "nova", tipo: t }),
+      openModal: (t, opts) =>
+        setUi({
+          kind: "nova",
+          tipo: t,
+          ...(opts?.pontoViciadoId
+            ? { pontoViciadoId: opts.pontoViciadoId }
+            : {}),
+        }),
       openAgendaEventForEdit: (id, opts) =>
         setUi({
           kind: "edit",

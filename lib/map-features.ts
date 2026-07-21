@@ -32,6 +32,12 @@ export type MapDisplayPoint = {
   /** Só preenchido em ponto viciado — para o formulário de revitalização. */
   subprefeitura?: string;
   subregional?: SubregionalId;
+  /** Catálogo PV: nº de limpezas (Excel). */
+  limpezas?: number;
+  /** Catálogo PV: frequência de limpeza. */
+  frequencia?: string;
+  /** Catálogo PV: data ISO da última revitalização (Excel). */
+  ultimaRevitalizacao?: string | null;
   /** Serviços (agenda concluída): equipa no terreno. */
   integrantes?: string[];
   /** Serviços: data/hora formatada (pt-BR). */
@@ -78,6 +84,9 @@ type PvFeature = {
   date?: string;
   volumetria?: string;
   subprefeitura?: string;
+  limpezas?: number;
+  frequencia?: string;
+  ultimaRevitalizacao?: string | null;
 };
 
 type NhFeature = {
@@ -151,8 +160,15 @@ function codigoNucleo(f: NhFeature, seen: Set<string>): string {
 function pvToStatus(f: PvFeature): MapaStatus {
   const s = (f.status ?? f.date ?? "").toString().toLowerCase();
   if (s.includes("inativ")) return "inativo";
-  if (s.includes("resol")) return "resolvido";
+  if (s.includes("revital") || s.includes("resol")) return "resolvido";
   return "ativo";
+}
+
+function statusLabelPt(status: MapaStatus, raw?: string): string {
+  if (raw?.trim()) return raw.trim();
+  if (status === "inativo") return "Inativo";
+  if (status === "resolvido") return "Revitalizado";
+  return "Ativo";
 }
 
 function buildPoints(): { markers: MapDisplayPoint[]; polygons: MapPolygon[] } {
@@ -197,6 +213,16 @@ function buildPoints(): { markers: MapDisplayPoint[]; polygons: MapPolygon[] } {
       const codigo = codigoPontoViciado(f, markerIdSeen);
       const setorU = f.setor?.trim();
       const sp = f.subprefeitura?.trim();
+      const limpezas =
+        typeof f.limpezas === "number" && Number.isFinite(f.limpezas)
+          ? f.limpezas
+          : undefined;
+      const frequencia = f.frequencia?.trim() || undefined;
+      const ultima =
+        typeof f.ultimaRevitalizacao === "string" &&
+        f.ultimaRevitalizacao.trim()
+          ? f.ultimaRevitalizacao.trim().slice(0, 10)
+          : null;
       return {
         id: codigo,
         type: "ponto-viciado" as const,
@@ -208,16 +234,28 @@ function buildPoints(): { markers: MapDisplayPoint[]; polygons: MapPolygon[] } {
             : codigo,
         address: address || "Endereço não informado",
         status: st,
-        lastAction: null,
+        lastAction: ultima,
         responsible: null,
-        recurrent: false,
-        occurrences: 0,
+        recurrent: (limpezas ?? 0) > 1,
+        occurrences: limpezas ?? 0,
         subprefeitura: sp,
+        limpezas,
+        frequencia,
+        ultimaRevitalizacao: ultima,
         detailLines: [
           ...(f.volumetria
             ? [{ label: "Volumetria", value: f.volumetria }]
             : []),
-          ...(f.status ? [{ label: "Status", value: f.status }] : []),
+          {
+            label: "Status",
+            value: statusLabelPt(st, f.status),
+          },
+          ...(limpezas != null
+            ? [{ label: "Nº de limpezas", value: String(limpezas) }]
+            : []),
+          ...(frequencia
+            ? [{ label: "Frequência", value: frequencia }]
+            : []),
         ],
       };
     }),
