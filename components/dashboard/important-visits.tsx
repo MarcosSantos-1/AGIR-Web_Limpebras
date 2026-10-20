@@ -49,7 +49,7 @@ export function ImportantVisits() {
                 view: "list",
               })}
               scroll={false}
-              className="block rounded-2xl border border-zinc-100 p-4 transition-all hover:border-[var(--gradient-start)]/20 hover:shadow-md"
+              className="block rounded-2xl border border-zinc-100 bg-zinc-50/60 p-4 transition-all hover:border-[var(--gradient-start)]/20 hover:bg-white hover:shadow-md dark:border-zinc-800 dark:bg-zinc-800/50 dark:hover:bg-zinc-800"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">

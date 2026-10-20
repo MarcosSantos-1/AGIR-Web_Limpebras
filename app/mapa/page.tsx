@@ -41,7 +41,6 @@ import {
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -394,6 +393,13 @@ function MapaPageContent() {
   const [pvSaving, setPvSaving] = useState(false);
   const [pvDeleteOpen, setPvDeleteOpen] = useState(false);
   const [pvDeleting, setPvDeleting] = useState(false);
+  const [pvGeoUpdating, setPvGeoUpdating] = useState(false);
+  const [pvPreviousPosition, setPvPreviousPosition] = useState<
+    [number, number] | null
+  >(null);
+  const [pvHoldRatio, setPvHoldRatio] = useState(0);
+  const pvHoldStart = useRef<number | null>(null);
+  const pvHoldFrame = useRef<number | null>(null);
   const [pvSubregionalErro, setPvSubregionalErro] = useState(false);
 
   const mergedMarkers = useMemo(
@@ -543,6 +549,7 @@ function MapaPageContent() {
     setAddPvGeocodedLocation("");
     setAddPvSubregionalId("");
     setAddPvPosition(null);
+    setPvPreviousPosition(null);
     setPickPvLocationMode(false);
     setPvSaving(false);
     setReverseGeoLoading(false);
@@ -620,6 +627,12 @@ function MapaPageContent() {
       customPontoEntries,
       editingFirestoreDocId,
     );
+    if (editingFirestoreDocId) {
+      const own = customPontoEntries.find(
+        (e) => e.firestoreDocId === editingFirestoreDocId,
+      );
+      if (own) reserved.delete(own.point.id);
+    }
     const preferred = addPvCodigo.trim();
     if (!preferred) {
       toast.error("Indique o código do ponto.");
@@ -676,6 +689,81 @@ function MapaPageContent() {
     }
   };
 
+  const stopPvHold = () => {
+    if (pvHoldFrame.current != null) {
+      cancelAnimationFrame(pvHoldFrame.current);
+      pvHoldFrame.current = null;
+    }
+    pvHoldStart.current = null;
+    setPvHoldRatio(0);
+  };
+
+  const tickPvHold = (now: number) => {
+    if (pvHoldStart.current == null) return;
+    const ratio = Math.min(1, (now - pvHoldStart.current) / 5000);
+    setPvHoldRatio(ratio);
+    if (ratio >= 1) {
+      stopPvHold();
+      void confirmDeletePvFirebase();
+      return;
+    }
+    pvHoldFrame.current = requestAnimationFrame(tickPvHold);
+  };
+
+  const startPvHold = () => {
+    if (pvDeleting || pvHoldStart.current != null) return;
+    pvHoldStart.current = performance.now();
+    pvHoldFrame.current = requestAnimationFrame(tickPvHold);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (pvHoldFrame.current != null) {
+        cancelAnimationFrame(pvHoldFrame.current);
+      }
+    };
+  }, []);
+
+  const refreshPvCoordinates = async () => {
+    const addr = addPvEndereco.trim();
+    if (!addr) {
+      toast.error("Preencha o endereço com o número antes de atualizar.");
+      return;
+    }
+    setPvGeoUpdating(true);
+    try {
+      const res = await fetch("/api/geocode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: addr }),
+      });
+      const data: unknown = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const payload = data as { error?: string };
+        toast.error(
+          typeof payload.error === "string" && payload.error.trim()
+            ? payload.error
+            : "Não foi possível localizar esse endereço.",
+        );
+        return;
+      }
+      const payload = data as { results?: GeocodeHit[] };
+      const hit = payload.results?.[0];
+      if (!hit) {
+        toast.warning("Nenhuma coordenada encontrada para esse endereço.");
+        return;
+      }
+      const previous = addPvPosition;
+      setPvPreviousPosition(previous);
+      setAddPvPosition([hit.lat, hit.lng]);
+      setAddPvGeocodedLocation(hit.formatted_address);
+      toast.success("Coordenadas atualizadas a partir do endereço.");
+    } catch {
+      toast.error("Falha ao atualizar as coordenadas.");
+    } finally {
+      setPvGeoUpdating(false);
+    }
+  };
   const confirmDeletePvFirebase = async () => {
     if (!selectedId || !firebasePvDocId) return;
     setPvDeleting(true);
@@ -1513,19 +1601,50 @@ function MapaPageContent() {
               </p>
             </div>
             {addPvGeocodedLocation || addPvPosition ? (
-              <div className="flex items-start gap-2.5 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-800/50">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[var(--gradient-accent)]" />
-                <div className="min-w-0 space-y-0.5">
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                    Localização
-                  </p>
-                  <p className="text-sm text-zinc-700 dark:text-zinc-200">
-                    {addPvGeocodedLocation ||
-                      (addPvPosition
-                        ? `${addPvPosition[0].toFixed(5)}, ${addPvPosition[1].toFixed(5)}`
-                        : "—")}
-                  </p>
+              <div className="space-y-3 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 dark:border-zinc-700 dark:bg-zinc-800/50">
+                <div className="flex items-start gap-2.5">
+                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[var(--gradient-accent)]" />
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                      Localização
+                    </p>
+                    {addPvGeocodedLocation ? (
+                      <p className="text-sm text-zinc-800 dark:text-zinc-100">
+                        {addPvGeocodedLocation}
+                      </p>
+                    ) : null}
+                    {pvPreviousPosition ? (
+                      <p className="text-sm text-red-600 line-through decoration-red-500/80 dark:text-red-400">
+                        {pvPreviousPosition[0].toFixed(6)},{" "}
+                        {pvPreviousPosition[1].toFixed(6)}
+                      </p>
+                    ) : null}
+                    {addPvPosition ? (
+                      <p
+                        className={
+                          pvPreviousPosition
+                            ? "text-sm font-semibold text-emerald-700 dark:text-emerald-400"
+                            : "text-sm text-zinc-700 dark:text-zinc-200"
+                        }
+                      >
+                        {addPvPosition[0].toFixed(6)},{" "}
+                        {addPvPosition[1].toFixed(6)}
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
+                <Button
+                  type="button"
+                  className="h-10 w-full rounded-lg bg-accent-gradient text-white shadow-md shadow-[var(--gradient-start)]/25 transition hover:opacity-90 hover:shadow-lg hover:shadow-[var(--gradient-start)]/35"
+                  disabled={pvSaving || pvGeoUpdating}
+                  onClick={() => void refreshPvCoordinates()}
+                >
+                  {pvGeoUpdating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Atualizar coordenadas"
+                  )}
+                </Button>
               </div>
             ) : (
               <p className="text-xs text-amber-800 dark:text-amber-300">
@@ -1580,31 +1699,46 @@ function MapaPageContent() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={pvDeleteOpen} onOpenChange={setPvDeleteOpen}>
+      <AlertDialog
+        open={pvDeleteOpen}
+        onOpenChange={(open) => {
+          setPvDeleteOpen(open);
+          if (!open) stopPvHold();
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir ponto viciado?</AlertDialogTitle>
             <AlertDialogDescription>
-              «{selectedId}» será removido da nuvem para toda a equipe. Esta
-              ação não pode ser desfeita.
+              «{selectedId}» será removido da nuvem para toda a equipe. Apagar
+              é irreversível: o ponto não volta depois de excluído.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={pvDeleting}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-red-600 hover:bg-red-600/90"
+            <AlertDialogCancel disabled={pvDeleting} onClick={stopPvHold}>
+              Cancelar
+            </AlertDialogCancel>
+            <button
+              type="button"
               disabled={pvDeleting}
-              onClick={(e) => {
-                e.preventDefault();
-                void confirmDeletePvFirebase();
-              }}
+              onPointerDown={startPvHold}
+              onPointerUp={stopPvHold}
+              onPointerLeave={stopPvHold}
+              onPointerCancel={stopPvHold}
+              className="relative inline-flex h-9 min-w-44 touch-none items-center justify-center overflow-hidden rounded-md bg-red-700 px-4 text-sm font-medium text-white select-none disabled:opacity-60"
             >
-              {pvDeleting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Excluir"
-              )}
-            </AlertDialogAction>
+              <span
+                className="absolute inset-y-0 left-0 bg-red-500"
+                style={{ width: `${pvHoldRatio * 100}%` }}
+              />
+              <span className="relative">
+                {pvDeleting
+                  ? "Excluindo…"
+                  : pvHoldRatio > 0
+                    ? "Segure para excluir…"
+                    : "Segure 5 segundos"}
+              </span>
+            </button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

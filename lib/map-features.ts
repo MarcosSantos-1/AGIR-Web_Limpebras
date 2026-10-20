@@ -333,23 +333,37 @@ export function allStaticMapMarkerIds(): Set<string> {
 }
 
 /**
- * Catálogo oficial ganha do ponto criado no app quando o código é o mesmo
- * (o cadastro da planilha traz volumetria, frequência e limpezas).
+ * Catálogo oficial traz volumetria e frequência. Se o mesmo código foi
+ * editado no app, posição e endereço gravados substituem os da planilha.
  * Pontos só do app continuam no mapa.
  */
 export function mergeMapMarkers(
   custom: MapDisplayPoint[],
   base: MapDisplayPoint[],
 ): MapDisplayPoint[] {
-  const officialIds = new Set(base.map((m) => m.id));
+  const customById = new Map(custom.map((m) => [m.id, m]));
   const seen = new Set<string>();
   const out: MapDisplayPoint[] = [];
   for (const m of base) {
+    const override = customById.get(m.id);
+    if (
+      override &&
+      m.type === "ponto-viciado" &&
+      override.type === "ponto-viciado"
+    ) {
+      out.push({
+        ...m,
+        position: override.position,
+        address: override.address.trim() || m.address,
+        subprefeitura: override.subprefeitura || m.subprefeitura,
+      });
+    } else {
+      out.push(m);
+    }
     seen.add(m.id);
-    out.push(m);
   }
   for (const m of custom) {
-    if (seen.has(m.id) || officialIds.has(m.id)) continue;
+    if (seen.has(m.id)) continue;
     seen.add(m.id);
     out.push(m);
   }
@@ -377,8 +391,17 @@ export function mergePontosVicioFormOptions(
       subprefeitura: m.subprefeitura ?? "",
     }));
   const officialIds = new Set(MAPA_PONTOS_VICIO_FORM.map((f) => f.id));
+  const customById = new Map(custom.map((c) => [c.id, c]));
   return [
-    ...MAPA_PONTOS_VICIO_FORM,
+    ...MAPA_PONTOS_VICIO_FORM.map((f) => {
+      const override = customById.get(f.id);
+      if (!override) return f;
+      return {
+        ...f,
+        address: override.address.trim() || f.address,
+        subprefeitura: override.subprefeitura || f.subprefeitura,
+      };
+    }),
     ...custom.filter((c) => !officialIds.has(c.id)),
   ];
 }
