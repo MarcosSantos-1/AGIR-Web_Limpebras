@@ -11,7 +11,7 @@
     "start": "next start",
     "lint": "eslint .",
     "seed:firestore": "tsx scripts/seed-firestore.ts",
-    "import:pontos-viciados": "tsx scripts/import-pontos-viciados-xlsx.ts"
+    "import:pontos-viciados": "py -3 scripts/import-pontos-viciados-xlsb.py"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1044.0",

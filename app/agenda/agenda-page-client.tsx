@@ -60,6 +60,7 @@ import { DatePickerField } from "@/components/forms/date-picker-field";
 import { serviceTypeColor } from "@/lib/constants/service-type-colors";
 import { SubregionalBadge } from "@/components/subregional-badge";
 import { getTodayIsoInTimeZone } from "@/lib/date/week";
+import { calendarMonthFirestoreRange } from "@/lib/date/agenda-view-range";
 import { deleteHistoryRecord } from "@/lib/firestore/history";
 
 const eventTypes = [
@@ -111,14 +112,50 @@ function AgendaPageContent() {
   const { getEvent, updateEvent, deleteEvent } = useAgendaEvents();
   const { posts: socialPosts } = useSocialPosts();
 
+  const monthBounds = useMemo(
+    () => calendarMonthFirestoreRange(selectedDate),
+    [selectedDate],
+  );
+
+  const visibleSocialPosts = useMemo(() => {
+    return socialPosts.filter((p) => {
+      if (p.status !== "agendado" && p.status !== "publicado") return false;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(p.date)) return false;
+      if (p.date < monthBounds.startIso || p.date > monthBounds.endIso) {
+        return false;
+      }
+      if (selectedType !== "all") return false;
+      if (viewMode === "list") {
+        if (listStatusFilter === "pendente" && p.status !== "agendado") {
+          return false;
+        }
+        if (listStatusFilter === "concluido" && p.status !== "publicado") {
+          return false;
+        }
+        if (
+          listStatusFilter === "reagendado" ||
+          listStatusFilter === "cancelado"
+        ) {
+          return false;
+        }
+        if (listDateFilter && p.date !== listDateFilter) return false;
+      }
+      return true;
+    });
+  }, [
+    socialPosts,
+    monthBounds.startIso,
+    monthBounds.endIso,
+    selectedType,
+    viewMode,
+    listStatusFilter,
+    listDateFilter,
+  ]);
+
   const socialItemsForDate = useCallback(
     (dateStr: string): SocialAgendaItem[] => {
-      return socialPosts
-        .filter(
-          (p) =>
-            p.date === dateStr &&
-            (p.status === "agendado" || p.status === "publicado"),
-        )
+      return visibleSocialPosts
+        .filter((p) => p.date === dateStr)
         .map((p) => ({
           kind: "social" as const,
           id: p.id,
@@ -128,7 +165,7 @@ function AgendaPageContent() {
           status: p.status,
         }));
     },
-    [socialPosts],
+    [visibleSocialPosts],
   );
 
   const { openAgendaEventForEdit } = useNovaAcao();
@@ -172,13 +209,41 @@ function AgendaPageContent() {
   );
 
   const [displayEvents, setDisplayEvents] = useState<AgendaEvent[]>([]);
+  const [highlightSettled, setHighlightSettled] = useState(false);
 
   useEffect(() => {
-    void mergeAgendaHighlightIfNeeded(
-      viewportEvents,
-      highlightId,
-    ).then(setDisplayEvents);
+    let cancelled = false;
+    if (!highlightId) {
+      setDisplayEvents(viewportEvents);
+      setHighlightSettled(true);
+      return;
+    }
+    const already = viewportEvents.some((e) => String(e.id) === highlightId);
+    if (already) {
+      setDisplayEvents(viewportEvents);
+      setHighlightSettled(true);
+      return;
+    }
+    setHighlightSettled(false);
+    void mergeAgendaHighlightIfNeeded(viewportEvents, highlightId).then(
+      (list) => {
+        if (cancelled) return;
+        setDisplayEvents(list);
+        setHighlightSettled(true);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
   }, [viewportEvents, highlightId]);
+
+  const clearHighlight = useCallback(() => {
+    if (!searchParams.get("event")) return;
+    const p = new URLSearchParams(searchParams.toString());
+    p.delete("event");
+    const qs = p.toString();
+    router.replace(qs ? `/agenda?${qs}` : "/agenda");
+  }, [router, searchParams]);
 
   const scrollToEventCard = useCallback((id: string) => {
     const el = document.getElementById(`agenda-event-${id}`);
@@ -273,6 +338,9 @@ function AgendaPageContent() {
   });
 
   const listFilteredEvents = useMemo(() => {
+    if (highlightId) {
+      return displayEvents.filter((e) => String(e.id) === highlightId);
+    }
     return displayEvents
       .filter(
         (e) => selectedType === "all" || e.type === selectedType
@@ -285,7 +353,7 @@ function AgendaPageContent() {
         (a, b) =>
           a.date.localeCompare(b.date) || a.time.localeCompare(b.time)
       );
-  }, [displayEvents, selectedType, listStatusFilter, listDateFilter]);
+  }, [displayEvents, selectedType, listStatusFilter, listDateFilter, highlightId]);
 
   const getEventsForDate = useCallback(
     (date: Date) => {
@@ -318,7 +386,10 @@ function AgendaPageContent() {
         <Button
           variant={viewMode === "week" ? "default" : "outline"}
           size="sm"
-          onClick={() => setViewMode("week")}
+          onClick={() => {
+            setViewMode("week");
+            clearHighlight();
+          }}
           className={
             viewMode === "week"
               ? "rounded-xl bg-accent-gradient text-white"
@@ -331,7 +402,10 @@ function AgendaPageContent() {
         <Button
           variant={viewMode === "month" ? "default" : "outline"}
           size="sm"
-          onClick={() => setViewMode("month")}
+          onClick={() => {
+            setViewMode("month");
+            clearHighlight();
+          }}
           className={
             viewMode === "month"
               ? "rounded-xl bg-accent-gradient text-white"
@@ -344,7 +418,10 @@ function AgendaPageContent() {
         <Button
           variant={viewMode === "list" ? "default" : "outline"}
           size="sm"
-          onClick={() => setViewMode("list")}
+          onClick={() => {
+            setViewMode("list");
+            clearHighlight();
+          }}
           className={
             viewMode === "list"
               ? "rounded-xl bg-accent-gradient text-white"
@@ -360,7 +437,10 @@ function AgendaPageContent() {
         {eventTypes.map((type) => (
           <button
             key={type.id}
-            onClick={() => setSelectedType(type.id)}
+            onClick={() => {
+              setSelectedType(type.id);
+              clearHighlight();
+            }}
             className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all ${
               selectedType === type.id
                 ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
@@ -773,9 +853,10 @@ function AgendaPageContent() {
             </span>
             <Select
               value={listStatusFilter}
-              onValueChange={(v) =>
-                setListStatusFilter(v as "all" | AgendaEventStatus)
-              }
+              onValueChange={(v) => {
+                setListStatusFilter(v as "all" | AgendaEventStatus);
+                clearHighlight();
+              }}
             >
               <SelectTrigger className="h-10 w-full rounded-xl border-zinc-200 bg-zinc-50 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
                 <SelectValue placeholder="Status" />
@@ -798,10 +879,22 @@ function AgendaPageContent() {
               <div className="min-w-[200px]">
                 <DatePickerField
                   value={listDateFilter}
-                  onChange={setListDateFilter}
+                  onChange={(value) => {
+                    setListDateFilter(value);
+                    clearHighlight();
+                  }}
                   placeholder="Todas as datas"
                 />
               </div>
+              {highlightId ? (
+                <Button
+                  type="button"
+                  className="h-10 rounded-xl bg-accent-gradient px-4 text-white shadow-md"
+                  onClick={clearHighlight}
+                >
+                  Apagar filtro
+                </Button>
+              ) : null}
               {listDateFilter && (
                 <Button
                   type="button"
@@ -818,29 +911,30 @@ function AgendaPageContent() {
         </div>
       )}
 
+      {viewMode === "list" && highlightId && !highlightSettled ? (
+        <div className="flex items-center justify-center gap-3 rounded-2xl border border-zinc-100 bg-white py-16 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
+          <Loader2 className="h-5 w-5 animate-spin text-[var(--gradient-accent)]" />
+          <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
+            Buscando item…
+          </p>
+        </div>
+      ) : null}
+
       {/* List View */}
-      {viewMode === "list" && (
+      {viewMode === "list" && (highlightSettled || !highlightId) && (
         <div className="space-y-4">
           {listFilteredEvents.length === 0 &&
-            socialPosts.filter(
-              (p) =>
-                (p.status === "agendado" || p.status === "publicado") &&
-                p.date !== "—" &&
-                (!listDateFilter || p.date === listDateFilter),
-            ).length === 0 && (
+            (highlightId || visibleSocialPosts.length === 0) && (
               <p className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
-                Nenhum evento com os filtros atuais.
+                {highlightId
+                  ? "Não encontramos esse item."
+                  : "Nenhum evento com os filtros atuais."}
               </p>
             )}
 
-          {/* Social content cards */}
-          {socialPosts
-            .filter(
-              (p) =>
-                (p.status === "agendado" || p.status === "publicado") &&
-                p.date !== "—" &&
-                (!listDateFilter || p.date === listDateFilter),
-            )
+          {!highlightId
+            ? visibleSocialPosts
+            .slice()
             .sort((a, b) => a.date.localeCompare(b.date))
             .map((sp, index) => (
               <motion.div
@@ -879,7 +973,8 @@ function AgendaPageContent() {
                   </div>
                 </div>
               </motion.div>
-            ))}
+            ))
+            : null}
           {listFilteredEvents.map((event, index) => {
               const typeConfig = getTypeConfig(event.type);
               const statusConfig = getStatusConfig(event.status);

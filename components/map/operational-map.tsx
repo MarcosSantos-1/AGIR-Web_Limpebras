@@ -22,8 +22,10 @@ export type OperationalMapPoint = {
   position: [number, number];
   recurrent: boolean;
   occurrences: number;
-  /** Status do ponto (usado para cor de ponto-viciado). */
+  /** Status do ponto (legado; a cor do pin usa `color` quando definida). */
   status?: "ativo" | "inativo" | "resolvido" | "em-andamento" | "recorrente";
+  /** Cor do pin já calculada (faixa de ponto viciado). */
+  color?: string;
 };
 
 const typeHex: Record<string, string> = {
@@ -65,21 +67,24 @@ function makeDivIcon(
   recurrent: boolean,
   occurrences: number,
   status?: OperationalMapPoint["status"],
+  color?: string,
+  pulse?: boolean,
 ) {
   const fill =
-    type === "ponto-viciado" && status
+    color ??
+    (type === "ponto-viciado" && status
       ? (pvStatusHex[status] ?? typeHex[type])
-      : (typeHex[type] ?? "#71717a");
+      : (typeHex[type] ?? "#71717a"));
   const size = selected ? 44 : 40;
   const border = "4px solid #ffffff";
   const shadow = "0 10px 15px -3px rgba(0,0,0,0.2)";
-  const scale = selected ? "scale(1.08)" : "scale(1)";
+  const scale = pulse ? "scale(1.12)" : selected ? "scale(1.08)" : "scale(1)";
   const faClass = mapTypeToFaClass[type];
   const fontPx = Math.round(size * 0.4);
   const innerGlyph = faClass ? faGlyphInner(faClass, fontPx) : "";
 
   const badge =
-    recurrent && occurrences > 0
+    type !== "ponto-viciado" && recurrent && occurrences > 0
       ? `<span style="position:absolute;right:-4px;top:-4px;min-width:1.25rem;height:1.25rem;padding:0 4px;border-radius:9999px;background:#ef4444;color:#fff;font-size:10px;font-weight:700;font-family:system-ui;line-height:1.25rem;text-align:center;border:2px solid #fff">${
           occurrences > 9 ? "9+" : occurrences
         }</span>`
@@ -87,7 +92,7 @@ function makeDivIcon(
 
   return L.divIcon({
     className: "agir-map-marker",
-    html: `<div style="position:relative;width:${size}px;height:${size}px;transform:translate(-50%,-50%) ${scale}">
+    html: `<div class="${pulse ? "agir-pin-pulse" : ""}" style="position:relative;width:${size}px;height:${size}px;transform:translate(-50%,-50%) ${scale}">
       <div style="position:relative;width:100%;height:100%">
         <div style="width:100%;height:100%;border-radius:9999px;background:${fill};border:${border};box-shadow:${shadow}"></div>
         ${innerGlyph}
@@ -99,12 +104,12 @@ function makeDivIcon(
   });
 }
 
-const cartoAttribution =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
 const esriAttribution =
   "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community";
+const osmAttribution =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 
-type BaseLayer = "carto" | "satellite";
+export type MapBaseLayer = "osm" | "satellite";
 
 export type OperationalMapFlyTo = {
   lat: number;
@@ -119,8 +124,10 @@ type OperationalMapProps = {
   polygons: MapPolygon[];
   selectedId: string | null;
   onSelectId: (id: string) => void;
-  /** Padrão: CartoDB Positron. */
-  baseLayer?: BaseLayer;
+  /** Pin que pulsa depois de uma busca (ex.: ponto viciado escolhido). */
+  pulseId?: string | null;
+  /** Padrão: OpenStreetMap. */
+  baseLayer?: MapBaseLayer;
   /** Centro animado (ex.: resultado de geocoding). */
   flyTo?: OperationalMapFlyTo | null;
   /** Marcador do último endereço pesquisado (geocoding). */
@@ -210,7 +217,8 @@ export function OperationalMap({
   polygons,
   selectedId,
   onSelectId,
-  baseLayer = "carto",
+  pulseId = null,
+  baseLayer = "osm",
   flyTo = null,
   searchResultMarker = null,
   placementMode = false,
@@ -221,10 +229,10 @@ export function OperationalMap({
       center={defaultMapView.center}
       zoom={defaultMapView.zoom}
       className={cn(
-        "z-0 h-full min-h-[520px] w-full",
+        "z-0 h-full min-h-[640px] w-full",
         placementMode && "cursor-crosshair",
       )}
-      style={{ minHeight: 520 }}
+      style={{ minHeight: 640 }}
       scrollWheelZoom
       zoomControl={false}
     >
@@ -234,14 +242,7 @@ export function OperationalMap({
         active={placementMode && !!onPlacementClick}
         onPick={(lat, lng) => onPlacementClick?.(lat, lng)}
       />
-      {baseLayer === "carto" ? (
-        <TileLayer
-          attribution={cartoAttribution}
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-          subdomains="abcd"
-          maxZoom={20}
-        />
-      ) : (
+      {baseLayer === "satellite" ? (
         <LayerGroup>
           <TileLayer
             attribution={esriAttribution}
@@ -259,6 +260,13 @@ export function OperationalMap({
             maxZoom={20}
           />
         </LayerGroup>
+      ) : (
+        <TileLayer
+          attribution={osmAttribution}
+          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maxZoom={20}
+          maxNativeZoom={19}
+        />
       )}
 
       {polygons.map((poly) => {
@@ -283,7 +291,7 @@ export function OperationalMap({
 
       {points.map((p) => (
         <Marker
-          key={`${p.id}-${selectedId === p.id ? "1" : "0"}-${p.status ?? ""}`}
+          key={`${p.id}-${selectedId === p.id ? "1" : "0"}-${pulseId === p.id ? "p" : "0"}-${p.color ?? p.status ?? ""}`}
           position={p.position}
           icon={makeDivIcon(
             p.type,
@@ -291,11 +299,13 @@ export function OperationalMap({
             p.recurrent,
             p.occurrences,
             p.status,
+            p.color,
+            pulseId === p.id,
           )}
           eventHandlers={{
             click: () => onSelectId(p.id),
           }}
-          zIndexOffset={selectedId === p.id ? 1000 : 0}
+          zIndexOffset={pulseId === p.id ? 2000 : selectedId === p.id ? 1000 : 0}
           interactive={!placementMode}
         />
       ))}

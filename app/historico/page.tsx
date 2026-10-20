@@ -3,8 +3,8 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { EvidenceMediaThumb } from "@/components/evidence/evidence-media-thumb";
 import { motion } from "framer-motion";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState, type MouseEvent } from "react";
-import { useSearchParams } from "next/navigation";
 import {
   Search,
   Calendar,
@@ -20,6 +20,8 @@ import {
   Users,
   Pencil,
   Trash2,
+  Megaphone,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -90,6 +92,7 @@ export default function HistoricoPage() {
 }
 
 function HistoricoPageBody() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [monthYm, setMonthYm] = useState(() => {
     const d = new Date();
@@ -99,9 +102,6 @@ function HistoricoPageBody() {
   const [selectedType, setSelectedType] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [expandedRecord, setExpandedRecord] = useState<number | null>(null);
-  const [pendingAgendaExpand, setPendingAgendaExpand] = useState<number | null>(
-    null,
-  );
   const [records, setRecords] = useState<HistoryRecordDoc[]>([]);
   const [agendaMonthEvents, setAgendaMonthEvents] = useState<AgendaEvent[]>(
     [],
@@ -182,7 +182,16 @@ function HistoricoPageBody() {
     );
   }, [records, agendaMonthEvents]);
 
+  const focusAgendaRaw = searchParams.get("agendaId");
+  const focusQuery = searchParams.get("q") ?? "";
+  const focusAgendaId = Number.parseInt(focusAgendaRaw ?? "", 10);
+  const pinSingleRecord =
+    Number.isFinite(focusAgendaId) &&
+    focusQuery.length > 0 &&
+    searchQuery === focusQuery;
+
   const filteredRecords = visibleRecords.filter((record) => {
+    if (pinSingleRecord && record.id !== focusAgendaId) return false;
     const row = displayHistoryRow(record);
     const q = searchQuery.toLowerCase();
     const searchMatch =
@@ -195,6 +204,13 @@ function HistoricoPageBody() {
     return searchMatch && typeMatch && statusMatch;
   });
 
+  const focusLoading = Boolean(focusAgendaRaw) && !historicoReady;
+
+  const clearHistoryFocus = () => {
+    setSearchQuery("");
+    router.replace("/historico");
+  };
+
   useEffect(() => {
     const agendaId = searchParams.get("agendaId");
     if (!agendaId) return;
@@ -202,30 +218,11 @@ function HistoricoPageBody() {
     if (ym && /^\d{4}-\d{2}$/.test(ym)) {
       setMonthYm(ym);
     }
-    setSelectedType("all");
-    setSelectedStatus("all");
-    setSearchQuery("");
+    const q = searchParams.get("q") ?? "";
+    if (q) setSearchQuery(q);
     const id = Number.parseInt(agendaId, 10);
-    if (Number.isFinite(id)) setPendingAgendaExpand(id);
+    if (Number.isFinite(id)) setExpandedRecord(id);
   }, [searchParams]);
-
-  useEffect(() => {
-    if (!historicoReady || pendingAgendaExpand == null) return;
-    const id = pendingAgendaExpand;
-    if (!visibleRecords.some((r) => r.id === id)) {
-      setPendingAgendaExpand(null);
-      return;
-    }
-    setExpandedRecord(id);
-    setPendingAgendaExpand(null);
-    const t = window.setTimeout(() => {
-      document.getElementById(`historico-card-${id}`)?.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-    }, 200);
-    return () => window.clearTimeout(t);
-  }, [historicoReady, pendingAgendaExpand, visibleRecords]);
 
   const toggleExpand = (id: number) => {
     setExpandedRecord(expandedRecord === id ? null : id);
@@ -260,7 +257,10 @@ function HistoricoPageBody() {
           <input
             type="month"
             value={monthYm}
-            onChange={(e) => setMonthYm(e.target.value)}
+            onChange={(e) => {
+              setMonthYm(e.target.value);
+              if (focusAgendaRaw) clearHistoryFocus();
+            }}
             className="h-12 rounded-xl border-0 bg-white px-4 text-sm font-medium text-zinc-900 shadow-card focus:outline-none focus:ring-2 focus:ring-[var(--gradient-start)]/20 dark:bg-zinc-900 dark:text-zinc-100"
           />
         </label>
@@ -274,7 +274,22 @@ function HistoricoPageBody() {
             className="h-12 w-full rounded-xl border-0 bg-white pl-12 pr-4 text-sm text-zinc-900 shadow-card placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[var(--gradient-start)]/20 dark:bg-zinc-900 dark:text-zinc-100"
           />
         </div>
-        <Select value={selectedType} onValueChange={setSelectedType}>
+        {focusAgendaRaw ? (
+          <Button
+            type="button"
+            className="h-12 rounded-xl bg-accent-gradient px-4 text-white shadow-md"
+            onClick={clearHistoryFocus}
+          >
+            Apagar filtro
+          </Button>
+        ) : null}
+        <Select
+          value={selectedType}
+          onValueChange={(v) => {
+            setSelectedType(v);
+            if (focusAgendaRaw) clearHistoryFocus();
+          }}
+        >
           <SelectTrigger className="h-12 min-w-[200px] rounded-xl border-0 bg-white px-4 text-sm shadow-card focus:ring-2 focus:ring-[var(--gradient-start)]/20 dark:bg-zinc-900">
             <SelectValue placeholder="Tipo" />
           </SelectTrigger>
@@ -287,7 +302,13 @@ function HistoricoPageBody() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+        <Select
+          value={selectedStatus}
+          onValueChange={(v) => {
+            setSelectedStatus(v);
+            if (focusAgendaRaw) clearHistoryFocus();
+          }}
+        >
           <SelectTrigger className="h-12 min-w-[180px] rounded-xl border-0 bg-white px-4 text-sm shadow-card focus:ring-2 focus:ring-[var(--gradient-start)]/20 dark:bg-zinc-900">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
@@ -365,7 +386,14 @@ function HistoricoPageBody() {
       )}
 
       {/* Timeline */}
-      {!historicoReady ? (
+      {focusLoading ? (
+        <div className="flex items-center justify-center gap-3 rounded-2xl border border-zinc-100 bg-white py-16 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
+          <Loader2 className="h-5 w-5 animate-spin text-[var(--gradient-accent)]" />
+          <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
+            Buscando item…
+          </p>
+        </div>
+      ) : !historicoReady ? (
         <HistoricoTimelineSkeleton rows={5} />
       ) : (
       <div className="relative">
@@ -443,6 +471,14 @@ function HistoricoPageBody() {
                           <User className="h-4 w-4" />
                           {row.responsible}
                         </span>
+                        {typeof record.panfletosDistribuidos === "number" &&
+                        record.panfletosDistribuidos > 0 ? (
+                          <span className="flex items-center gap-1">
+                            <Megaphone className="h-4 w-4" />
+                            {record.panfletosDistribuidos.toLocaleString("pt-BR")}{" "}
+                            panfletos
+                          </span>
+                        ) : null}
                         <span className="flex items-center gap-1">
                           <Image className="h-4 w-4" />
                           {record.photos + row.extraPhotos.length} fotos
@@ -622,7 +658,7 @@ function HistoricoPageBody() {
       </div>
       )}
 
-      {historicoReady && filteredRecords.length === 0 && (
+      {!focusLoading && historicoReady && filteredRecords.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-zinc-100 bg-white py-16 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
           <FileText className="h-12 w-12 text-zinc-300 dark:text-zinc-600" />
           <p className="mt-4 text-lg font-medium text-zinc-500 dark:text-zinc-400">

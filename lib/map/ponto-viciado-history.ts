@@ -7,6 +7,12 @@ export type PontoViciadoHistoryLink = {
   agendaMonthYm: string;
   date: string;
   title: string;
+  /** Primeira foto da revitalização concluída no app. */
+  photoUrl?: string;
+  /** Panfletos distribuídos, quando houve. */
+  panfletos?: number;
+  /** Quilos de resíduos, sem o sufixo "kg". */
+  pesoKg?: string;
 };
 
 const TITLE_RE = /^Revitalização\s*[—\-]\s*(.+)$/i;
@@ -17,6 +23,20 @@ function normalizeCodigo(raw: string): string | null {
   const t = raw.trim().toUpperCase();
   if (!CODIGO_RE.test(t)) return null;
   return t;
+}
+
+function pesoKgFromObservations(observations: string): string | undefined {
+  const m = /^Resíduos:\s*(.+)$/m.exec(observations);
+  const raw = m?.[1]?.replace(/\s*kg\s*$/i, "").trim();
+  return raw || undefined;
+}
+
+function firstPhotoUrl(urls: Array<string | undefined>): string | undefined {
+  for (const url of urls) {
+    const t = url?.trim();
+    if (t) return t;
+  }
+  return undefined;
 }
 
 /** Extrai código territorial (ex. CV-011) de título ou observações de revitalização. */
@@ -51,6 +71,7 @@ export function buildPontoViciadoHistoryIndex(
     historyRecords,
     agendaEvents,
   );
+  const agendaById = new Map(agendaEvents.map((e) => [e.id, e]));
   const byCodigo = new Map<string, PontoViciadoHistoryLink>();
 
   for (const r of merged) {
@@ -64,11 +85,24 @@ export function buildPontoViciadoHistoryIndex(
     const ym = r.date.length >= 7 ? r.date.slice(0, 7) : "";
     if (!ym) continue;
 
+    const ev = agendaById.get(r.id);
+    const obs = [r.observations, ev?.observations].filter(Boolean).join("\n");
+    const panfletosRaw = r.panfletosDistribuidos ?? ev?.panfletosDistribuidos;
+    const photoUrl = firstPhotoUrl([
+      ...(r.extraPhotoUrls ?? []),
+      ...(ev?.completionPhotoDataUrls ?? []),
+    ]);
+    const pesoKg = pesoKgFromObservations(obs);
     const next: PontoViciadoHistoryLink = {
       agendaNumericId: r.id,
       agendaMonthYm: ym,
       date: r.date,
       title: r.title,
+      ...(photoUrl ? { photoUrl } : {}),
+      ...(typeof panfletosRaw === "number" && panfletosRaw > 0
+        ? { panfletos: panfletosRaw }
+        : {}),
+      ...(pesoKg ? { pesoKg } : {}),
     };
     const prev = byCodigo.get(codigo);
     if (
@@ -81,4 +115,39 @@ export function buildPontoViciadoHistoryIndex(
   }
 
   return byCodigo;
+}
+
+/** Card de uma ação concluída (revitalização ou outro serviço) pelo id da agenda. */
+export function historyCardForAgendaId(
+  id: number,
+  historyRecords: HistoryRecordDoc[],
+  agendaEvents: AgendaEvent[],
+): PontoViciadoHistoryLink | null {
+  const rec = historyRecords.find((r) => r.id === id);
+  const ev = agendaEvents.find((e) => e.id === id);
+  if (!rec && (!ev || ev.status !== "concluido")) return null;
+
+  const date = rec?.date || ev?.date || "";
+  const ym = date.length >= 7 ? date.slice(0, 7) : "";
+  if (!ym) return null;
+
+  const obs = [rec?.observations, ev?.observations].filter(Boolean).join("\n");
+  const panfletosRaw = rec?.panfletosDistribuidos ?? ev?.panfletosDistribuidos;
+  const photoUrl = firstPhotoUrl([
+    ...(rec?.extraPhotoUrls ?? []),
+    ...(ev?.completionPhotoDataUrls ?? []),
+  ]);
+  const pesoKg = pesoKgFromObservations(obs);
+
+  return {
+    agendaNumericId: id,
+    agendaMonthYm: ym,
+    date,
+    title: rec?.title || ev?.title || "Ação realizada",
+    ...(photoUrl ? { photoUrl } : {}),
+    ...(typeof panfletosRaw === "number" && panfletosRaw > 0
+      ? { panfletos: panfletosRaw }
+      : {}),
+    ...(pesoKg ? { pesoKg } : {}),
+  };
 }

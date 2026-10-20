@@ -62,8 +62,8 @@ function modalPinIcon() {
   });
 }
 
-const cartoAttribution =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+const osmAttribution =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 
 type ModalLocationMiniMapProps = {
   className?: string;
@@ -92,10 +92,10 @@ export function ModalLocationMiniMap({
     >
       <FlyToTarget target={flyTo} />
       <TileLayer
-        attribution={cartoAttribution}
-        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-        subdomains="abcd"
+        attribution={osmAttribution}
+        url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         maxZoom={20}
+        maxNativeZoom={19}
       />
       <MapClickPickHandler onPick={onMapClick} />
       {marker ? (

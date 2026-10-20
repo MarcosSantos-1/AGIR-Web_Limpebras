@@ -22,6 +22,7 @@ import {
   Recycle,
   Copy,
   Check,
+  Megaphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,7 +62,6 @@ import {
   allStaticMapMarkerIds,
   type MapDisplayPoint,
   type MapPolygon,
-  type MapaStatus,
 } from "@/lib/map-features";
 import { SubregionalSelectField } from "@/components/forms/subregional-select-field";
 import {
@@ -83,6 +83,7 @@ import {
 import type {
   OperationalMapPoint,
   OperationalMapFlyTo,
+  MapBaseLayer,
 } from "@/components/map/operational-map";
 import { formatDateBr, cn } from "@/lib/utils";
 import { SubregionalBadge } from "@/components/subregional-badge";
@@ -90,7 +91,14 @@ import { toast } from "sonner";
 import { useNovaAcao } from "@/components/acao/nova-acao-provider";
 import { subscribeHistoryRecords } from "@/lib/firestore/history";
 import type { HistoryRecordDoc } from "@/data/history-records";
-import { buildPontoViciadoHistoryIndex } from "@/lib/map/ponto-viciado-history";
+import { buildPontoViciadoHistoryIndex, historyCardForAgendaId } from "@/lib/map/ponto-viciado-history";
+import {
+  classifyPontoViciado,
+  PV_DEFAULT_FAIXAS,
+  PV_FAIXA_VISUAL,
+  PV_SUBFILTER_FAIXAS,
+  type PvFaixa,
+} from "@/lib/map/ponto-viciado-visual";
 
 const OperationalMap = dynamic(
   () =>
@@ -98,7 +106,7 @@ const OperationalMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-[min(60vh,560px)] min-h-[520px] w-full items-center justify-center rounded-3xl bg-zinc-100 text-sm text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
+      <div className="flex h-[calc(100vh-11rem)] min-h-[640px] w-full items-center justify-center rounded-3xl bg-zinc-100 text-sm text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
         Carregando mapa…
       </div>
     ),
@@ -106,6 +114,13 @@ const OperationalMap = dynamic(
 );
 
 const pointTypes = [
+  {
+    id: "ponto-viciado",
+    label: "Ponto Viciado",
+    faClass: "fa-solid fa-trash-can",
+    color: "bg-red-500",
+    textColor: "text-red-500 dark:text-red-400",
+  },
   {
     id: "ecoponto",
     label: "Ecoponto",
@@ -135,13 +150,6 @@ const pointTypes = [
     textColor: "text-blue-600 dark:text-blue-400",
   },
   {
-    id: "ponto-viciado",
-    label: "Ponto Viciado",
-    faClass: "fa-solid fa-trash-can",
-    color: "bg-red-500",
-    textColor: "text-red-500 dark:text-red-400",
-  },
-  {
     id: "nucleo-habitacional",
     label: "Núcleo habitacional",
     faClass: "fa-solid fa-house-chimney",
@@ -149,42 +157,6 @@ const pointTypes = [
     textColor: "text-amber-500 dark:text-amber-400",
   },
 ] as const;
-
-/** Tipos exibidos na legenda (sem núcleo — só camadas). */
-const legendPointTypes = pointTypes.filter(
-  (t) => t.id !== "nucleo-habitacional",
-);
-
-const pvStatusVisual: Record<
-  MapaStatus,
-  { color: string; textColor: string; label: string }
-> = {
-  ativo: {
-    color: "bg-red-500",
-    textColor: "text-red-500 dark:text-red-400",
-    label: "Ponto Viciado",
-  },
-  inativo: {
-    color: "bg-zinc-500",
-    textColor: "text-zinc-500 dark:text-zinc-400",
-    label: "Ponto Viciado (inativo)",
-  },
-  resolvido: {
-    color: "bg-emerald-600",
-    textColor: "text-emerald-600 dark:text-emerald-400",
-    label: "Ponto Viciado (revitalizado)",
-  },
-  "em-andamento": {
-    color: "bg-amber-500",
-    textColor: "text-amber-500 dark:text-amber-400",
-    label: "Ponto Viciado",
-  },
-  recorrente: {
-    color: "bg-red-500",
-    textColor: "text-red-500 dark:text-red-400",
-    label: "Ponto Viciado",
-  },
-};
 
 const DEFAULT_MAP_LAYER_TYPES = [
   "ecoponto",
@@ -378,12 +350,14 @@ function MapaPageContent() {
   ]);
   const [typesPopoverOpen, setTypesPopoverOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [searchPulseId, setSearchPulseId] = useState<string | null>(null);
   const [coordsCopied, setCoordsCopied] = useState(false);
 
   useEffect(() => {
     setCoordsCopied(false);
   }, [selectedId]);
-  const [mapBase, setMapBase] = useState<"carto" | "satellite">("carto");
+  const [mapBase, setMapBase] = useState<MapBaseLayer>("osm");
+  const [pvFaixas, setPvFaixas] = useState<PvFaixa[]>([...PV_DEFAULT_FAIXAS]);
   const [addressQuery, setAddressQuery] = useState("");
   const [searchMode, setSearchMode] = useState<MapSearchMode>("endereco");
   const [geocodeLoading, setGeocodeLoading] = useState(false);
@@ -437,8 +411,29 @@ function MapaPageContent() {
     [agendaMarkers, mergedMarkers],
   );
 
+  const faixaByMarkerId = useMemo(() => {
+    const out = new Map<string, PvFaixa>();
+    for (const p of allMarkers) {
+      if (p.type !== "ponto-viciado") continue;
+      out.set(
+        p.id,
+        classifyPontoViciado({
+          status: p.status,
+          volumetria: p.volumetria,
+          revitalizadoNoSistema: pvHistoryByCodigo.has(p.id.toUpperCase()),
+        }),
+      );
+    }
+    return out;
+  }, [allMarkers, pvHistoryByCodigo]);
+
   const { filteredMarkers, filteredPolygons, visibleCount } = useMemo(() => {
-    const markers = allMarkers.filter((p) => selectedTypes.includes(p.type));
+    const markers = allMarkers.filter((p) => {
+      if (!selectedTypes.includes(p.type)) return false;
+      if (p.type !== "ponto-viciado") return true;
+      const faixa = faixaByMarkerId.get(p.id);
+      return faixa != null && pvFaixas.includes(faixa);
+    });
     const polygons = MAPA_POLYGONS.filter((p) =>
       selectedTypes.includes(p.type),
     );
@@ -447,19 +442,24 @@ function MapaPageContent() {
       filteredPolygons: polygons,
       visibleCount: markers.length + polygons.length,
     };
-  }, [selectedTypes, allMarkers]);
+  }, [selectedTypes, allMarkers, faixaByMarkerId, pvFaixas]);
 
   const mapLayerPoints: OperationalMapPoint[] = useMemo(
     () =>
-      filteredMarkers.map((p) => ({
-        id: p.id,
-        type: p.type,
-        position: p.position,
-        recurrent: p.recurrent,
-        occurrences: p.occurrences,
-        status: p.status,
-      })),
-    [filteredMarkers],
+      filteredMarkers.map((p) => {
+        const faixa =
+          p.type === "ponto-viciado" ? faixaByMarkerId.get(p.id) : undefined;
+        return {
+          id: p.id,
+          type: p.type,
+          position: p.position,
+          recurrent: p.recurrent,
+          occurrences: p.occurrences,
+          status: p.status,
+          color: faixa ? PV_FAIXA_VISUAL[faixa].hex : undefined,
+        };
+      }),
+    [filteredMarkers, faixaByMarkerId],
   );
 
   const selectedItem: MapItem | null = resolveMapaItem(
@@ -475,25 +475,33 @@ function MapaPageContent() {
   const placementActive = pickPvLocationMode;
 
   const toggleType = (typeId: string) => {
-    setSelectedTypes((prev) =>
-      prev.includes(typeId)
-        ? prev.filter((t) => t !== typeId)
-        : [...prev, typeId],
+    setSelectedTypes((prev) => {
+      const turningOn = !prev.includes(typeId);
+      if (typeId === "ponto-viciado" && turningOn) {
+        setPvFaixas([...PV_DEFAULT_FAIXAS]);
+      }
+      return turningOn ? [...prev, typeId] : prev.filter((t) => t !== typeId);
+    });
+  };
+
+  const togglePvFaixa = (faixa: PvFaixa) => {
+    setPvFaixas((prev) =>
+      prev.includes(faixa) ? prev.filter((f) => f !== faixa) : [...prev, faixa],
     );
   };
 
-  const getTypeConfig = (type: string, status?: MapaStatus) => {
-    const base = pointTypes.find((t) => t.id === type) ?? pointTypes[0];
-    if (type === "ponto-viciado" && status) {
-      const vis = pvStatusVisual[status] ?? pvStatusVisual.ativo;
-      return {
-        ...base,
-        color: vis.color,
-        textColor: vis.textColor,
-        label: vis.label,
-      };
-    }
-    return base;
+  const getTypeConfig = (item: MapItem) => {
+    const base = pointTypes.find((t) => t.id === item.type) ?? pointTypes[0];
+    if (item.type !== "ponto-viciado") return base;
+    const faixa = faixaByMarkerId.get(item.id);
+    if (!faixa) return base;
+    const vis = PV_FAIXA_VISUAL[faixa];
+    return {
+      ...base,
+      color: vis.tailwindBg,
+      textColor: vis.tailwindText,
+      label: vis.label,
+    };
   };
 
   async function reverseGeocodeAndFill(lat: number, lng: number) {
@@ -714,6 +722,17 @@ function MapaPageContent() {
       nonce: flyNonceRef.current,
     });
     setSelectedId(hit.id);
+    setSearchPulseId(
+      hit.ensureLayer === "ponto-viciado" ? hit.id : null,
+    );
+    if (hit.ensureLayer === "ponto-viciado") {
+      const faixa = faixaByMarkerId.get(hit.id);
+      if (faixa) {
+        setPvFaixas((prev) =>
+          prev.includes(faixa) ? prev : [...prev, faixa],
+        );
+      }
+    }
     setSearchPin(null);
     setGeocodeAlternatives(null);
     setCatalogAlternatives(null);
@@ -783,6 +802,20 @@ function MapaPageContent() {
     }
   };
 
+  const historyCardForItem = (item: MapItem) => {
+    if (item.type === "ponto-viciado") {
+      return pvHistoryByCodigo.get(item.id.toUpperCase()) ?? null;
+    }
+    if ("agendaNumericId" in item && item.agendaNumericId != null) {
+      return historyCardForAgendaId(
+        item.agendaNumericId,
+        historyRecords,
+        agendaEvents,
+      );
+    }
+    return null;
+  };
+
   return (
     <>
       <div className="flex gap-6">
@@ -793,14 +826,18 @@ function MapaPageContent() {
           className="relative z-0 flex min-h-0 flex-1 flex-col gap-3"
         >
           {/* isolate: z-index dos overlays fica local e não cobre modais (Dialog z-50+) */}
-          <div className="relative z-0 isolate min-h-[520px] flex-1 overflow-hidden rounded-3xl bg-zinc-200 shadow-lg dark:bg-zinc-800">
-            <div className="absolute inset-0 z-0 h-full w-full min-h-[520px]">
+          <div className="relative z-0 isolate h-[calc(100vh-11rem)] min-h-[640px] flex-1 overflow-hidden rounded-3xl bg-zinc-200 shadow-lg dark:bg-zinc-800">
+            <div className="absolute inset-0 z-0 h-full w-full min-h-[640px]">
               <OperationalMap
                 baseLayer={mapBase}
                 points={mapLayerPoints}
                 polygons={filteredPolygons}
                 selectedId={selectedId}
-                onSelectId={(id) => setSelectedId(id)}
+                pulseId={searchPulseId}
+                onSelectId={(id) => {
+                  setSelectedId(id);
+                  setSearchPulseId((current) => (current === id ? current : null));
+                }}
                 flyTo={flyTo}
                 searchResultMarker={searchPin}
                 placementMode={placementActive && !reverseGeoLoading}
@@ -938,13 +975,15 @@ function MapaPageContent() {
                 <PopoverTrigger asChild>
                   <Button
                     type="button"
-                    size="icon"
                     variant="secondary"
-                    className="pointer-events-auto h-11 w-11 shrink-0 rounded-xl border border-zinc-200/80 bg-white/95 shadow-md backdrop-blur-sm hover:bg-white dark:border-zinc-700 dark:bg-zinc-900/95 dark:hover:bg-zinc-800"
+                    className="pointer-events-auto h-12 gap-2 rounded-xl border border-zinc-200/80 bg-white/95 px-4 shadow-md backdrop-blur-sm hover:bg-white dark:border-zinc-700 dark:bg-zinc-900/95 dark:hover:bg-zinc-800"
                     aria-label="Camadas — tipos de ponto"
                     title="Camadas — tipos de ponto"
                   >
                     <Layers className="h-5 w-5 text-zinc-700 dark:text-zinc-300" />
+                    <span className="text-sm font-medium text-zinc-800 dark:text-zinc-100">
+                      Camadas
+                    </span>
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent
@@ -963,43 +1002,82 @@ function MapaPageContent() {
                     {pointTypes.map((type) => {
                       const isSelected = selectedTypes.includes(type.id);
                       return (
-                        <button
-                          key={type.id}
-                          type="button"
-                          onClick={() => toggleType(type.id)}
-                          className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-all ${
-                            isSelected
-                              ? "bg-zinc-100 dark:bg-zinc-800"
-                              : "opacity-50 hover:opacity-75"
-                          }`}
-                        >
-                          <div
-                            className={`flex h-8 w-8 items-center justify-center rounded-lg ${type.color}`}
+                        <div key={type.id}>
+                          <button
+                            type="button"
+                            onClick={() => toggleType(type.id)}
+                            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-all ${
+                              isSelected
+                                ? "bg-zinc-100 dark:bg-zinc-800"
+                                : "opacity-50 hover:opacity-75"
+                            }`}
                           >
-                            <i
-                              className={`${type.faClass} text-sm text-white`}
-                              aria-hidden
-                            />
-                          </div>
-                          <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                            {type.label}
-                          </span>
-                          <div
-                            className={`ml-auto h-4 w-4 rounded-full border-2 ${isSelected ? "border-[var(--gradient-start)] bg-[var(--gradient-start)]" : "border-zinc-300 dark:border-zinc-600"}`}
-                          >
-                            {isSelected && (
-                              <svg
-                                className="h-full w-full text-white"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  fill="currentColor"
-                                  d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
-                                />
-                              </svg>
-                            )}
-                          </div>
-                        </button>
+                            <div
+                              className={`flex h-8 w-8 items-center justify-center rounded-lg ${type.color}`}
+                            >
+                              <i
+                                className={`${type.faClass} text-sm text-white`}
+                                aria-hidden
+                              />
+                            </div>
+                            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                              {type.label}
+                            </span>
+                            <div
+                              className={`ml-auto h-4 w-4 rounded-full border-2 ${isSelected ? "border-[var(--gradient-start)] bg-[var(--gradient-start)]" : "border-zinc-300 dark:border-zinc-600"}`}
+                            >
+                              {isSelected && (
+                                <svg
+                                  className="h-full w-full text-white"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    fill="currentColor"
+                                    d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                                  />
+                                </svg>
+                              )}
+                            </div>
+                          </button>
+                          {type.id === "ponto-viciado" && isSelected ? (
+                            <div className="ml-11 mt-1 space-y-1 border-l border-zinc-200 pl-3 dark:border-zinc-700">
+                              <p className="px-1 text-[11px] font-medium uppercase tracking-wide text-zinc-400">
+                                Também mostrar
+                              </p>
+                              {PV_SUBFILTER_FAIXAS.map((faixa) => {
+                                const on = pvFaixas.includes(faixa);
+                                const vis = PV_FAIXA_VISUAL[faixa];
+                                return (
+                                  <button
+                                    key={faixa}
+                                    type="button"
+                                    onClick={() => togglePvFaixa(faixa)}
+                                    className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs ${
+                                      on
+                                        ? "bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
+                                        : "text-zinc-500 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-800/60"
+                                    }`}
+                                  >
+                                    <span
+                                      className="h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-zinc-300 dark:ring-zinc-600"
+                                      style={{ backgroundColor: vis.hex }}
+                                    />
+                                    <span className="font-medium">
+                                      {vis.shortLabel}
+                                    </span>
+                                    <span
+                                      className={`ml-auto h-3.5 w-3.5 rounded-full border-2 ${
+                                        on
+                                          ? "border-[var(--gradient-start)] bg-[var(--gradient-start)]"
+                                          : "border-zinc-300 dark:border-zinc-600"
+                                      }`}
+                                    />
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ) : null}
+                        </div>
                       );
                     })}
                   </div>
@@ -1024,17 +1102,17 @@ function MapaPageContent() {
               >
                 <button
                   type="button"
-                  title="Mapa padrão (CartoDB Positron)"
-                  aria-pressed={mapBase === "carto"}
-                  onClick={() => setMapBase("carto")}
+                  title="OpenStreetMap"
+                  aria-pressed={mapBase === "osm"}
+                  onClick={() => setMapBase("osm")}
                   className={cn(
                     "rounded-full px-3 py-2 text-lg leading-none transition",
-                    mapBase === "carto"
+                    mapBase === "osm"
                       ? "bg-zinc-900 text-white shadow-sm dark:bg-zinc-100 dark:text-zinc-900"
                       : "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800",
                   )}
                 >
-                  <span role="img" aria-label="Mapa de ruas">
+                  <span role="img" aria-label="Mapa">
                     🗺️
                   </span>
                 </button>
@@ -1057,25 +1135,6 @@ function MapaPageContent() {
               </div>
             </div>
 
-            <div className="pointer-events-none absolute bottom-4 left-4 z-20">
-              <div className="pointer-events-auto rounded-xl bg-white/90 p-3 shadow-md backdrop-blur-sm dark:bg-zinc-900/90">
-                <p className="mb-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-                  LEGENDA
-                </p>
-                <div className="flex max-w-sm flex-wrap gap-3">
-                  {legendPointTypes.map((type) => (
-                    <div key={type.id} className="flex items-center gap-1.5">
-                      <span
-                        className={`h-3 w-3 rounded-full ${type.color}`}
-                      />
-                      <span className="text-xs text-zinc-600 dark:text-zinc-300">
-                        {type.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
           </div>
 
           <div className="flex shrink-0 flex-wrap justify-center gap-3">
@@ -1114,12 +1173,7 @@ function MapaPageContent() {
               <div className="mb-4 flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   {(() => {
-                    const cfg = getTypeConfig(
-                      selectedItem.type,
-                      "status" in selectedItem
-                        ? selectedItem.status
-                        : undefined,
-                    );
+                    const cfg = getTypeConfig(selectedItem);
                     return (
                       <>
                         <div
@@ -1231,6 +1285,30 @@ function MapaPageContent() {
                     </span>
                   </div>
                 ) : null}
+                {(() => {
+                  const card = historyCardForItem(selectedItem);
+                  if (!card?.pesoKg && !card?.panfletos) return null;
+                  return (
+                    <>
+                      {card.pesoKg ? (
+                        <div className="flex items-center gap-3 text-sm">
+                          <Recycle className="h-4 w-4 shrink-0 text-zinc-400" />
+                          <span className="text-zinc-600 dark:text-zinc-300">
+                            Peso coletado: {card.pesoKg} kg
+                          </span>
+                        </div>
+                      ) : null}
+                      {card.panfletos ? (
+                        <div className="flex items-center gap-3 text-sm">
+                          <Megaphone className="h-4 w-4 shrink-0 text-zinc-400" />
+                          <span className="text-zinc-600 dark:text-zinc-300">
+                            {card.panfletos} panfleto(s)
+                          </span>
+                        </div>
+                      ) : null}
+                    </>
+                  );
+                })()}
                 {"agendaNumericId" in selectedItem &&
                 selectedItem.agendaNumericId != null ? (
                   selectedItem.integrantes &&
@@ -1263,7 +1341,16 @@ function MapaPageContent() {
                 {selectedItem.detailLines &&
                   selectedItem.detailLines.length > 0 && (
                     <ul className="space-y-2 border-t border-zinc-100 pt-3 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-300">
-                      {selectedItem.detailLines.map((d) => (
+                      {selectedItem.detailLines
+                        .filter((d) => {
+                          if (d.label === "Nº de limpezas") return false;
+                          if (d.label !== "Volumetria") return true;
+                          if (selectedItem.type !== "ponto-viciado") return true;
+                          return !pvHistoryByCodigo.get(
+                            selectedItem.id.toUpperCase(),
+                          )?.pesoKg;
+                        })
+                        .map((d) => (
                         <li key={`${d.label}-${d.value}`}>
                           <span className="font-medium text-zinc-700 dark:text-zinc-200">
                             {d.label}:
@@ -1277,37 +1364,44 @@ function MapaPageContent() {
 
               {(() => {
                 const isPv = selectedItem.type === "ponto-viciado";
-                const pvHist = isPv
-                  ? pvHistoryByCodigo.get(selectedItem.id.toUpperCase())
-                  : undefined;
-                const serviceHist =
-                  "agendaNumericId" in selectedItem &&
-                  selectedItem.agendaNumericId != null &&
-                  selectedItem.agendaMonthYm
-                    ? {
-                        agendaNumericId: selectedItem.agendaNumericId,
-                        agendaMonthYm: selectedItem.agendaMonthYm,
-                      }
-                    : null;
-                const histLink = pvHist ?? serviceHist;
-
-                if (!histLink && !isPv) return null;
+                const card = historyCardForItem(selectedItem);
+                if (!card && !isPv) return null;
+                const historyHref = card
+                  ? `/historico?ym=${encodeURIComponent(card.agendaMonthYm)}&agendaId=${card.agendaNumericId}&q=${encodeURIComponent(card.title)}`
+                  : null;
 
                 return (
                   <div className="mt-4 flex flex-col gap-2 border-t border-zinc-100 pt-4 dark:border-zinc-800">
-                    {histLink ? (
-                      <Button
-                        asChild
-                        type="button"
-                        className="w-full rounded-xl bg-orange-500 text-white hover:bg-orange-600"
+                    {card && historyHref ? (
+                      <Link
+                        href={historyHref}
+                        className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition hover:border-orange-300 dark:border-zinc-700 dark:bg-zinc-950"
+                        target="_blank"
+                        rel="noopener noreferrer"
                       >
-                        <Link
-                          href={`/historico?ym=${encodeURIComponent(histLink.agendaMonthYm)}&agendaId=${histLink.agendaNumericId}`}
-                        >
-                          <History className="mr-2 h-4 w-4" />
-                          Histórico
-                        </Link>
-                      </Button>
+                        {card.photoUrl ? (
+                          <img
+                            src={card.photoUrl}
+                            alt=""
+                            className="h-32 w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-16 items-center justify-center bg-zinc-100 text-zinc-400 dark:bg-zinc-800">
+                            <History className="h-5 w-5" />
+                          </div>
+                        )}
+                        <div className="space-y-1 p-3">
+                          <p className="text-sm font-medium text-zinc-800 dark:text-zinc-100">
+                            {card.title}
+                          </p>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                            {formatDateBr(card.date)}
+                          </p>
+                          <p className="text-xs font-medium text-orange-600 dark:text-orange-400">
+                            Abrir no histórico
+                          </p>
+                        </div>
+                      </Link>
                     ) : null}
                     {isPv ? (
                       <Button
@@ -1327,20 +1421,9 @@ function MapaPageContent() {
                 );
               })()}
 
-              {selectedItem.type === "ponto-viciado" &&
+              {selectedItem.type !== "ponto-viciado" &&
+              selectedItem.recurrent &&
               selectedItem.occurrences > 0 ? (
-                <div className="mt-4 rounded-xl bg-red-50 p-3 dark:bg-red-950/40">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-red-500" />
-                    <span className="text-sm font-medium text-red-700 dark:text-red-300">
-                      Limpezas registradas
-                    </span>
-                  </div>
-                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">
-                    {selectedItem.occurrences} limpeza(s) no catálogo
-                  </p>
-                </div>
-              ) : selectedItem.recurrent && selectedItem.occurrences > 0 ? (
                 <div className="mt-4 rounded-xl bg-red-50 p-3 dark:bg-red-950/40">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4 text-red-500" />

@@ -1,7 +1,6 @@
 /**
- * Regenera data/features-PV.json a partir do Excel de pontos viciados.
- *
- * Executar: npm run import:pontos-viciados
+ * Fonte atual: `scripts/import-pontos-viciados-xlsb.py`
+ * (`npm run import:pontos-viciados`). Este ficheiro lia o Excel antigo (.xlsx).
  */
 import ExcelJS from "exceljs";
 import * as fs from "node:fs";

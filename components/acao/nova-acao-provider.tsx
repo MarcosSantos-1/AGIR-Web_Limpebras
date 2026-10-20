@@ -211,7 +211,12 @@ function extractIdFromTituloRev(titulo: string): string {
 }
 
 const REVITALIZACAO_STRUCTURED_LINE =
-  /^(Ponto viciado|Subprefeitura|Data da revitalização|Volume retirado|Resíduos|Equipe):\s*/;
+  /^(Ponto viciado|Subprefeitura|Data da revitalização|Volume retirado|Resíduos|Equipe|Agentes envolvidos|Colaboradores|Munícipes participantes|Pessoas conscientizadas|Instituições participantes):\s*/;
+
+function parseCountLine(observations: string, label: string): string {
+  const m = new RegExp(`^${label}:\\s*(\\d+)$`, "m").exec(observations);
+  return m?.[1]?.trim() ?? "";
+}
 
 /** Parse campo observations de revitalização criado pelo formulário. */
 function parseRevitalizacaoObservations(observations: string) {
@@ -222,6 +227,11 @@ function parseRevitalizacaoObservations(observations: string) {
     volume: volM?.[1]?.replace(/\s*m³\s*$/i, "").trim() ?? "",
     kg: kgM?.[1]?.replace(/\s*kg\s*$/i, "").trim() ?? "",
     equipe: eqM?.[1]?.trim() ?? "",
+    agentes: parseCountLine(observations, "Agentes envolvidos"),
+    colaboradores: parseCountLine(observations, "Colaboradores"),
+    municipes: parseCountLine(observations, "Munícipes participantes"),
+    conscientizadas: parseCountLine(observations, "Pessoas conscientizadas"),
+    instituicoes: parseCountLine(observations, "Instituições participantes"),
   };
 }
 
@@ -1604,6 +1614,11 @@ function RevitalizacaoDialog({
   const [volumeRev, setVolumeRev] = React.useState("");
   const [kgRev, setKgRev] = React.useState("");
   const [equipeRev, setEquipeRev] = React.useState("");
+  const [agentesRev, setAgentesRev] = React.useState("");
+  const [colaboradoresRev, setColaboradoresRev] = React.useState("");
+  const [municipesRev, setMunicipesRev] = React.useState("");
+  const [conscientizadasRev, setConscientizadasRev] = React.useState("");
+  const [instituicoesRev, setInstituicoesRev] = React.useState("");
   const [saveErrorRev, setSaveErrorRev] = React.useState<string | null>(null);
   const [savingRev, setSavingRev] = React.useState(false);
   const [pontoErro, setPontoErro] = React.useState(false);
@@ -1626,6 +1641,11 @@ function RevitalizacaoDialog({
       setVolumeRev("");
       setKgRev("");
       setEquipeRev("");
+      setAgentesRev("");
+      setColaboradoresRev("");
+      setMunicipesRev("");
+      setConscientizadasRev("");
+      setInstituicoesRev("");
       setDataRevitalizacao(format(new Date(), "yyyy-MM-dd"));
       setHorarioRev("");
       setDescricaoFeitoRev("");
@@ -1663,6 +1683,11 @@ function RevitalizacaoDialog({
     setVolumeRev(parsed.volume);
     setKgRev(parsed.kg);
     setEquipeRev(parsed.equipe);
+    setAgentesRev(parsed.agentes);
+    setColaboradoresRev(parsed.colaboradores);
+    setMunicipesRev(parsed.municipes);
+    setConscientizadasRev(parsed.conscientizadas);
+    setInstituicoesRev(parsed.instituicoes);
     if (initialEvent.status === "concluido") {
       const { previsto, extra } = splitRevitalizacaoFreeText(
         initialEvent.observations ?? "",
@@ -1752,7 +1777,17 @@ function RevitalizacaoDialog({
             }
             const vol = volumeRev.trim();
             const kg = kgRev.trim();
+            if (situacaoRev === "finalizado") {
+              const kgNum = Number(kg.replace(",", "."));
+              if (!kg || !Number.isFinite(kgNum) || kgNum <= 0) {
+                setSaveErrorRev("Informe o peso dos resíduos (kg).");
+                scrollModalFormToTop(revitalizacaoFormScrollRef.current);
+                return;
+              }
+            }
             const eq = equipeRev.trim();
+            const countLine = (label: string, value: string) =>
+              value.trim() ? `${label}: ${value.trim()}` : "";
             const title = `Revitalização — ${pontoViciadoId}`;
             const observationLines =
               situacaoRev === "agendar"
@@ -1767,6 +1802,11 @@ function RevitalizacaoDialog({
                     vol ? `Volume retirado: ${vol} m³` : "",
                     kg ? `Resíduos: ${kg} kg` : "",
                     eq ? `Equipe: ${eq} pessoa(s)` : "",
+                    countLine("Agentes envolvidos", agentesRev),
+                    countLine("Colaboradores", colaboradoresRev),
+                    countLine("Munícipes participantes", municipesRev),
+                    countLine("Pessoas conscientizadas", conscientizadasRev),
+                    countLine("Instituições participantes", instituicoesRev),
                     `Data da revitalização: ${dataRevitalizacao}`,
                   ];
             const structuredObs = observationLines.filter(Boolean).join("\n");
@@ -2340,23 +2380,36 @@ function RevitalizacaoDialog({
                           className="text-zinc-600 dark:text-zinc-400"
                         >
                           Resíduos (kg)
+                          <RequiredStar />
                         </Label>
-                        <Input
-                          id="q-kg"
-                          name="residuosKg"
-                          type="number"
-                          min={0}
-                          step="0.1"
-                          placeholder="0"
-                          className="h-11 border-zinc-200 dark:border-zinc-700"
-                          value={kgRev}
-                          onChange={(e) => setKgRev(e.target.value)}
-                        />
+                        <div className="relative max-w-xs">
+                          <Input
+                            id="q-kg"
+                            name="residuosKg"
+                            inputMode="decimal"
+                            required
+                            aria-required
+                            placeholder=""
+                            className="h-11 border-zinc-200 pr-12 dark:border-zinc-700"
+                            value={kgRev}
+                            onChange={(e) => {
+                              const raw = e.target.value
+                                .replace(",", ".")
+                                .replace(/[^\d.]/g, "");
+                              const [whole, ...rest] = raw.split(".");
+                              const frac = rest.join("").slice(0, 1);
+                              setKgRev(rest.length ? `${whole}.${frac}` : whole);
+                            }}
+                          />
+                          <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-medium text-zinc-500">
+                            kg
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </SectionBox>
 
-                  <SectionBox icon={Users} title="Equipe">
+                  <SectionBox icon={Users} title="Equipe e participação">
                     <div className="space-y-2">
                       <Label
                         htmlFor="eq-num"
@@ -2367,13 +2420,44 @@ function RevitalizacaoDialog({
                       <Input
                         id="eq-num"
                         name="equipeNum"
-                        type="number"
-                        min={1}
+                        inputMode="numeric"
                         placeholder="0"
                         className="h-11 max-w-xs border-zinc-200 dark:border-zinc-700"
                         value={equipeRev}
-                        onChange={(e) => setEquipeRev(e.target.value)}
+                        onChange={(e) =>
+                          setEquipeRev(e.target.value.replace(/\D/g, ""))
+                        }
                       />
+                    </div>
+                    <div className={cn(fieldGrid(), "mt-4 gap-4")}>
+                      {(
+                        [
+                          ["rev-agentes", "N° de agentes envolvidos", agentesRev, setAgentesRev],
+                          ["rev-colaboradores", "N° de colaboradores", colaboradoresRev, setColaboradoresRev],
+                          ["rev-municipes", "N° de munícipes participantes", municipesRev, setMunicipesRev],
+                          ["rev-conscientizadas", "N° de pessoas conscientizadas", conscientizadasRev, setConscientizadasRev],
+                          ["rev-instituicoes", "N° de instituições participantes", instituicoesRev, setInstituicoesRev],
+                        ] as const
+                      ).map(([id, label, value, setValue]) => (
+                        <div key={id} className="space-y-2">
+                          <Label
+                            htmlFor={id}
+                            className="text-zinc-600 dark:text-zinc-400"
+                          >
+                            {label}
+                          </Label>
+                          <Input
+                            id={id}
+                            inputMode="numeric"
+                            placeholder="0"
+                            className="h-11 border-zinc-200 dark:border-zinc-700"
+                            value={value}
+                            onChange={(e) =>
+                              setValue(e.target.value.replace(/\D/g, ""))
+                            }
+                          />
+                        </div>
+                      ))}
                     </div>
                   </SectionBox>
 

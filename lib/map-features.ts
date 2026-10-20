@@ -38,6 +38,8 @@ export type MapDisplayPoint = {
   frequencia?: string;
   /** Catálogo PV: data ISO da última revitalização (Excel). */
   ultimaRevitalizacao?: string | null;
+  /** Catálogo PV: faixa de volume em texto (Excel). */
+  volumetria?: string;
   /** Serviços (agenda concluída): equipa no terreno. */
   integrantes?: string[];
   /** Serviços: data/hora formatada (pt-BR). */
@@ -223,6 +225,7 @@ function buildPoints(): { markers: MapDisplayPoint[]; polygons: MapPolygon[] } {
         f.ultimaRevitalizacao.trim()
           ? f.ultimaRevitalizacao.trim().slice(0, 10)
           : null;
+      const volumetria = f.volumetria?.trim() || undefined;
       return {
         id: codigo,
         type: "ponto-viciado" as const,
@@ -242,6 +245,7 @@ function buildPoints(): { markers: MapDisplayPoint[]; polygons: MapPolygon[] } {
         limpezas,
         frequencia,
         ultimaRevitalizacao: ultima,
+        volumetria,
         detailLines: [
           ...(f.volumetria
             ? [{ label: "Volumetria", value: f.volumetria }]
@@ -250,9 +254,6 @@ function buildPoints(): { markers: MapDisplayPoint[]; polygons: MapPolygon[] } {
             label: "Status",
             value: statusLabelPt(st, f.status),
           },
-          ...(limpezas != null
-            ? [{ label: "Nº de limpezas", value: String(limpezas) }]
-            : []),
           ...(frequencia
             ? [{ label: "Frequência", value: frequencia }]
             : []),
@@ -331,15 +332,24 @@ export function allStaticMapMarkerIds(): Set<string> {
   return new Set(MAPA_MARKERS.map((m) => m.id));
 }
 
-/** Custom primeiro; `base` entra só se o id ainda não existir. */
+/**
+ * Catálogo oficial ganha do ponto criado no app quando o código é o mesmo
+ * (o cadastro da planilha traz volumetria, frequência e limpezas).
+ * Pontos só do app continuam no mapa.
+ */
 export function mergeMapMarkers(
   custom: MapDisplayPoint[],
   base: MapDisplayPoint[],
 ): MapDisplayPoint[] {
+  const officialIds = new Set(base.map((m) => m.id));
   const seen = new Set<string>();
   const out: MapDisplayPoint[] = [];
-  for (const m of [...custom, ...base]) {
-    if (seen.has(m.id)) continue;
+  for (const m of base) {
+    seen.add(m.id);
+    out.push(m);
+  }
+  for (const m of custom) {
+    if (seen.has(m.id) || officialIds.has(m.id)) continue;
     seen.add(m.id);
     out.push(m);
   }
@@ -366,10 +376,10 @@ export function mergePontosVicioFormOptions(
       address: m.address,
       subprefeitura: m.subprefeitura ?? "",
     }));
-  const ids = new Set(custom.map((c) => c.id));
+  const officialIds = new Set(MAPA_PONTOS_VICIO_FORM.map((f) => f.id));
   return [
-    ...custom,
-    ...MAPA_PONTOS_VICIO_FORM.filter((f) => !ids.has(f.id)),
+    ...MAPA_PONTOS_VICIO_FORM,
+    ...custom.filter((c) => !officialIds.has(c.id)),
   ];
 }
 

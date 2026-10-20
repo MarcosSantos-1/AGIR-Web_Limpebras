@@ -230,6 +230,42 @@
   border: none;
 }
 
+@keyframes agir-pin-pulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1.12);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.4);
+  }
+}
+
+@keyframes agir-pin-ring {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.85;
+  }
+  100% {
+    transform: scale(1.55);
+    opacity: 0;
+  }
+}
+
+.agir-pin-pulse {
+  animation: agir-pin-pulse 1.05s ease-in-out infinite;
+  z-index: 2;
+}
+
+.agir-pin-pulse::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 9999px;
+  border: 3px solid rgba(249, 115, 22, 0.85);
+  animation: agir-pin-ring 1.05s ease-out infinite;
+  pointer-events: none;
+}
+
 .leaflet-container {
   font-family: inherit;
   height: 100%;

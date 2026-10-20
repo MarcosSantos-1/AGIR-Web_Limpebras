@@ -149,6 +149,7 @@ function RedesSociaisPageBody() {
   }, [searchParams, openConteudoModal, router, pathname]);
 
   const filtered = postsState.filter((p) => {
+    if (highlightId) return String(p.id) === highlightId;
     const f = matchesFilter(p, selectedFilter);
     const q = searchQuery.toLowerCase();
     const searchMatch =
@@ -159,6 +160,24 @@ function RedesSociaisPageBody() {
       (p.ideiaResumo?.toLowerCase().includes(q) ?? false);
     return f && searchMatch;
   });
+
+  const clearContentFocus = () => {
+    setSearchQuery("");
+    router.replace(pathname, { scroll: false });
+  };
+
+  const focusSeed = useRef<string | null>(null);
+  useEffect(() => {
+    if (!highlightId) {
+      focusSeed.current = null;
+      return;
+    }
+    if (!postsHydrated || focusSeed.current === highlightId) return;
+    const post = postsState.find((p) => String(p.id) === highlightId);
+    if (!post) return;
+    focusSeed.current = highlightId;
+    setSearchQuery(post.tema);
+  }, [highlightId, postsHydrated, postsState]);
 
   const confirmDeletePost = async () => {
     if (!postToDelete) return;
@@ -215,6 +234,15 @@ function RedesSociaisPageBody() {
             className="h-12 w-full rounded-xl border-0 bg-white pl-12 pr-4 text-sm text-zinc-900 shadow-card placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[var(--gradient-start)]/20 dark:bg-zinc-900 dark:text-zinc-100"
           />
         </div>
+        {highlightId ? (
+          <Button
+            type="button"
+            className="h-12 shrink-0 rounded-xl bg-accent-gradient px-4 text-white shadow-md"
+            onClick={clearContentFocus}
+          >
+            Apagar filtro
+          </Button>
+        ) : null}
         <Button
           type="button"
           onClick={() => openConteudoModal()}
@@ -230,7 +258,10 @@ function RedesSociaisPageBody() {
           <button
             key={filter.id}
             type="button"
-            onClick={() => setSelectedFilter(filter.id)}
+            onClick={() => {
+              setSelectedFilter(filter.id);
+              if (highlightId) clearContentFocus();
+            }}
             className={`rounded-xl px-4 py-2.5 text-sm font-medium transition-all ${
               selectedFilter === filter.id
                 ? "bg-accent-gradient text-white shadow-lg shadow-[var(--gradient-start)]/25"
@@ -244,7 +275,14 @@ function RedesSociaisPageBody() {
 
       <SocialFollowerCards />
 
-      {!postsHydrated ? (
+      {highlightId && !postsHydrated ? (
+        <div className="flex items-center justify-center gap-3 rounded-3xl border border-zinc-100 bg-white py-16 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
+          <Loader2 className="h-5 w-5 animate-spin text-[var(--gradient-accent)]" />
+          <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
+            Buscando item…
+          </p>
+        </div>
+      ) : !postsHydrated ? (
         <RedesSociaisSkeletonGrid />
       ) : (
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
