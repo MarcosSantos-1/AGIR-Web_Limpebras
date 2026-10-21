@@ -16,6 +16,7 @@ import {
   addCustomPontoViciado,
   updateCustomPontoViciado,
   deleteCustomPontoViciado,
+  hidePontoViciadoCodigo,
   type CustomPontoViciadoEntry,
   type AddCustomPontoViciadoInput,
 } from "@/lib/firestore/custom-pontos-viciados";
@@ -26,6 +27,8 @@ type Ctx = {
   customPontosViciados: MapDisplayPoint[];
   /** Metadados para editar/remover pelo id do marcador (= `codigo`). */
   customPontoEntries: CustomPontoViciadoEntry[];
+  /** Códigos do catálogo que a equipe removeu do mapa. */
+  pontosOcultos: Set<string>;
   pontosVicioFormOptions: ReturnType<typeof mergePontosVicioFormOptions>;
   addPontoViciado: (input: AddCustomPontoViciadoInput) => Promise<void>;
   updatePontoViciado: (
@@ -58,9 +61,18 @@ export function CustomPontosViciadosProvider({
   }, []);
 
   const customPontosViciados = useMemo(
-    () => entries.map((e) => e.point),
+    () =>
+      entries.flatMap((e) => (e.point ? [e.point] : [])),
     [entries],
   );
+
+  const pontosOcultos = useMemo(() => {
+    const set = new Set<string>();
+    for (const e of entries) {
+      if (e.ocultoCodigo) set.add(e.ocultoCodigo);
+    }
+    return set;
+  }, [entries]);
 
   const addPontoViciado = useCallback(async (input: AddCustomPontoViciadoInput) => {
     await addCustomPontoViciado(input);
@@ -79,23 +91,25 @@ export function CustomPontosViciadosProvider({
   const deletePontoViciadoByCodigo = useCallback(
     async (codigo: string) => {
       const docId = firebaseDocIdForPontoCodigo(entries, codigo);
-      if (!docId) {
-        throw new Error("Ponto não encontrado.");
-      }
-      await deleteCustomPontoViciado(docId);
+      await hidePontoViciadoCodigo(codigo);
+      if (docId) await deleteCustomPontoViciado(docId);
     },
     [entries],
   );
 
   const pontosVicioFormOptions = useMemo(
-    () => mergePontosVicioFormOptions(customPontosViciados),
-    [customPontosViciados],
+    () =>
+      mergePontosVicioFormOptions(customPontosViciados).filter(
+        (p) => !pontosOcultos.has(p.id),
+      ),
+    [customPontosViciados, pontosOcultos],
   );
 
   const value = useMemo(
     () => ({
       customPontosViciados,
       customPontoEntries: entries,
+      pontosOcultos,
       pontosVicioFormOptions,
       addPontoViciado,
       updatePontoViciado,
@@ -105,6 +119,7 @@ export function CustomPontosViciadosProvider({
     [
       customPontosViciados,
       entries,
+      pontosOcultos,
       pontosVicioFormOptions,
       addPontoViciado,
       updatePontoViciado,

@@ -304,6 +304,7 @@ function reservedCodigosForPv(
     ) {
       continue;
     }
+    if (!e.point) continue;
     s.add(e.point.id);
   }
   return s;
@@ -325,6 +326,7 @@ function MapaPageContent() {
   const {
     customPontosViciados,
     customPontoEntries,
+    pontosOcultos,
     addPontoViciado,
     updatePontoViciado,
     deletePontoViciadoByCodigo,
@@ -379,6 +381,10 @@ function MapaPageContent() {
   const [editingFirestoreDocId, setEditingFirestoreDocId] = useState<
     string | null
   >(null);
+  /** Código do ponto aberto na edição, inclusive os que só existem na planilha. */
+  const [editingSourceCodigo, setEditingSourceCodigo] = useState<string | null>(
+    null,
+  );
   const [addPvCodigo, setAddPvCodigo] = useState("");
   const [addPvEndereco, setAddPvEndereco] = useState("");
   /** Endereço geocodificado completo (clique no mapa) — só exibição. */
@@ -413,8 +419,11 @@ function MapaPageContent() {
   );
 
   const allMarkers = useMemo(
-    () => [...agendaMarkers, ...mergedMarkers],
-    [agendaMarkers, mergedMarkers],
+    () =>
+      [...agendaMarkers, ...mergedMarkers].filter(
+        (p) => p.type !== "ponto-viciado" || !pontosOcultos.has(p.id),
+      ),
+    [agendaMarkers, mergedMarkers, pontosOcultos],
   );
 
   const faixaByMarkerId = useMemo(() => {
@@ -544,6 +553,7 @@ function MapaPageContent() {
 
   const resetPvModal = () => {
     setEditingFirestoreDocId(null);
+    setEditingSourceCodigo(null);
     setAddPvCodigo("");
     setAddPvEndereco("");
     setAddPvGeocodedLocation("");
@@ -598,8 +608,8 @@ function MapaPageContent() {
       selectedItem?.type === "ponto-viciado" ? selectedItem : null;
     if (!item || item.type !== "ponto-viciado") return;
     const fb = firebaseDocIdForPontoCodigo(customPontoEntries, item.id);
-    if (!fb) return;
-    setEditingFirestoreDocId(fb);
+    setEditingFirestoreDocId(fb ?? null);
+    setEditingSourceCodigo(item.id);
     setAddPvCodigo(item.id);
     setAddPvEndereco(item.address ?? "");
     setAddPvGeocodedLocation("");
@@ -631,8 +641,9 @@ function MapaPageContent() {
       const own = customPontoEntries.find(
         (e) => e.firestoreDocId === editingFirestoreDocId,
       );
-      if (own) reserved.delete(own.point.id);
+      if (own?.point) reserved.delete(own.point.id);
     }
+    if (editingSourceCodigo) reserved.delete(editingSourceCodigo);
     const preferred = addPvCodigo.trim();
     if (!preferred) {
       toast.error("Indique o código do ponto.");
@@ -765,7 +776,7 @@ function MapaPageContent() {
     }
   };
   const confirmDeletePvFirebase = async () => {
-    if (!selectedId || !firebasePvDocId) return;
+    if (!selectedId) return;
     setPvDeleting(true);
     try {
       await deletePontoViciadoByCodigo(selectedId);
@@ -1525,9 +1536,7 @@ function MapaPageContent() {
                 </div>
               ) : null}
 
-              {firebasePvDocId &&
-              selectedItem.type === "ponto-viciado" &&
-              !pickPvLocationMode ? (
+              {selectedItem.type === "ponto-viciado" && !pickPvLocationMode ? (
                 <div className="mt-4 flex flex-wrap gap-2 border-t border-zinc-100 pt-4 dark:border-zinc-800">
                   <Button
                     type="button"

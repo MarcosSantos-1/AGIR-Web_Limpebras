@@ -27,12 +27,17 @@ export type CustomPontoViciadoFirestoreDoc = {
 
 export type CustomPontoViciadoEntry = {
   firestoreDocId: string;
-  point: MapDisplayPoint;
+  /** Nulo quando o documento só oculta um ponto do catálogo. */
+  point: MapDisplayPoint | null;
+  ocultoCodigo?: string;
 };
 
 function snapToEntry(docId: string, data: Record<string, unknown>): CustomPontoViciadoEntry | null {
   const codigo =
     typeof data.codigo === "string" ? data.codigo.trim() : "";
+  if (data.oculto === true && codigo) {
+    return { firestoreDocId: docId, point: null, ocultoCodigo: codigo };
+  }
   const address =
     typeof data.address === "string" ? data.address.trim() : "";
   const lat = typeof data.lat === "number" ? data.lat : Number.NaN;
@@ -72,7 +77,11 @@ export function subscribeCustomPontosViciados(
         const row = snapToEntry(d.id, d.data() as Record<string, unknown>);
         if (row) items.push(row);
       }
-      items.sort((a, b) => a.point.id.localeCompare(b.point.id, "pt-BR"));
+      items.sort((a, b) => {
+        const idA = a.point?.id ?? a.ocultoCodigo ?? "";
+        const idB = b.point?.id ?? b.ocultoCodigo ?? "";
+        return idA.localeCompare(idB, "pt-BR");
+      });
       onNext(items);
     },
     (err) => onError?.(err as Error),
@@ -125,9 +134,19 @@ export async function deleteCustomPontoViciado(firestoreDocId: string): Promise<
   await deleteDoc(doc(db, CUSTOM_PONTOS_VICIOS_COLLECTION, firestoreDocId));
 }
 
+/** Esconde um ponto do catálogo (planilha) para toda a equipe. */
+export async function hidePontoViciadoCodigo(codigo: string): Promise<void> {
+  const db = getFirebaseDb();
+  await addDoc(collection(db, CUSTOM_PONTOS_VICIOS_COLLECTION), {
+    codigo: codigo.trim(),
+    oculto: true,
+    updatedAtMs: Date.now(),
+  });
+}
+
 export function firebaseDocIdForPontoCodigo(
   entries: CustomPontoViciadoEntry[],
   codigo: string,
 ): string | undefined {
-  return entries.find((e) => e.point.id === codigo)?.firestoreDocId;
+  return entries.find((e) => e.point?.id === codigo)?.firestoreDocId;
 }
