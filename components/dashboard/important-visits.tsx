@@ -7,8 +7,9 @@ import {
   getHomePendingActionVisits,
 } from "@/data/agenda-events";
 import { getCurrentWeekMondayIso } from "@/lib/date/week";
+import { formatDateBr } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { MapPin, Clock, ArrowRight } from "lucide-react";
+import { MapPin, Clock, ArrowRight, Calendar } from "lucide-react";
 import Link from "next/link";
 
 export function ImportantVisits() {
@@ -59,14 +60,20 @@ export function ImportantVisits() {
                   <p className="mt-1 text-sm text-[var(--gradient-accent)]">{visit.typeLabel}</p>
                 </div>
               </div>
-              <div className="mt-3 flex items-center gap-4 text-xs text-zinc-500 dark:text-zinc-400 dark:text-zinc-500">
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-zinc-500 dark:text-zinc-400">
                 <span className="flex items-center gap-1">
-                  <MapPin className="h-3.5 w-3.5" />
+                  <MapPin className="h-3.5 w-3.5 shrink-0" />
                   {visit.address}
                 </span>
                 <span className="flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5" />
-                  {visit.time}
+                  <Calendar className="h-3.5 w-3.5 shrink-0" />
+                  {formatDateBr(visit.date)}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5 shrink-0" />
+                  {!visit.time || visit.time === "--"
+                    ? "Sem horário"
+                    : visit.time}
                 </span>
               </div>
             </Link>

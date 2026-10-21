@@ -20,7 +20,7 @@ import {
 import { formatDateBr } from "@/lib/utils";
 import { agendaClockLabel } from "@/lib/agenda/time-display";
 import { motion } from "framer-motion";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronLeft,
@@ -38,6 +38,10 @@ import {
   Share2,
   Trash2,
   Loader2,
+  Building2,
+  Recycle,
+  Weight,
+  Megaphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -82,6 +86,81 @@ const statusOptions = [
 ];
 
 const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+const ISO_IN_TEXT = /\d{4}-\d{2}-\d{2}/g;
+
+function withDatesBr(value: string): string {
+  return value.replace(ISO_IN_TEXT, (iso) => formatDateBr(iso));
+}
+
+const observationIcons: Record<string, ComponentType<{ className?: string }>> = {
+  "Ponto viciado": MapPin,
+  Subprefeitura: Building2,
+  "Data da revitalização": Calendar,
+  "Volume retirado": Recycle,
+  Resíduos: Weight,
+  Equipe: Users,
+  "Agentes envolvidos": Users,
+  Colaboradores: Users,
+  "Munícipes participantes": Users,
+  "Pessoas conscientizadas": Megaphone,
+  "Instituições participantes": Building2,
+};
+
+function AgendaObservations({ text }: { text: string }) {
+  const structured: { label: string; value: string }[] = [];
+  const free: string[] = [];
+  for (const raw of text.split(/\n/)) {
+    const line = raw.trim();
+    if (!line || line === "Previsto:") continue;
+    const match = /^([^:]{2,48}):\s*(.+)$/.exec(line);
+    if (match && observationIcons[match[1].trim()]) {
+      structured.push({
+        label: match[1].trim(),
+        value: withDatesBr(match[2].trim()),
+      });
+    } else if (line.startsWith("Previsto:")) {
+      free.push(withDatesBr(line.slice("Previsto:".length).trim()));
+    } else {
+      free.push(withDatesBr(line));
+    }
+  }
+  if (structured.length === 0) {
+    return (
+      <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">
+        {withDatesBr(text)}
+      </p>
+    );
+  }
+  return (
+    <div className="mt-3 space-y-2">
+      <div className="flex flex-wrap gap-x-5 gap-y-2">
+        {structured.map((row) => {
+          const Icon = observationIcons[row.label] ?? MapPin;
+          return (
+            <span
+              key={`${row.label}-${row.value}`}
+              className="flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-300"
+            >
+              <Icon className="h-4 w-4 shrink-0 text-zinc-400" />
+              <span className="text-zinc-400 dark:text-zinc-500">
+                {row.label}
+              </span>
+              <span className="font-medium text-zinc-800 dark:text-zinc-100">
+                {row.value}
+              </span>
+            </span>
+          );
+        })}
+      </div>
+      {free.length > 0 ? (
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          {free.join(" ")}
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 type SocialAgendaItem = {
   kind: "social";
@@ -1124,11 +1203,9 @@ function AgendaPageContent() {
                               ))}
                             </div>
                           )}
-                        {event.observations && (
-                          <p className="mt-2 text-sm text-zinc-400 dark:text-zinc-500">
-                            {event.observations}
-                          </p>
-                        )}
+                        {event.observations ? (
+                          <AgendaObservations text={event.observations} />
+                        ) : null}
                         {isListSelected && (
                           <div
                             className="mt-4 space-y-3 border-t border-zinc-100 pt-4 dark:border-zinc-800"
