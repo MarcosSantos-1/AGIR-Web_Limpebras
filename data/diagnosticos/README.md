@@ -6,7 +6,7 @@ A página `/diagnosticos` consulta as seis fontes históricas e permite criar, c
 
 A entrada da página é a aba **Levantamentos**. Cada card representa uma fonte histórica ou um trimestre em preenchimento. Levantamentos em preenchimento aparecem primeiro, seguidos pelos históricos do mais recente ao mais antigo. A revisão de 19/10/2026 mantém identificação própria.
 
-O trimestre atual é apresentado como levantamento a iniciar; a lista de códigos do catálogo é persistida ao abrir seu preenchimento pela primeira vez. Outros trimestres podem ser criados em **Novo levantamento**. Essa lista fixa é a referência do denominador, acrescida dos pontos novos efetivamente registrados. O progresso conta pontos trimestrais concluídos, sem contar visitas avulsas, campos ou duplicatas. Reabrir um diagnóstico como rascunho retira sua conclusão da contagem.
+Use **Novo levantamento** com um título como **4º trimestre de 2026**. Só pode existir um levantamento em preenchimento. Um levantamento com zero pontos concluídos pode ser cancelado, preservando os rascunhos existentes; se for uma revisão histórica, o card original volta ao arquivo. A lista de pontos esperados é persistida e ampliada automaticamente quando novos pontos entram no catálogo compartilhado, inclusive com o levantamento já aberto. O progresso conta pontos trimestrais concluídos, sem contar visitas avulsas, campos ou duplicatas. Reabrir um diagnóstico como rascunho retira sua conclusão da contagem.
 
 Os cards têm um accordion laranja com observações compartilhadas, pendências da fonte e data da atualização. As configurações são persistidas em documentos da coleção `appSettings`, com `type: diagnostico-levantamento` e controle de revisão. As regras existentes dessa coleção já permitem acesso autenticado; não é necessária uma nova coleção de permissões para as observações.
 
@@ -48,7 +48,7 @@ As regras seguem o padrão atual do projeto: usuários autenticados podem ler e 
 
 ## Rascunhos e conexão
 
-As respostas do formulário são salvas localmente por conta e podem ser recuperadas em **Retomar rascunho**. Há um rascunho local mais recente por usuário/aparelho. Fotos ainda não enviadas ficam apenas na memória até salvar; se fechar, será necessário selecioná-las novamente. Fotos enviadas com sucesso antes de uma falha posterior de gravação mantêm suas URLs no rascunho para nova tentativa.
+As respostas do formulário são salvas localmente por conta e podem ser recuperadas em **Retomar rascunho**. Há um rascunho local mais recente por usuário/aparelho. No formulário tradicional, fotos ainda não enviadas ficam apenas na memória até salvar; se fechar, será necessário selecioná-las novamente. Fotos enviadas com sucesso antes de uma falha posterior de gravação mantêm suas URLs no rascunho para nova tentativa.
 
 Não há PWA, fila offline, sincronização em segundo plano nem publicação no mapa nesta entrega. As gravações e os uploads dependem de conexão. Esses recursos podem usar o mesmo contrato de dados em uma próxima etapa.
 
@@ -70,3 +70,16 @@ npm run build
 ```
 
 Os testes verificam contagens, identidade e separação das revisões, exclusão da linha incompleta, alternativas versionadas, validações de rascunho/conclusão, datas, coordenadas, regra de inatividade e chaves de foto. A verificação autenticada de CRUD, upload e responsividade em aparelhos reais deve ser realizada após publicar as regras e entrar no aplicativo.
+
+## Preenchimento no mapa e no celular
+
+- `/diagnosticos/mapa`: mapa do levantamento selecionado (ou do ativo), com todos os pontos, resumo em drawer e formulário em modal amplo.
+- `/diagnosticos/campo`: tela própria de campo, sem a navegação inferior, com voltar, GPS, filtros de 500 m, 1 km, 3 km e todos, busca, lista por proximidade e formulário por pergunta/subetapa.
+- Verde indica conclusão no levantamento selecionado. Amarelo indica pendência. Cinza indica ponto inativo ainda a confirmar, sem removê-lo do mapa. A conclusão atual tem prioridade sobre a condição histórica.
+- As respostas locais são separadas por conta e ponto; fotos pendentes do fluxo móvel são persistidas em IndexedDB. Reabrir o mesmo ponto retoma o rascunho se a revisão do servidor ainda corresponder. O botão Rascunho envia ao servidor; fechar mantém o material no aparelho.
+- Um ponto inativo recebe as alternativas oficiais de não aplicabilidade para o descarte, com explicação visível e sem dispensar identificação e características do logradouro.
+- Concluir ou salvar atualiza o contador de conclusões junto do diagnóstico em uma transação. Um levantamento cancelado/encerrado recusa novas gravações do fluxo de campo. A ativação usa um documento de controle compartilhado para impedir dois levantamentos ativos concorrentes.
+- Pontos novos com coordenadas válidas, cadastrados pelo diagnóstico, também passam para o catálogo compartilhado do mapa. Assim, aparecem no levantamento atual e nos próximos.
+- O mapa depende de internet para carregar os tiles; o envio de dados e fotos continua exigindo conexão. Não há sincronização automática em segundo plano nem garantia de preservação local se o usuário limpar os dados do navegador. GPS depende da permissão do usuário e de HTTPS (ou localhost).
+
+A navegação inferior global no celular contém Home, Mapa, adicionar, Galeria e Mais. A sidebar permanece apenas no desktop. A tela de campo usa seus próprios componentes e não monta essa navegação.

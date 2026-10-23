@@ -2,9 +2,15 @@ import { FIELDS, fieldVersion, type Diagnostic } from "@/lib/diagnosticos";
 
 export type Levantamento = {
   id: string; period: string; title: string; sourceId?: string;
-  status: "em-preenchimento" | "concluido";
+  status: "em-preenchimento" | "concluido" | "cancelado";
+  completedCodes?: string[];
   expectedCodes: string[]; notes: string; revision: number; updatedAtMs?: number;
 };
+
+export function periodFromTitle(title: string): string | null {
+  const match = /^([1-4])\s*[º°o]?\s*trimestre\s+de\s+(\d{4})$/i.exec(title.trim());
+  return match ? `${match[2]}-T${match[1]}` : null;
+}
 
 export function periodLabel(period: string) {
   const [year, quarter] = period.split("-T");

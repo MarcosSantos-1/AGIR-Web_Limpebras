@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test:diagnosticos": "tsx --test scripts/diagnosticos.test.ts scripts/firebase-token-verification.test.ts scripts/levantamentos.test.ts",
+    "test:diagnosticos": "tsx --test scripts/diagnosticos.test.ts scripts/firebase-token-verification.test.ts scripts/levantamentos.test.ts scripts/survey-workspace.test.ts",
     "prepare:diagnosticos": "py -3 scripts/prepare-diagnosticos.py",
     "seed:firestore": "tsx scripts/seed-firestore.ts",
     "import:pontos-viciados": "py -3 scripts/import-pontos-viciados-xlsb.py"
