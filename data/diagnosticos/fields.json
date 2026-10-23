@@ -1,0 +1,3036 @@
+[
+  {
+    "key": "codigo",
+    "label": "Código do ponto",
+    "column": "A",
+    "type": "text",
+    "step": 0,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "1. Código Padronizado de Identificação.",
+        "options": []
+      },
+      "2025-T4": {
+        "instruction": "1. Código Padronizado de Identificação.",
+        "options": []
+      },
+      "2026-T1": {
+        "instruction": "1. Código Padronizado de Identificação.",
+        "options": []
+      },
+      "2026-T2": {
+        "instruction": "1. Código Padronizado de Identificação.",
+        "options": []
+      },
+      "2026-T3": {
+        "instruction": "1. Código Padronizado de Identificação.",
+        "options": []
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "1. Código Padronizado de Identificação.",
+        "options": []
+      }
+    }
+  },
+  {
+    "key": "subprefeitura",
+    "label": "Subprefeitura",
+    "column": "B",
+    "type": "select",
+    "step": 0,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "2.1 Subprefeitura.\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Aricanduva/Formosa/Carrão",
+          "Butantã",
+          "Campo Limpo",
+          "Capela do Socorro",
+          "Casa Verde",
+          "Cidade Ademar",
+          "Cidade Tiradentes",
+          "Ermelino Matarazzo",
+          "Freguesia do Ó/Brasilândia",
+          "Guaianases",
+          "Ipiranga",
+          "Itaim Paulista",
+          "Itaquera",
+          "Jabaquara",
+          "Jaçanã/Tremembé",
+          "Lapa",
+          "M'Boi Mirim",
+          "Mooca",
+          "Parelheiros",
+          "Penha",
+          "Perus/Anhanguera",
+          "Pinheiros",
+          "Pirituba/Jaraguá",
+          "Santana/Tucuruvi",
+          "Santo Amaro",
+          "São Mateus",
+          "São Miguel Paulista",
+          "Sapopemba",
+          "Sé",
+          "Vila Maria/Vila Guilherme",
+          "Vila Mariana",
+          "Vila Prudente"
+        ]
+      },
+      "2025-T4": {
+        "instruction": "2.1 Subprefeitura.\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Aricanduva/Formosa/Carrão",
+          "Butantã",
+          "Campo Limpo",
+          "Capela do Socorro",
+          "Casa Verde",
+          "Cidade Ademar",
+          "Cidade Tiradentes",
+          "Ermelino Matarazzo",
+          "Freguesia do Ó/Brasilândia",
+          "Guaianases",
+          "Ipiranga",
+          "Itaim Paulista",
+          "Itaquera",
+          "Jabaquara",
+          "Jaçanã/Tremembé",
+          "Lapa",
+          "M'Boi Mirim",
+          "Mooca",
+          "Parelheiros",
+          "Penha",
+          "Perus/Anhanguera",
+          "Pinheiros",
+          "Pirituba/Jaraguá",
+          "Santana/Tucuruvi",
+          "Santo Amaro",
+          "São Mateus",
+          "São Miguel Paulista",
+          "Sapopemba",
+          "Sé",
+          "Vila Maria/Vila Guilherme",
+          "Vila Mariana",
+          "Vila Prudente"
+        ]
+      },
+      "2026-T1": {
+        "instruction": "2.1 Subprefeitura.\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Aricanduva/Formosa/Carrão",
+          "Butantã",
+          "Campo Limpo",
+          "Capela do Socorro",
+          "Casa Verde",
+          "Cidade Ademar",
+          "Cidade Tiradentes",
+          "Ermelino Matarazzo",
+          "Freguesia do Ó/Brasilândia",
+          "Guaianases",
+          "Ipiranga",
+          "Itaim Paulista",
+          "Itaquera",
+          "Jabaquara",
+          "Jaçanã/Tremembé",
+          "Lapa",
+          "M'Boi Mirim",
+          "Mooca",
+          "Parelheiros",
+          "Penha",
+          "Perus/Anhanguera",
+          "Pinheiros",
+          "Pirituba/Jaraguá",
+          "Santana/Tucuruvi",
+          "Santo Amaro",
+          "São Mateus",
+          "São Miguel Paulista",
+          "Sapopemba",
+          "Sé",
+          "Vila Maria/Vila Guilherme",
+          "Vila Mariana",
+          "Vila Prudente"
+        ]
+      },
+      "2026-T2": {
+        "instruction": "2.1 Subprefeitura.\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Aricanduva/Formosa/Carrão",
+          "Butantã",
+          "Campo Limpo",
+          "Capela do Socorro",
+          "Casa Verde",
+          "Cidade Ademar",
+          "Cidade Tiradentes",
+          "Ermelino Matarazzo",
+          "Freguesia do Ó/Brasilândia",
+          "Guaianases",
+          "Ipiranga",
+          "Itaim Paulista",
+          "Itaquera",
+          "Jabaquara",
+          "Jaçanã/Tremembé",
+          "Lapa",
+          "M'Boi Mirim",
+          "Mooca",
+          "Parelheiros",
+          "Penha",
+          "Perus/Anhanguera",
+          "Pinheiros",
+          "Pirituba/Jaraguá",
+          "Santana/Tucuruvi",
+          "Santo Amaro",
+          "São Mateus",
+          "São Miguel Paulista",
+          "Sapopemba",
+          "Sé",
+          "Vila Maria/Vila Guilherme",
+          "Vila Mariana",
+          "Vila Prudente"
+        ]
+      },
+      "2026-T3": {
+        "instruction": "2.1 Subprefeitura.\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Aricanduva/Formosa/Carrão",
+          "Butantã",
+          "Campo Limpo",
+          "Capela do Socorro",
+          "Casa Verde",
+          "Cidade Ademar",
+          "Cidade Tiradentes",
+          "Ermelino Matarazzo",
+          "Freguesia do Ó/Brasilândia",
+          "Guaianases",
+          "Ipiranga",
+          "Itaim Paulista",
+          "Itaquera",
+          "Jabaquara",
+          "Jaçanã/Tremembé",
+          "Lapa",
+          "M'Boi Mirim",
+          "Mooca",
+          "Parelheiros",
+          "Penha",
+          "Perus/Anhanguera",
+          "Pinheiros",
+          "Pirituba/Jaraguá",
+          "Santana/Tucuruvi",
+          "Santo Amaro",
+          "São Mateus",
+          "São Miguel Paulista",
+          "Sapopemba",
+          "Sé",
+          "Vila Maria/Vila Guilherme",
+          "Vila Mariana",
+          "Vila Prudente"
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "2.1 Subprefeitura.\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Aricanduva/Formosa/Carrão",
+          "Butantã",
+          "Campo Limpo",
+          "Capela do Socorro",
+          "Casa Verde",
+          "Cidade Ademar",
+          "Cidade Tiradentes",
+          "Ermelino Matarazzo",
+          "Freguesia do Ó/Brasilândia",
+          "Guaianases",
+          "Ipiranga",
+          "Itaim Paulista",
+          "Itaquera",
+          "Jabaquara",
+          "Jaçanã/Tremembé",
+          "Lapa",
+          "M'Boi Mirim",
+          "Mooca",
+          "Parelheiros",
+          "Penha",
+          "Perus/Anhanguera",
+          "Pinheiros",
+          "Pirituba/Jaraguá",
+          "Santana/Tucuruvi",
+          "Santo Amaro",
+          "São Mateus",
+          "São Miguel Paulista",
+          "Sapopemba",
+          "Sé",
+          "Vila Maria/Vila Guilherme",
+          "Vila Mariana",
+          "Vila Prudente"
+        ]
+      }
+    }
+  },
+  {
+    "key": "sigla",
+    "label": "Sigla",
+    "column": "C",
+    "type": "select",
+    "step": 0,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "2.2. Sigla da Subprefeitura.\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "AF",
+          "BT",
+          "CL",
+          "CS",
+          "CV",
+          "AD",
+          "CT",
+          "EM",
+          "FB",
+          "G",
+          "IP",
+          "IT",
+          "IQ",
+          "JA",
+          "JT",
+          "LA",
+          "MB",
+          "MO",
+          "PA",
+          "PE",
+          "PR",
+          "PI",
+          "PJ",
+          "ST",
+          "SA",
+          "SM",
+          "MP",
+          "SB",
+          "SE",
+          "MG",
+          "VM",
+          "VP"
+        ]
+      },
+      "2025-T4": {
+        "instruction": "2.2. Sigla da Subprefeitura.\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "AF",
+          "BT",
+          "CL",
+          "CS",
+          "CV",
+          "AD",
+          "CT",
+          "EM",
+          "FB",
+          "G",
+          "IP",
+          "IT",
+          "IQ",
+          "JA",
+          "JT",
+          "LA",
+          "MB",
+          "MO",
+          "PA",
+          "PE",
+          "PR",
+          "PI",
+          "PJ",
+          "ST",
+          "SA",
+          "SM",
+          "MP",
+          "SB",
+          "SE",
+          "MG",
+          "VM",
+          "VP"
+        ]
+      },
+      "2026-T1": {
+        "instruction": "2.2. Sigla da Subprefeitura.\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "AF",
+          "BT",
+          "CL",
+          "CS",
+          "CV",
+          "AD",
+          "CT",
+          "EM",
+          "FB",
+          "G",
+          "IP",
+          "IT",
+          "IQ",
+          "JA",
+          "JT",
+          "LA",
+          "MB",
+          "MO",
+          "PA",
+          "PE",
+          "PR",
+          "PI",
+          "PJ",
+          "ST",
+          "SA",
+          "SM",
+          "MP",
+          "SB",
+          "SE",
+          "MG",
+          "VM",
+          "VP"
+        ]
+      },
+      "2026-T2": {
+        "instruction": "2.2. Sigla da Subprefeitura.\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "AF",
+          "BT",
+          "CL",
+          "CS",
+          "CV",
+          "AD",
+          "CT",
+          "EM",
+          "FB",
+          "G",
+          "IP",
+          "IT",
+          "IQ",
+          "JA",
+          "JT",
+          "LA",
+          "MB",
+          "MO",
+          "PA",
+          "PE",
+          "PR",
+          "PI",
+          "PJ",
+          "ST",
+          "SA",
+          "SM",
+          "MP",
+          "SB",
+          "SE",
+          "MG",
+          "VM",
+          "VP"
+        ]
+      },
+      "2026-T3": {
+        "instruction": "2.2. Sigla da Subprefeitura.\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "AF",
+          "BT",
+          "CL",
+          "CS",
+          "CV",
+          "AD",
+          "CT",
+          "EM",
+          "FB",
+          "G",
+          "IP",
+          "IT",
+          "IQ",
+          "JA",
+          "JT",
+          "LA",
+          "MB",
+          "MO",
+          "PA",
+          "PE",
+          "PR",
+          "PI",
+          "PJ",
+          "ST",
+          "SA",
+          "SM",
+          "MP",
+          "SB",
+          "SE",
+          "MG",
+          "VM",
+          "VP"
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "2.2. Sigla da Subprefeitura.\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "AF",
+          "BT",
+          "CL",
+          "CS",
+          "CV",
+          "AD",
+          "CT",
+          "EM",
+          "FB",
+          "G",
+          "IP",
+          "IT",
+          "IQ",
+          "JA",
+          "JT",
+          "LA",
+          "MB",
+          "MO",
+          "PA",
+          "PE",
+          "PR",
+          "PI",
+          "PJ",
+          "ST",
+          "SA",
+          "SM",
+          "MP",
+          "SB",
+          "SE",
+          "MG",
+          "VM",
+          "VP"
+        ]
+      }
+    }
+  },
+  {
+    "key": "distrito",
+    "label": "Distrito",
+    "column": "D",
+    "type": "text",
+    "step": 0,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "2.3. Distrito.",
+        "options": []
+      },
+      "2025-T4": {
+        "instruction": "2.3. Distrito.",
+        "options": []
+      },
+      "2026-T1": {
+        "instruction": "2.3. Distrito.",
+        "options": []
+      },
+      "2026-T2": {
+        "instruction": "2.3. Distrito.",
+        "options": []
+      },
+      "2026-T3": {
+        "instruction": "2.3. Distrito.",
+        "options": []
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "2.3. Distrito.",
+        "options": []
+      }
+    }
+  },
+  {
+    "key": "dataChecagem",
+    "label": "Data da checagem",
+    "column": "E",
+    "type": "date",
+    "step": 0,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "3. Data da checagem in loco.\n\n--> Instrução: utilize o formato\ndd / mm / aaaa.",
+        "options": []
+      },
+      "2025-T4": {
+        "instruction": "3. Data da checagem in loco.\n\n--> Instrução: utilize o formato\ndd / mm / aaaa.",
+        "options": []
+      },
+      "2026-T1": {
+        "instruction": "3. Data da checagem in loco.\n\n--> Instrução: utilize o formato\ndd / mm / aaaa.",
+        "options": []
+      },
+      "2026-T2": {
+        "instruction": "3. Data da checagem in loco.\n\n--> Instrução: utilize o formato\ndd / mm / aaaa.",
+        "options": []
+      },
+      "2026-T3": {
+        "instruction": "3. Data da checagem in loco.\n\n--> Instrução: utilize o formato\ndd / mm / aaaa.",
+        "options": []
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "3. Data da checagem in loco.\n\n--> Instrução: utilize o formato\ndd / mm / aaaa.",
+        "options": []
+      }
+    }
+  },
+  {
+    "key": "antiguidade",
+    "label": "Ponto antigo ou novo no trimestre",
+    "column": "F",
+    "type": "select",
+    "step": 1,
+    "quarterly": true,
+    "versions": {
+      "2025-T3": {
+        "instruction": "4. O Logradouro com Descarte Irregular é:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "“Antigo”, já existia no(s) trimestre(s) anterior(es).",
+          "“Novo”, surgiu durante este trimestre."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "4. O Logradouro com Descarte Irregular é:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "“Antigo”, já existia no(s) trimestre(s) anterior(es).",
+          "“Novo”, surgiu durante este trimestre."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "4. O Logradouro com Descarte Irregular Recorrente é:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "“Antigo”, já existia no(s) trimestre(s) anterior(es).",
+          "“Novo”, surgiu durante este trimestre."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "4. O Logradouro com Descarte Irregular Recorrente é:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "“Antigo”, já existia no(s) trimestre(s) anterior(es).",
+          "“Novo”, surgiu durante este trimestre."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "4. O Logradouro com Descarte Irregular Recorrente é:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "“Antigo”, já existia no(s) trimestre(s) anterior(es).",
+          "“Novo”, surgiu durante este trimestre."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "4. O Logradouro com Descarte Irregular Recorrente é:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "“Antigo”, já existia no(s) trimestre(s) anterior(es).",
+          "“Novo”, surgiu durante este trimestre."
+        ]
+      }
+    }
+  },
+  {
+    "key": "statusTrimestral",
+    "label": "Atividade durante o trimestre",
+    "column": "G",
+    "type": "select",
+    "step": 1,
+    "quarterly": true,
+    "versions": {
+      "2025-T3": {
+        "instruction": "5. Status do Logradouro com Descarte Irregular durante este trimestre:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Permaneceu “inativo”, não recebeu descarte irregular de resíduos.",
+          "Esteve “ativo”, recebeu descarte irregular de resíduos."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "5. Status do Logradouro com Descarte Irregular durante este trimestre:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Permaneceu “inativo”, não recebeu descarte irregular de resíduos.",
+          "Esteve “ativo”, recebeu descarte irregular de resíduos."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "5. Status do Logradouro com Descarte Irregular Recorrente, durante este trimestre:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Permaneceu “inativo”, não recebeu descarte irregular de resíduos.",
+          "Esteve “ativo”, recebeu descarte irregular de resíduos."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "5. Status do Logradouro com Descarte Irregular Recorrente, durante este trimestre:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Permaneceu “inativo”, não recebeu descarte irregular de resíduos.",
+          "Esteve “ativo”, recebeu descarte irregular de resíduos."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "5. Status do Logradouro com Descarte Irregular Recorrente, durante este trimestre:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Permaneceu “inativo”, não recebeu descarte irregular de resíduos.",
+          "Esteve “ativo”, recebeu descarte irregular de resíduos."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "5. Status do Logradouro com Descarte Irregular Recorrente, durante este trimestre:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Permaneceu “inativo”, não recebeu descarte irregular de resíduos.",
+          "Esteve “ativo”, recebeu descarte irregular de resíduos."
+        ]
+      }
+    }
+  },
+  {
+    "key": "revitalizacao",
+    "label": "Revitalização no trimestre",
+    "column": "H",
+    "type": "select",
+    "step": 1,
+    "quarterly": true,
+    "versions": {
+      "2025-T3": {
+        "instruction": "6.1. A(s) operação(ões) de limpeza do Logradouro com Descarte Irregular, neste trimestre, foi(foram) realizada(s):\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Sem revitalização.",
+          "Com revitalização \"livre\".",
+          "Com revitalização vinculada ao Projeto Revitaliza SP.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "6.1. A(s) operação(ões) de limpeza do Logradouro com Descarte Irregular, neste trimestre, foi(foram) realizada(s):\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Sem revitalização.",
+          "Com revitalização \"livre\".",
+          "Com revitalização vinculada ao Projeto Revitaliza SP.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "6.1. A(s) operação(ões) de limpeza do Logradouro com Descarte Irregular Recorrente, neste trimestre, foi(foram) realizada(s):\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Sem revitalização.",
+          "Com revitalização \"livre\".",
+          "Com revitalização vinculada ao Projeto Revitaliza SP.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "6.1. A(s) operação(ões) de limpeza do Logradouro com Descarte Irregular Recorrente, neste trimestre, foi(foram) realizada(s):\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Sem revitalização.",
+          "Com revitalização \"livre\".",
+          "Com revitalização vinculada ao Projeto Revitaliza SP.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "6.1. A(s) operação(ões) de limpeza do Logradouro com Descarte Irregular Recorrente, neste trimestre, foi(foram) realizada(s):\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Sem revitalização.",
+          "Com revitalização \"livre\".",
+          "Com revitalização vinculada ao Projeto Revitaliza SP.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "6.1. A(s) operação(ões) de limpeza do Logradouro com Descarte Irregular Recorrente, neste trimestre, foi(foram) realizada(s):\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Sem revitalização.",
+          "Com revitalização \"livre\".",
+          "Com revitalização vinculada ao Projeto Revitaliza SP.",
+          "Não se aplica (inativo)."
+        ]
+      }
+    }
+  },
+  {
+    "key": "coleta",
+    "label": "Coleta predominante no trimestre",
+    "column": "I",
+    "type": "select",
+    "step": 1,
+    "quarterly": true,
+    "versions": {
+      "2025-T3": {
+        "instruction": "6.2. Na(s) operação(ões) de limpeza do Logradouro com Descarte Irregular, neste trimestre, o tipo predominante de coleta utilizada foi:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Manual.",
+          "Compactador.",
+          "Mecanizada.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "6.2. Na(s) operação(ões) de limpeza do Logradouro com Descarte Irregular, neste trimestre, o tipo predominante de coleta utilizada foi:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Manual.",
+          "Compactador.",
+          "Mecanizada.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "6.2. Na(s) operação(ões) de limpeza do Logradouro com Descarte Irregular Recorrente, neste trimestre, o tipo predominante de coleta utilizada foi:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Manual.",
+          "Compactador.",
+          "Mecanizada.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "6.2. Na(s) operação(ões) de limpeza do Logradouro com Descarte Irregular Recorrente, neste trimestre, o tipo predominante de coleta utilizada foi:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Manual.",
+          "Compactador.",
+          "Mecanizada.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "6.2. Na(s) operação(ões) de limpeza do Logradouro com Descarte Irregular Recorrente, neste trimestre, o tipo predominante de coleta utilizada foi:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Manual.",
+          "Compactador.",
+          "Mecanizada.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "6.2. Na(s) operação(ões) de limpeza do Logradouro com Descarte Irregular Recorrente, neste trimestre, o tipo predominante de coleta utilizada foi:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Manual.",
+          "Compactador.",
+          "Mecanizada.",
+          "Não se aplica (inativo)."
+        ]
+      }
+    }
+  },
+  {
+    "key": "limpezas",
+    "label": "Operações de limpeza no trimestre",
+    "column": "J",
+    "type": "number",
+    "step": 1,
+    "quarterly": true,
+    "versions": {
+      "2025-T3": {
+        "instruction": "7. Quantas operações de limpeza foram realizadas, neste trimestre, no Logradouro com Descarte Irregular?\n\n--> Instrução: escreva um NÚMERO para indicar a quantidade. Se o Logradouro com Descarte Irregular esteve \"inativo\" e, portanto, não sofreu operação de limpeza, escreva o número \"0\" (zero).",
+        "options": []
+      },
+      "2025-T4": {
+        "instruction": "7. Quantas operações de limpeza foram realizadas, neste trimestre, no Logradouro com Descarte Irregular?\n\n--> Instrução: escreva um NÚMERO para indicar a quantidade. Se o Logradouro com Descarte Irregular esteve \"inativo\" e, portanto, não sofreu operação de limpeza, escreva o número \"0\" (zero).",
+        "options": []
+      },
+      "2026-T1": {
+        "instruction": "7. Quantas operações de limpeza foram realizadas, neste trimestre, no Logradouro com Descarte Irregular Recorrente?\n\n--> Instrução: escreva um NÚMERO para indicar a quantidade. Se o Logradouro com Descarte Irregular Recorrente esteve \"inativo\" e, portanto, não sofreu operação de limpeza, escreva o número \"0\" (zero).",
+        "options": []
+      },
+      "2026-T2": {
+        "instruction": "7. Quantas operações de limpeza foram realizadas, neste trimestre, no Logradouro com Descarte Irregular Recorrente?\n\n--> Instrução: escreva um NÚMERO para indicar a quantidade. Se o Logradouro com Descarte Irregular Recorrente esteve \"inativo\" e, portanto, não sofreu operação de limpeza, escreva o número \"0\" (zero).",
+        "options": []
+      },
+      "2026-T3": {
+        "instruction": "7. Quantas operações de limpeza foram realizadas, neste trimestre, no Logradouro com Descarte Irregular Recorrente?\n\n--> Instrução: escreva um NÚMERO para indicar a quantidade. Se o Logradouro com Descarte Irregular Recorrente esteve \"inativo\" e, portanto, não sofreu operação de limpeza, escreva o número \"0\" (zero).",
+        "options": []
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "7. Quantas operações de limpeza foram realizadas, neste trimestre, no Logradouro com Descarte Irregular Recorrente?\n\n--> Instrução: escreva um NÚMERO para indicar a quantidade. Se o Logradouro com Descarte Irregular Recorrente esteve \"inativo\" e, portanto, não sofreu operação de limpeza, escreva o número \"0\" (zero).",
+        "options": []
+      }
+    }
+  },
+  {
+    "key": "endereco",
+    "label": "Endereço",
+    "column": "K",
+    "type": "text",
+    "step": 0,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "8.1. Endereço, compreendendo título, nome e numeração do(s) logradouro(s):\n\n--> Instrução: escreva o TÍTULO E NOME COMPLETOS DO LOGRADOURO (não utilize abreviaturas como “R.” e/ou “Av.”); a NUMERAÇÃO DEVE SER PRECEDIDA POR VÍRGULA (não utilize símbolos como “n.º”); indique uma ESQUINA usando os caracteres “X” E/OU “&” para separar os respectivos logradouros (anotando o título, nome e número completos para ambos); e utilize a expressão “S/N” QUANDO O LOGRADOURO NÃO POSSUIR NUMERAÇÃO.",
+        "options": []
+      },
+      "2025-T4": {
+        "instruction": "8.1. Endereço, compreendendo título, nome e numeração do(s) logradouro(s):\n\n--> Instrução: escreva o TÍTULO E NOME COMPLETOS DO LOGRADOURO (não utilize abreviaturas como “R.” e/ou “Av.”); a NUMERAÇÃO DEVE SER PRECEDIDA POR VÍRGULA (não utilize símbolos como “n.º”); indique uma ESQUINA usando os caracteres “X” E/OU “&” para separar os respectivos logradouros (anotando o título, nome e número completos para ambos); e utilize a expressão “S/N” QUANDO O LOGRADOURO NÃO POSSUIR NUMERAÇÃO.",
+        "options": []
+      },
+      "2026-T1": {
+        "instruction": "8.1. Endereço do Logradouro com Descarte Irregular Recorrente, compreendendo título, nome e numeração:\n\n--> Instrução: escreva o TÍTULO E NOME COMPLETOS DO LOGRADOURO (não utilize abreviaturas como “R.” e/ou “Av.”); a NUMERAÇÃO DEVE SER PRECEDIDA POR VÍRGULA (não utilize símbolos como “n.º”); indique uma ESQUINA usando os caracteres “X” E/OU “&” para separar os respectivos logradouros (anotando o título, nome e número completos para ambos); e utilize a expressão “S/N” QUANDO O LOGRADOURO NÃO POSSUIR NUMERAÇÃO.",
+        "options": []
+      },
+      "2026-T2": {
+        "instruction": "8.1. Endereço do Logradouro com Descarte Irregular Recorrente, compreendendo título, nome e numeração:\n\n--> Instrução: escreva o TÍTULO E NOME COMPLETOS DO LOGRADOURO (não utilize abreviaturas como “R.” e/ou “Av.”); a NUMERAÇÃO DEVE SER PRECEDIDA POR VÍRGULA (não utilize símbolos como “n.º”); indique uma ESQUINA usando os caracteres “X” E/OU “&” para separar os respectivos logradouros (anotando o título, nome e número completos para ambos); e utilize a expressão “S/N” QUANDO O LOGRADOURO NÃO POSSUIR NUMERAÇÃO.",
+        "options": []
+      },
+      "2026-T3": {
+        "instruction": "8.1. Endereço do Logradouro com Descarte Irregular Recorrente, compreendendo título, nome e numeração:\n\n--> Instrução: escreva o TÍTULO E NOME COMPLETOS DO LOGRADOURO (não utilize abreviaturas como “R.” e/ou “Av.”); a NUMERAÇÃO DEVE SER PRECEDIDA POR VÍRGULA (não utilize símbolos como “n.º”); indique uma ESQUINA usando os caracteres “X” E/OU “&” para separar os respectivos logradouros (anotando o título, nome e número completos para ambos); e utilize a expressão “S/N” QUANDO O LOGRADOURO NÃO POSSUIR NUMERAÇÃO.",
+        "options": []
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "8.1. Endereço do Logradouro com Descarte Irregular Recorrente, compreendendo título, nome e numeração:\n\n--> Instrução: escreva o TÍTULO E NOME COMPLETOS DO LOGRADOURO (não utilize abreviaturas como “R.” e/ou “Av.”); a NUMERAÇÃO DEVE SER PRECEDIDA POR VÍRGULA (não utilize símbolos como “n.º”); indique uma ESQUINA usando os caracteres “X” E/OU “&” para separar os respectivos logradouros (anotando o título, nome e número completos para ambos); e utilize a expressão “S/N” QUANDO O LOGRADOURO NÃO POSSUIR NUMERAÇÃO.",
+        "options": []
+      }
+    }
+  },
+  {
+    "key": "complemento",
+    "label": "Complemento e referência",
+    "column": "L",
+    "type": "text",
+    "step": 0,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "8.2. Complemento sobre o(s) logradouro(s):\n\n--> Instrução: utilize para especificar referências que auxiliem na localização territorial do logradouro (como “canteiro central”, “ao lado”, “defronte”, “subestação de energia”, “próximo do estabelecimento ...” etc.). ",
+        "options": []
+      },
+      "2025-T4": {
+        "instruction": "8.2. Complemento sobre o(s) logradouro(s):\n\n--> Instrução: utilize para especificar referências que auxiliem na localização territorial do logradouro (como “canteiro central”, “ao lado”, “defronte”, “subestação de energia”, “próximo do estabelecimento ...” etc.). ",
+        "options": []
+      },
+      "2026-T1": {
+        "instruction": "8.2. Complemento sobre o Logradouro com Descarte Irregular Recorrente:\n\n--> Instrução: utilize para especificar referências que auxiliem na localização territorial do logradouro (como “canteiro central”, “ao lado”, “defronte”, “subestação de energia”, “próximo do estabelecimento ...” etc.). ",
+        "options": []
+      },
+      "2026-T2": {
+        "instruction": "8.2. Complemento sobre o Logradouro com Descarte Irregular Recorrente:\n\n--> Instrução: utilize para especificar referências que auxiliem na localização territorial do logradouro (como “canteiro central”, “ao lado”, “defronte”, “subestação de energia”, “próximo do estabelecimento ...” etc.). ",
+        "options": []
+      },
+      "2026-T3": {
+        "instruction": "8.2. Complemento sobre o Logradouro com Descarte Irregular Recorrente:\n\n--> Instrução: utilize para especificar referências que auxiliem na localização territorial do logradouro (como “canteiro central”, “ao lado”, “defronte”, “subestação de energia”, “próximo do estabelecimento ...” etc.). ",
+        "options": []
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "8.2. Complemento sobre o Logradouro com Descarte Irregular Recorrente:\n\n--> Instrução: utilize para especificar referências que auxiliem na localização territorial do logradouro (como “canteiro central”, “ao lado”, “defronte”, “subestação de energia”, “próximo do estabelecimento ...” etc.). ",
+        "options": []
+      }
+    }
+  },
+  {
+    "key": "latitude",
+    "label": "Latitude",
+    "column": "M",
+    "type": "number",
+    "step": 0,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "9.1. Coordenadas Geográficas: Latitude.\n\n--> Instrução: utilize VÍRGULA como separador decimal e atente para o sinal, bem como para a ordem correta das coordenadas.",
+        "options": []
+      },
+      "2025-T4": {
+        "instruction": "9.1. Coordenadas Geográficas: Latitude.\n\n--> Instrução: utilize VÍRGULA como separador decimal e atente para o sinal, bem como para a ordem correta das coordenadas.",
+        "options": []
+      },
+      "2026-T1": {
+        "instruction": "9.1. Coordenadas Geográficas: Latitude.\n\n--> Instrução: utilize VÍRGULA como separador decimal e atente para o sinal, bem como para a ordem correta das coordenadas.",
+        "options": []
+      },
+      "2026-T2": {
+        "instruction": "9.1. Coordenadas Geográficas: Latitude.\n\n--> Instrução: utilize VÍRGULA como separador decimal e atente para o sinal, bem como para a ordem correta das coordenadas.",
+        "options": []
+      },
+      "2026-T3": {
+        "instruction": "9.1. Coordenadas Geográficas: Latitude.\n\n--> Instrução: utilize VÍRGULA como separador decimal e atente para o sinal, bem como para a ordem correta das coordenadas.",
+        "options": []
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "9.1. Coordenadas Geográficas: Latitude.\n\n--> Instrução: utilize VÍRGULA como separador decimal e atente para o sinal, bem como para a ordem correta das coordenadas.",
+        "options": []
+      }
+    }
+  },
+  {
+    "key": "longitude",
+    "label": "Longitude",
+    "column": "N",
+    "type": "number",
+    "step": 0,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "9.2. Coordenadas Geográficas: Longitude.\n\n--> Instrução: utilize VÍRGULA como separador decimal e atente para o sinal, bem como para a ordem correta das coordenadas.",
+        "options": []
+      },
+      "2025-T4": {
+        "instruction": "9.2. Coordenadas Geográficas: Longitude.\n\n--> Instrução: utilize VÍRGULA como separador decimal e atente para o sinal, bem como para a ordem correta das coordenadas.",
+        "options": []
+      },
+      "2026-T1": {
+        "instruction": "9.2. Coordenadas Geográficas: Longitude.\n\n--> Instrução: utilize VÍRGULA como separador decimal e atente para o sinal, bem como para a ordem correta das coordenadas.",
+        "options": []
+      },
+      "2026-T2": {
+        "instruction": "9.2. Coordenadas Geográficas: Longitude.\n\n--> Instrução: utilize VÍRGULA como separador decimal e atente para o sinal, bem como para a ordem correta das coordenadas.",
+        "options": []
+      },
+      "2026-T3": {
+        "instruction": "9.2. Coordenadas Geográficas: Longitude.\n\n--> Instrução: utilize VÍRGULA como separador decimal e atente para o sinal, bem como para a ordem correta das coordenadas.",
+        "options": []
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "9.2. Coordenadas Geográficas: Longitude.\n\n--> Instrução: utilize VÍRGULA como separador decimal e atente para o sinal, bem como para a ordem correta das coordenadas.",
+        "options": []
+      }
+    }
+  },
+  {
+    "key": "lote",
+    "label": "Lote",
+    "column": "O",
+    "type": "select",
+    "step": 0,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "10. Lote e empresa responsável:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Lote 1",
+          "Lote 2",
+          "Lote 3",
+          "Lote 4",
+          "Lote 5",
+          "Lote 6",
+          "Lote 7",
+          "Lote 8",
+          "Lote 9",
+          "Lote 10",
+          "Lote 11"
+        ]
+      },
+      "2025-T4": {
+        "instruction": "10. Lote e empresa responsável:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Lote 1",
+          "Lote 2",
+          "Lote 3",
+          "Lote 4",
+          "Lote 5",
+          "Lote 6",
+          "Lote 7",
+          "Lote 8",
+          "Lote 9",
+          "Lote 10",
+          "Lote 11"
+        ]
+      },
+      "2026-T1": {
+        "instruction": "10. Lote dos serviços indivisíveis de limpeza urbana onde se localiza o Logradouro com Descarte Irregular Recorrente:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Lote 1",
+          "Lote 2",
+          "Lote 3",
+          "Lote 4",
+          "Lote 5",
+          "Lote 6",
+          "Lote 7",
+          "Lote 8",
+          "Lote 9",
+          "Lote 10",
+          "Lote 11"
+        ]
+      },
+      "2026-T2": {
+        "instruction": "10. Lote dos serviços indivisíveis de limpeza urbana onde se localiza o Logradouro com Descarte Irregular Recorrente:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Lote 1",
+          "Lote 2",
+          "Lote 3",
+          "Lote 4",
+          "Lote 5",
+          "Lote 6",
+          "Lote 7",
+          "Lote 8",
+          "Lote 9",
+          "Lote 10",
+          "Lote 11"
+        ]
+      },
+      "2026-T3": {
+        "instruction": "10. Lote dos serviços indivisíveis de limpeza urbana onde se localiza o Logradouro com Descarte Irregular Recorrente:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Lote 1",
+          "Lote 2",
+          "Lote 3",
+          "Lote 4",
+          "Lote 5",
+          "Lote 6",
+          "Lote 7",
+          "Lote 8",
+          "Lote 9",
+          "Lote 10",
+          "Lote 11"
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "10. Lote dos serviços indivisíveis de limpeza urbana onde se localiza o Logradouro com Descarte Irregular Recorrente:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Lote 1",
+          "Lote 2",
+          "Lote 3",
+          "Lote 4",
+          "Lote 5",
+          "Lote 6",
+          "Lote 7",
+          "Lote 8",
+          "Lote 9",
+          "Lote 10",
+          "Lote 11"
+        ]
+      }
+    }
+  },
+  {
+    "key": "tipoLogradouro",
+    "label": "Tipo de logradouro",
+    "column": "P",
+    "type": "select",
+    "step": 2,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "11. O tipo de Logradouro com Descarte Irregular é:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Via trafegável por pedestres e/ou automóveis, caminhões e/ou motocicletas.",
+          "Beco, escadaria, passagem e/ou viela não trafegável por automóveis, caminhões e/ou motocicletas.",
+          "Outros."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "11. O tipo de Logradouro com Descarte Irregular é:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Via trafegável por pedestres e/ou automóveis, caminhões e/ou motocicletas.",
+          "Beco, escadaria, passagem e/ou viela não trafegável por automóveis, caminhões e/ou motocicletas.",
+          "Outros."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "11. O tipo do Logradouro com Descarte Irregular Recorrente é:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Via trafegável por pedestres e/ou automóveis, caminhões e/ou motocicletas.",
+          "Beco, escadaria, passagem e/ou viela não trafegável por automóveis, caminhões e/ou motocicletas.",
+          "Outros."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "11. O tipo do Logradouro com Descarte Irregular Recorrente é:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Via trafegável por pedestres e/ou automóveis, caminhões e/ou motocicletas.",
+          "Beco, escadaria, passagem e/ou viela não trafegável por automóveis, caminhões e/ou motocicletas.",
+          "Outros."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "11. O tipo do Logradouro com Descarte Irregular Recorrente é:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Via trafegável por pedestres e/ou automóveis, caminhões e/ou motocicletas.",
+          "Beco, escadaria, passagem e/ou viela não trafegável por automóveis, caminhões e/ou motocicletas.",
+          "Outros."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "11. O tipo do Logradouro com Descarte Irregular Recorrente é:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Via trafegável por pedestres e/ou automóveis, caminhões e/ou motocicletas.",
+          "Beco, escadaria, passagem e/ou viela não trafegável por automóveis, caminhões e/ou motocicletas.",
+          "Outros."
+        ]
+      }
+    }
+  },
+  {
+    "key": "outroLogradouro",
+    "label": "Especifique o outro tipo",
+    "column": "Q",
+    "type": "text",
+    "step": 2,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "11.1. Por favor, especifique:\n\n--> Instrução: preencha caso a opção escolhida anteriormente foi \"Outros\".",
+        "options": []
+      },
+      "2025-T4": {
+        "instruction": "11.1. Por favor, especifique:\n\n--> Instrução: preencha caso a opção escolhida anteriormente foi \"Outros\".",
+        "options": []
+      },
+      "2026-T1": {
+        "instruction": "11.1. Por favor, especifique:\n\n--> Instrução: preencha caso a opção escolhida anteriormente foi \"Outros\".",
+        "options": []
+      },
+      "2026-T2": {
+        "instruction": "11.1. Por favor, especifique:\n\n--> Instrução: preencha caso a opção escolhida anteriormente foi \"Outros\".",
+        "options": []
+      },
+      "2026-T3": {
+        "instruction": "11.1. Por favor, especifique:\n\n--> Instrução: preencha caso a opção escolhida anteriormente foi \"Outros\".",
+        "options": []
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "11.1. Por favor, especifique:\n\n--> Instrução: preencha caso a opção escolhida anteriormente foi \"Outros\".",
+        "options": []
+      }
+    }
+  },
+  {
+    "key": "topografia",
+    "label": "Topografia",
+    "column": "R",
+    "type": "select",
+    "step": 2,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "12. A topografia do terreno onde se situa o Logradouro com Descarte Irregular tem superfície:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Plana (nivelada, “reta”).",
+          "Inclinada em aclive e/ou declive (não nivelada, “subida” ou “descida”)."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "12. A topografia do terreno onde se situa o Logradouro com Descarte Irregular tem superfície:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Plana (nivelada, “reta”).",
+          "Inclinada em aclive e/ou declive (não nivelada, “subida” ou “descida”)."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "12. A topografia do terreno onde se situa o Logradouro com Descarte Irregular Recorrente tem superfície:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Plana (nivelada, “reta”).",
+          "Inclinada em aclive e/ou declive (não nivelada, “subida” ou “descida”)."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "12. A topografia do terreno onde se situa o Logradouro com Descarte Irregular Recorrente tem superfície:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Plana (nivelada, “reta”).",
+          "Inclinada em aclive e/ou declive (não nivelada, “subida” ou “descida”)."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "12. A topografia do terreno onde se situa o Logradouro com Descarte Irregular Recorrente tem superfície:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Plana (nivelada, “reta”).",
+          "Inclinada em aclive e/ou declive (não nivelada, “subida” ou “descida”)."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "12. A topografia do terreno onde se situa o Logradouro com Descarte Irregular Recorrente tem superfície:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Plana (nivelada, “reta”).",
+          "Inclinada em aclive e/ou declive (não nivelada, “subida” ou “descida”)."
+        ]
+      }
+    }
+  },
+  {
+    "key": "ocupacao",
+    "label": "Perfil de ocupação",
+    "column": "S",
+    "type": "select",
+    "step": 2,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "13. O perfil de ocupação onde se situa o Logradouro com Descarte Irregular é predominantemente:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Residencial.",
+          "Comercial.",
+          "Industrial.",
+          "Misto."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "13. O perfil de ocupação onde se situa o Logradouro com Descarte Irregular é predominantemente:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Residencial.",
+          "Comercial.",
+          "Industrial.",
+          "Misto."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "13. O perfil de ocupação onde se situa o Logradouro com Descarte Irregular Recorrente é predominantemente:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Residencial.",
+          "Comercial.",
+          "Industrial.",
+          "Misto."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "13. O perfil de ocupação onde se situa o Logradouro com Descarte Irregular Recorrente é predominantemente:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Residencial.",
+          "Comercial.",
+          "Industrial.",
+          "Misto."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "13. O perfil de ocupação onde se situa o Logradouro com Descarte Irregular Recorrente é predominantemente:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Residencial.",
+          "Comercial.",
+          "Industrial.",
+          "Misto."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "13. O perfil de ocupação onde se situa o Logradouro com Descarte Irregular Recorrente é predominantemente:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Residencial.",
+          "Comercial.",
+          "Industrial.",
+          "Misto."
+        ]
+      }
+    }
+  },
+  {
+    "key": "entornoBueiro",
+    "label": "Bocas de lobo / bueiros",
+    "column": "T",
+    "type": "select",
+    "step": 2,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular existe(m): \n\na) Boca(s) de lobo e/ou bueiro(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular existe(m): \n\na) Boca(s) de lobo e/ou bueiro(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular Recorrente existe(m): \n\na) Boca(s) de lobo e/ou bueiro(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular Recorrente existe(m): \n\na) Boca(s) de lobo e/ou bueiro(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular Recorrente existe(m): \n\na) Boca(s) de lobo e/ou bueiro(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular Recorrente existe(m): \n\na) Boca(s) de lobo e/ou bueiro(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      }
+    }
+  },
+  {
+    "key": "entornoRio",
+    "label": "Córregos / rios",
+    "column": "U",
+    "type": "select",
+    "step": 2,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular existe(m): \n\nb) Córrego(s) e/ou rio(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular existe(m): \n\nb) Córrego(s) e/ou rio(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular Recorrente existe(m): \n\nb) Córrego(s) e/ou rio(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular Recorrente existe(m): \n\nb) Córrego(s) e/ou rio(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular Recorrente existe(m): \n\nb) Córrego(s) e/ou rio(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular Recorrente existe(m): \n\nb) Córrego(s) e/ou rio(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      }
+    }
+  },
+  {
+    "key": "entornoEncosta",
+    "label": "Encostas / morros",
+    "column": "V",
+    "type": "select",
+    "step": 2,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular existe(m): \n\nc) Encosta(s) e/ou morro(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular existe(m): \n\nc) Encosta(s) e/ou morro(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular Recorrente existe(m): \n\nc) Encosta(s) e/ou morro(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular Recorrente existe(m): \n\nc) Encosta(s) e/ou morro(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular Recorrente existe(m): \n\nc) Encosta(s) e/ou morro(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular Recorrente existe(m): \n\nc) Encosta(s) e/ou morro(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      }
+    }
+  },
+  {
+    "key": "entornoTerreno",
+    "label": "Terrenos baldios",
+    "column": "W",
+    "type": "select",
+    "step": 2,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular existe(m): \n\nd) Terreno(s) baldio(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular existe(m): \n\nd) Terreno(s) baldio(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular Recorrente existe(m): \n\nd) Terreno(s) baldio(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular Recorrente existe(m): \n\nd) Terreno(s) baldio(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular Recorrente existe(m): \n\nd) Terreno(s) baldio(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular Recorrente existe(m): \n\nd) Terreno(s) baldio(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      }
+    }
+  },
+  {
+    "key": "entornoSemSaida",
+    "label": "Ruas sem saída",
+    "column": "X",
+    "type": "select",
+    "step": 2,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular existe(m): \n\ne) Rua(s) sem saída?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular existe(m): \n\ne) Rua(s) sem saída?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular Recorrente existe(m): \n\ne) Rua(s) sem saída?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular Recorrente existe(m): \n\ne) Rua(s) sem saída?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular Recorrente existe(m): \n\ne) Rua(s) sem saída?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular Recorrente existe(m): \n\ne) Rua(s) sem saída?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      }
+    }
+  },
+  {
+    "key": "entornoMuro",
+    "label": "Gradeado / muro cego",
+    "column": "Y",
+    "type": "select",
+    "step": 2,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular existe(m): \n\nf) Gradeado e/ou muro “cego” (delimitando uma área pública e/ou privada, de grande extensão, como um fundo de lote, pátio de manobra, estação de energia, estação de tratamento de água etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular existe(m): \n\nf) Gradeado e/ou muro “cego” (delimitando uma área pública e/ou privada, de grande extensão, como um fundo de lote, pátio de manobra, estação de energia, estação de tratamento de água etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular Recorrente existe(m): \n\nf) Gradeado e/ou muro “cego” (delimitando uma área pública e/ou privada, de grande extensão, como um fundo de lote, pátio de manobra, estação de energia, estação de tratamento de água etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular Recorrente existe(m): \n\nf) Gradeado e/ou muro “cego” (delimitando uma área pública e/ou privada, de grande extensão, como um fundo de lote, pátio de manobra, estação de energia, estação de tratamento de água etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular Recorrente existe(m): \n\nf) Gradeado e/ou muro “cego” (delimitando uma área pública e/ou privada, de grande extensão, como um fundo de lote, pátio de manobra, estação de energia, estação de tratamento de água etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "14. Considerando um perímetro com até 15m (quinze metros), no entorno do Logradouro com Descarte Irregular Recorrente existe(m): \n\nf) Gradeado e/ou muro “cego” (delimitando uma área pública e/ou privada, de grande extensão, como um fundo de lote, pátio de manobra, estação de energia, estação de tratamento de água etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim."
+        ]
+      }
+    }
+  },
+  {
+    "key": "volume",
+    "label": "Faixa de volume",
+    "column": "Z",
+    "type": "select",
+    "step": 3,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "15. A volumetria do Descarte Irregular tem:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Menos de 1m3 (um metro cúbico).",
+          "Entre 1m3 (um metro cúbico) e 5m3 (cinco metros cúbicos).",
+          "Mais de 5m3 (cinco metros cúbicos).",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "15. A volumetria do Descarte Irregular tem:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Menos de 1m3 (um metro cúbico).",
+          "Entre 1m3 (um metro cúbico) e 5m3 (cinco metros cúbicos).",
+          "Mais de 5m3 (cinco metros cúbicos).",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "15. A volumetria do Descarte Irregular Recorrente tem:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Menos de 1m3 (um metro cúbico).",
+          "Entre 1m3 (um metro cúbico) e 5m3 (cinco metros cúbicos).",
+          "Mais de 5m3 (cinco metros cúbicos).",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "15. A volumetria do Descarte Irregular Recorrente tem:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Menos de 1m3 (um metro cúbico).",
+          "Entre 1m3 (um metro cúbico) e 5m3 (cinco metros cúbicos).",
+          "Mais de 5m3 (cinco metros cúbicos).",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "15. A volumetria do Descarte Irregular Recorrente tem:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Menos de 1m3 (um metro cúbico).",
+          "Entre 1m3 (um metro cúbico) e 5m3 (cinco metros cúbicos).",
+          "Mais de 5m3 (cinco metros cúbicos).",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "15. A volumetria do Descarte Irregular Recorrente tem:\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Menos de 1m3 (um metro cúbico).",
+          "Entre 1m3 (um metro cúbico) e 5m3 (cinco metros cúbicos).",
+          "Mais de 5m3 (cinco metros cúbicos).",
+          "Não se aplica (inativo)."
+        ]
+      }
+    }
+  },
+  {
+    "key": "residuoDomiciliar",
+    "label": "Resíduo domiciliar",
+    "column": "AA",
+    "type": "select",
+    "step": 3,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "16. O Descarte Irregular possui resíduos sólidos do tipo:\n\na) Domiciliar (restos de alimentos, embalagens etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "16. O Descarte Irregular possui resíduos sólidos do tipo:\n\na) Domiciliar (restos de alimentos, embalagens etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "16. O Descarte Irregular Recorrente possui resíduos sólidos do tipo:\n\na) Domiciliar (restos de alimentos, embalagens etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "16. O Descarte Irregular Recorrente possui resíduos sólidos do tipo:\n\na) Domiciliar (restos de alimentos, embalagens etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "16. O Descarte Irregular Recorrente possui resíduos sólidos do tipo:\n\na) Domiciliar (restos de alimentos, embalagens etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "16. O Descarte Irregular Recorrente possui resíduos sólidos do tipo:\n\na) Domiciliar (restos de alimentos, embalagens etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      }
+    }
+  },
+  {
+    "key": "residuoEntulho",
+    "label": "Entulho",
+    "column": "AB",
+    "type": "select",
+    "step": 3,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "16. O Descarte Irregular possui resíduos sólidos do tipo:\n\nb) Entulho (construção civil e/ou de reformas residenciais)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "16. O Descarte Irregular possui resíduos sólidos do tipo:\n\nb) Entulho (construção civil e/ou de reformas residenciais)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "16. O Descarte Irregular Recorrente possui resíduos sólidos do tipo:\n\nb) Entulho (construção civil e/ou de reformas residenciais)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "16. O Descarte Irregular Recorrente possui resíduos sólidos do tipo:\n\nb) Entulho (construção civil e/ou de reformas residenciais)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "16. O Descarte Irregular Recorrente possui resíduos sólidos do tipo:\n\nb) Entulho (construção civil e/ou de reformas residenciais)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "16. O Descarte Irregular Recorrente possui resíduos sólidos do tipo:\n\nb) Entulho (construção civil e/ou de reformas residenciais)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      }
+    }
+  },
+  {
+    "key": "residuoMoveis",
+    "label": "Móveis / grandes objetos",
+    "column": "AC",
+    "type": "select",
+    "step": 3,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "16. O Descarte Irregular possui resíduos sólidos do tipo:\n\nc) Móveis e/ou grandes objetos?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "16. O Descarte Irregular possui resíduos sólidos do tipo:\n\nc) Móveis e/ou grandes objetos?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "16. O Descarte Irregular Recorrente possui resíduos sólidos do tipo:\n\nc) Móveis e/ou grandes objetos?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "16. O Descarte Irregular Recorrente possui resíduos sólidos do tipo:\n\nc) Móveis e/ou grandes objetos?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "16. O Descarte Irregular Recorrente possui resíduos sólidos do tipo:\n\nc) Móveis e/ou grandes objetos?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "16. O Descarte Irregular Recorrente possui resíduos sólidos do tipo:\n\nc) Móveis e/ou grandes objetos?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      }
+    }
+  },
+  {
+    "key": "origemResidentes",
+    "label": "Residentes / transeuntes",
+    "column": "AD",
+    "type": "select",
+    "step": 3,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "17. No Descarte Irregular, os resíduos sólidos pode ser proveniente da ação de:\n\na) Residentes e/ou transeuntes?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "17. No Descarte Irregular, os resíduos sólidos pode ser proveniente da ação de:\n\na) Residentes e/ou transeuntes?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "17. No Descarte Irregular Recorrente, os resíduos sólidos podem ser provenientes da ação de:\n\na) Residentes e/ou transeuntes?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "17. No Descarte Irregular Recorrente, os resíduos sólidos podem ser provenientes da ação de:\n\na) Residentes e/ou transeuntes?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "17. No Descarte Irregular Recorrente, os resíduos sólidos podem ser provenientes da ação de:\n\na) Residentes e/ou transeuntes?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "17. No Descarte Irregular Recorrente, os resíduos sólidos podem ser provenientes da ação de:\n\na) Residentes e/ou transeuntes?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      }
+    }
+  },
+  {
+    "key": "origemPequenosTransportadores",
+    "label": "Pequenos transportadores / carroceiros",
+    "column": "AE",
+    "type": "select",
+    "step": 3,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "17. No Descarte Irregular, os resíduos sólidos pode ser proveniente da ação de:\n\nb) Carroceiro(s) e/ou pequeno(s) transportador(es) motorizado(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "17. No Descarte Irregular, os resíduos sólidos pode ser proveniente da ação de:\n\nb) Carroceiro(s) e/ou pequeno(s) transportador(es) motorizado(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "17. No Descarte Irregular Recorrente, os resíduos sólidos podem ser provenientes da ação de:\n\nb) Carroceiro(s) e/ou pequeno(s) transportador(es) motorizado(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "17. No Descarte Irregular Recorrente, os resíduos sólidos podem ser provenientes da ação de:\n\nb) Carroceiro(s) e/ou pequeno(s) transportador(es) motorizado(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "17. No Descarte Irregular Recorrente, os resíduos sólidos podem ser provenientes da ação de:\n\nb) Carroceiro(s) e/ou pequeno(s) transportador(es) motorizado(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "17. No Descarte Irregular Recorrente, os resíduos sólidos podem ser provenientes da ação de:\n\nb) Carroceiro(s) e/ou pequeno(s) transportador(es) motorizado(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      }
+    }
+  },
+  {
+    "key": "origemCacambeiros",
+    "label": "Caçambeiros",
+    "column": "AF",
+    "type": "select",
+    "step": 3,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "17. No Descarte Irregular, os resíduos sólidos pode ser proveniente da ação de:\n\nc) Transportador(es) de pequenos volumes (caçambeiro brooks)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "17. No Descarte Irregular, os resíduos sólidos pode ser proveniente da ação de:\n\nc) Transportador(es) de pequenos volumes (caçambeiro brooks)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "17. No Descarte Irregular Recorrente, os resíduos sólidos podem ser provenientes da ação de:\n\nc) Transportador(es) de pequenos volumes (caçambeiro brooks)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "17. No Descarte Irregular Recorrente, os resíduos sólidos podem ser provenientes da ação de:\n\nc) Transportador(es) de pequenos volumes (caçambeiro brooks)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "17. No Descarte Irregular Recorrente, os resíduos sólidos podem ser provenientes da ação de:\n\nc) Transportador(es) de pequenos volumes (caçambeiro brooks)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "17. No Descarte Irregular Recorrente, os resíduos sólidos podem ser provenientes da ação de:\n\nc) Transportador(es) de pequenos volumes (caçambeiro brooks)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      }
+    }
+  },
+  {
+    "key": "origemGrandesTransportadores",
+    "label": "Transportadores de grandes volumes",
+    "column": "AG",
+    "type": "select",
+    "step": 3,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "17. No Descarte Irregular, os resíduos sólidos pode ser proveniente da ação de:\n\nd) Transportador(es) de grandes volumes (caminhão basculante)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "17. No Descarte Irregular, os resíduos sólidos pode ser proveniente da ação de:\n\nd) Transportador(es) de grandes volumes (caminhão basculante)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "17. No Descarte Irregular Recorrente, os resíduos sólidos podem ser provenientes da ação de:\n\nd) Transportador(es) de grandes volumes (caminhão basculante)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "17. No Descarte Irregular Recorrente, os resíduos sólidos podem ser provenientes da ação de:\n\nd) Transportador(es) de grandes volumes (caminhão basculante)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "17. No Descarte Irregular Recorrente, os resíduos sólidos podem ser provenientes da ação de:\n\nd) Transportador(es) de grandes volumes (caminhão basculante)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "17. No Descarte Irregular Recorrente, os resíduos sólidos podem ser provenientes da ação de:\n\nd) Transportador(es) de grandes volumes (caminhão basculante)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      }
+    }
+  },
+  {
+    "key": "origemGrandesGeradores",
+    "label": "Grandes geradores",
+    "column": "AH",
+    "type": "select",
+    "step": 3,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "17. No Descarte Irregular, os resíduos sólidos pode ser proveniente da ação de:\n\ne) Grande(s) gerador(es)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "17. No Descarte Irregular, os resíduos sólidos pode ser proveniente da ação de:\n\ne) Grande(s) gerador(es)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "17. No Descarte Irregular Recorrente, os resíduos sólidos podem ser provenientes da ação de:\n\ne) Grande(s) gerador(es)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "17. No Descarte Irregular Recorrente, os resíduos sólidos podem ser provenientes da ação de:\n\ne) Grande(s) gerador(es)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "17. No Descarte Irregular Recorrente, os resíduos sólidos podem ser provenientes da ação de:\n\ne) Grande(s) gerador(es)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "17. No Descarte Irregular Recorrente, os resíduos sólidos podem ser provenientes da ação de:\n\ne) Grande(s) gerador(es)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      }
+    }
+  },
+  {
+    "key": "riscoAves",
+    "label": "Aves",
+    "column": "AI",
+    "type": "select",
+    "step": 4,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "18. No Descarte Irregular há:\n\na) Presença de aves (pombos, urubus etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "18. No Descarte Irregular há:\n\na) Presença de aves (pombos, urubus etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\na) Presença de aves (pombos, urubus etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\na) Presença de aves (pombos, urubus etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\na) Presença de aves (pombos, urubus etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\na) Presença de aves (pombos, urubus etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      }
+    }
+  },
+  {
+    "key": "riscoInsetos",
+    "label": "Insetos",
+    "column": "AJ",
+    "type": "select",
+    "step": 4,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "18. No Descarte Irregular há:\n\nb) Presença de insetos (baratas, moscas etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "18. No Descarte Irregular há:\n\nb) Presença de insetos (baratas, moscas etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\nb) Presença de insetos (baratas, moscas etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\nb) Presença de insetos (baratas, moscas etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\nb) Presença de insetos (baratas, moscas etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\nb) Presença de insetos (baratas, moscas etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      }
+    }
+  },
+  {
+    "key": "riscoPeconhentos",
+    "label": "Animais peçonhentos",
+    "column": "AK",
+    "type": "select",
+    "step": 4,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "18. No Descarte Irregular há:\n\nc) Presença de animais peçonhentos (cobras, escorpiões, etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "18. No Descarte Irregular há:\n\nc) Presença de animais peçonhentos (cobras, escorpiões, etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\nc) Presença de animais peçonhentos (cobras, escorpiões, etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\nc) Presença de animais peçonhentos (cobras, escorpiões, etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\nc) Presença de animais peçonhentos (cobras, escorpiões, etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\nc) Presença de animais peçonhentos (cobras, escorpiões, etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      }
+    }
+  },
+  {
+    "key": "riscoRoedores",
+    "label": "Roedores",
+    "column": "AL",
+    "type": "select",
+    "step": 4,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "18. No Descarte Irregular há:\n\nd) Presença de animais roedores (preás, ratos etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "18. No Descarte Irregular há:\n\nd) Presença de animais roedores (preás, ratos etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\nd) Presença de animais roedores (preás, ratos etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\nd) Presença de animais roedores (preás, ratos etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\nd) Presença de animais roedores (preás, ratos etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\nd) Presença de animais roedores (preás, ratos etc.)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      }
+    }
+  },
+  {
+    "key": "riscoAgua",
+    "label": "Acúmulo de água",
+    "column": "AM",
+    "type": "select",
+    "step": 4,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "18. No Descarte Irregular há:\n\ne) Acúmulo de água?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "18. No Descarte Irregular há:\n\ne) Acúmulo de água?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\ne) Acúmulo de água?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\ne) Acúmulo de água?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\ne) Acúmulo de água?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\ne) Acúmulo de água?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      }
+    }
+  },
+  {
+    "key": "riscoOdor",
+    "label": "Mau cheiro",
+    "column": "AN",
+    "type": "select",
+    "step": 4,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "18. No Descarte Irregular há:\n\nf) Odor(es) forte(s) e/ou mau-cheiro?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "18. No Descarte Irregular há:\n\nf) Odor(es) forte(s) e/ou mau-cheiro?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\nf) Odor(es) forte(s) e/ou mau-cheiro?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\nf) Odor(es) forte(s) e/ou mau-cheiro?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\nf) Odor(es) forte(s) e/ou mau-cheiro?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\nf) Odor(es) forte(s) e/ou mau-cheiro?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      }
+    }
+  },
+  {
+    "key": "riscoQueimada",
+    "label": "Vestígios de queimadas",
+    "column": "AO",
+    "type": "select",
+    "step": 4,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "18. No Descarte Irregular há:\n\ng) Vestígio(s) de queimada(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "18. No Descarte Irregular há:\n\ng) Vestígio(s) de queimada(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\ng) Vestígio(s) de queimada(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\ng) Vestígio(s) de queimada(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\ng) Vestígio(s) de queimada(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\ng) Vestígio(s) de queimada(s)?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      }
+    }
+  },
+  {
+    "key": "riscoErosao",
+    "label": "Erosão / danos na calçada ou via",
+    "column": "AP",
+    "type": "select",
+    "step": 4,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "18. No Descarte Irregular há:\n\nh) Sinais de erosão do terreno, danificação da calçada e/ou via?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "18. No Descarte Irregular há:\n\nh) Sinais de erosão do terreno, danificação da calçada e/ou via?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\nh) Sinais de erosão do terreno, danificação da calçada e/ou via?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\nh) Sinais de erosão do terreno, danificação da calçada e/ou via?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\nh) Sinais de erosão do terreno, danificação da calçada e/ou via?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "18. No Descarte Irregular Recorrente há:\n\nh) Sinais de erosão do terreno, danificação da calçada e/ou via?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo)."
+        ]
+      }
+    }
+  },
+  {
+    "key": "impactoPedestres",
+    "label": "Impacto na circulação de pedestres",
+    "column": "AQ",
+    "type": "select",
+    "step": 4,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "19. O Descarte Irregular prejudica e/ou impede:\n\na) A circulação de pedestres?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas. Se o tipo de logradouro for não for uma via trafegável por pedestres, utilize a opção \"Não se aplica\".",
+        "options": [
+          "Não.",
+          "Sim, parcialmente.",
+          "Sim, totalmente.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "19. O Descarte Irregular prejudica e/ou impede:\n\na) A circulação de pedestres?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas. Se o tipo de logradouro for não for uma via trafegável por pedestres, utilize a opção \"Não se aplica\".",
+        "options": [
+          "Não.",
+          "Sim, parcialmente.",
+          "Sim, totalmente.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "19. O Descarte Irregular Recorrente prejudica e/ou impede:\n\na) A circulação de pedestres?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas. Se o tipo de logradouro for não for uma via trafegável por pedestres, utilize a opção \"Não se aplica\".",
+        "options": [
+          "Não.",
+          "Sim, parcialmente.",
+          "Sim, totalmente.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "19. O Descarte Irregular Recorrente prejudica e/ou impede:\n\na) A circulação de pedestres?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas. Se o tipo de logradouro for não for uma via trafegável por pedestres, utilize a opção \"Não se aplica\".",
+        "options": [
+          "Não.",
+          "Sim, parcialmente.",
+          "Sim, totalmente.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "19. O Descarte Irregular Recorrente prejudica e/ou impede:\n\na) A circulação de pedestres?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas. Se o tipo de logradouro for não for uma via trafegável por pedestres, utilize a opção \"Não se aplica\".",
+        "options": [
+          "Não.",
+          "Sim, parcialmente.",
+          "Sim, totalmente.",
+          "Não se aplica (inativo)."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "19. O Descarte Irregular Recorrente prejudica e/ou impede:\n\na) A circulação de pedestres?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas. Se o tipo de logradouro for não for uma via trafegável por pedestres, utilize a opção \"Não se aplica\".",
+        "options": [
+          "Não.",
+          "Sim, parcialmente.",
+          "Sim, totalmente.",
+          "Não se aplica (inativo)."
+        ]
+      }
+    }
+  },
+  {
+    "key": "impactoVeiculos",
+    "label": "Impacto no tráfego de veículos",
+    "column": "AR",
+    "type": "select",
+    "step": 4,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "19. O Descarte Irregular prejudica e/ou impede:\n\nb) O tráfego de caminhões, motocicletas e/ou veículos?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas. Se o tipo de logradouro for não for uma via trafegável por caminhões, motocicletas e/ou veículos, utilize a opção \"Não se aplica\".",
+        "options": [
+          "Não.",
+          "Sim, parcialmente.",
+          "Sim, totalmente.",
+          "Não se aplica (inativo; e/ou beco, escadaria, passagem e/ou viela não trafegável por automóveis, caminhões e/ou motocicletas; e/ou outros)."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "19. O Descarte Irregular prejudica e/ou impede:\n\nb) O tráfego de caminhões, motocicletas e/ou veículos?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas. Se o tipo de logradouro for não for uma via trafegável por caminhões, motocicletas e/ou veículos, utilize a opção \"Não se aplica\".",
+        "options": [
+          "Não.",
+          "Sim, parcialmente.",
+          "Sim, totalmente.",
+          "Não se aplica (inativo; e/ou beco, escadaria, passagem e/ou viela não trafegável por automóveis, caminhões e/ou motocicletas; e/ou outros)."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "19. O Descarte Irregular Recorrente prejudica e/ou impede:\n\nb) O tráfego de caminhões, motocicletas e/ou veículos?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas. Se o tipo de logradouro for não for uma via trafegável por caminhões, motocicletas e/ou veículos, utilize a opção \"Não se aplica\".",
+        "options": [
+          "Não.",
+          "Sim, parcialmente.",
+          "Sim, totalmente.",
+          "Não se aplica (inativo; e/ou beco, escadaria, passagem e/ou viela não trafegável por automóveis, caminhões e/ou motocicletas; e/ou outros)."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "19. O Descarte Irregular Recorrente prejudica e/ou impede:\n\nb) O tráfego de caminhões, motocicletas e/ou veículos?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas. Se o tipo de logradouro for não for uma via trafegável por caminhões, motocicletas e/ou veículos, utilize a opção \"Não se aplica\".",
+        "options": [
+          "Não.",
+          "Sim, parcialmente.",
+          "Sim, totalmente.",
+          "Não se aplica (inativo; e/ou beco, escadaria, passagem e/ou viela não trafegável por automóveis, caminhões e/ou motocicletas; e/ou outros)."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "19. O Descarte Irregular Recorrente prejudica e/ou impede:\n\nb) O tráfego de caminhões, motocicletas e/ou veículos?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas. Se o tipo de logradouro for não for uma via trafegável por caminhões, motocicletas e/ou veículos, utilize a opção \"Não se aplica\".",
+        "options": [
+          "Não.",
+          "Sim, parcialmente.",
+          "Sim, totalmente.",
+          "Não se aplica (inativo; e/ou beco, escadaria, passagem e/ou viela não trafegável por automóveis, caminhões e/ou motocicletas; e/ou outros)."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "19. O Descarte Irregular Recorrente prejudica e/ou impede:\n\nb) O tráfego de caminhões, motocicletas e/ou veículos?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas. Se o tipo de logradouro for não for uma via trafegável por caminhões, motocicletas e/ou veículos, utilize a opção \"Não se aplica\".",
+        "options": [
+          "Não.",
+          "Sim, parcialmente.",
+          "Sim, totalmente.",
+          "Não se aplica (inativo; e/ou beco, escadaria, passagem e/ou viela não trafegável por automóveis, caminhões e/ou motocicletas; e/ou outros)."
+        ]
+      }
+    }
+  },
+  {
+    "key": "proximidadeConteiner",
+    "label": "Contêiner da concessionária",
+    "column": "AS",
+    "type": "select",
+    "step": 4,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Descarte Irregular há: \n\na) Contêiner(es) da concessionária para coleta de resíduo domiciliar?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Descarte Irregular há: \n\na) Contêiner(es) da concessionária para coleta de resíduo domiciliar?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Logradouro com Descarte Irregular Recorrente há: \n\na) Contêiner(es) da concessionária para coleta de resíduo domiciliar?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Logradouro com Descarte Irregular Recorrente há: \n\na) Contêiner(es) da concessionária para coleta de resíduo domiciliar?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Logradouro com Descarte Irregular Recorrente há: \n\na) Contêiner(es) da concessionária para coleta de resíduo domiciliar?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Logradouro com Descarte Irregular Recorrente há: \n\na) Contêiner(es) da concessionária para coleta de resíduo domiciliar?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      }
+    }
+  },
+  {
+    "key": "proximidadePlaca",
+    "label": "Placa / pintura contra descarte",
+    "column": "AT",
+    "type": "select",
+    "step": 4,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Descarte Irregular há: \n\nb) Placa e/ou pintura realizada pela população, sinalizando a proibição de “jogar entulho e/ou lixo”?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Descarte Irregular há: \n\nb) Placa e/ou pintura realizada pela população, sinalizando a proibição de “jogar entulho e/ou lixo”?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Logradouro com Descarte Irregular Recorrente há: \n\nb) Placa e/ou pintura realizada pela população, sinalizando a proibição de “jogar entulho e/ou lixo”?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Logradouro com Descarte Irregular Recorrente há: \n\nb) Placa e/ou pintura realizada pela população, sinalizando a proibição de “jogar entulho e/ou lixo”?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Logradouro com Descarte Irregular Recorrente há: \n\nb) Placa e/ou pintura realizada pela população, sinalizando a proibição de “jogar entulho e/ou lixo”?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Logradouro com Descarte Irregular Recorrente há: \n\nb) Placa e/ou pintura realizada pela população, sinalizando a proibição de “jogar entulho e/ou lixo”?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      }
+    }
+  },
+  {
+    "key": "proximidadeCatadores",
+    "label": "Circulação de catadores",
+    "column": "AU",
+    "type": "select",
+    "step": 4,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Descarte Irregular há: \n\nc) Circulação de catadoras(es) de material reciclável?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Descarte Irregular há: \n\nc) Circulação de catadoras(es) de material reciclável?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Logradouro com Descarte Irregular Recorrente há: \n\nc) Circulação de catadoras(es) de material reciclável?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Logradouro com Descarte Irregular Recorrente há: \n\nc) Circulação de catadoras(es) de material reciclável?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Logradouro com Descarte Irregular Recorrente há: \n\nc) Circulação de catadoras(es) de material reciclável?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Logradouro com Descarte Irregular Recorrente há: \n\nc) Circulação de catadoras(es) de material reciclável?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      }
+    }
+  },
+  {
+    "key": "proximidadeCirculacaoRua",
+    "label": "Circulação de pessoas em situação de rua",
+    "column": "AV",
+    "type": "select",
+    "step": 4,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Descarte Irregular há: \n\nd) Circulação de pessoas em situação de rua?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Descarte Irregular há: \n\nd) Circulação de pessoas em situação de rua?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Logradouro com Descarte Irregular Recorrente há: \n\nd) Circulação de pessoas em situação de rua?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Logradouro com Descarte Irregular Recorrente há: \n\nd) Circulação de pessoas em situação de rua?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Logradouro com Descarte Irregular Recorrente há: \n\nd) Circulação de pessoas em situação de rua?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Logradouro com Descarte Irregular Recorrente há: \n\nd) Circulação de pessoas em situação de rua?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      }
+    }
+  },
+  {
+    "key": "proximidadeFixacaoRua",
+    "label": "Fixação de pessoas em situação de rua",
+    "column": "AW",
+    "type": "select",
+    "step": 4,
+    "quarterly": false,
+    "versions": {
+      "2025-T3": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Descarte Irregular há: \n\ne) Fixação de pessoas em situação de rua?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      },
+      "2025-T4": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Descarte Irregular há: \n\ne) Fixação de pessoas em situação de rua?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      },
+      "2026-T1": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Logradouro com Descarte Irregular Recorrente há: \n\ne) Fixação de pessoas em situação de rua?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      },
+      "2026-T2": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Logradouro com Descarte Irregular Recorrente há: \n\ne) Fixação de pessoas em situação de rua?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      },
+      "2026-T3": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Logradouro com Descarte Irregular Recorrente há: \n\ne) Fixação de pessoas em situação de rua?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      },
+      "2026-T3-rev-20261019": {
+        "instruction": "20. Considerando um perímetro com até 15m (quinze metros), nas proximidades do Logradouro com Descarte Irregular Recorrente há: \n\ne) Fixação de pessoas em situação de rua?\n\n--> Instrução: escolha UMA OPÇÃO entre as alternativas.",
+        "options": [
+          "Não.",
+          "Sim.",
+          "Não se aplica (inativo).",
+          "Não sei responder."
+        ]
+      }
+    }
+  }
+]

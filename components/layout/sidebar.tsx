@@ -12,6 +12,8 @@ import {
   LogOut,
   Share2,
   Home,
+  MessageSquareWarning,
+  ClipboardList,
   PanelLeftClose,
   PanelLeft,
 } from "lucide-react";
@@ -34,8 +36,10 @@ const navigation = [
   { name: "Home", href: "/", icon: Home },
   { name: "Agenda", href: "/agenda", icon: Calendar },
   { name: "Mapa", href: "/mapa", icon: Map },
+  { name: "Diagnósticos", href: "/diagnosticos", icon: ClipboardList },
   { name: "Galeria", href: "/galeria", icon: Image },
   { name: "Redes sociais", href: "/redes-sociais", icon: Share2 },
+  { name: "Solicitações", href: "/solicitacoes", icon: MessageSquareWarning },
   { name: "Histórico", href: "/historico", icon: History },
   { name: "Indicadores", href: "/indicadores", icon: BarChart3 },
 ];

@@ -1,5 +1,5 @@
 /** Prefixos gerados pela app (upload-helpers e chamadores). */
-const ALLOWED_ROOTS = new Set(["social", "agenda", "historico", "galeria"]);
+const ALLOWED_ROOTS = new Set(["social", "agenda", "historico", "galeria", "diagnosticos"]);
 
 const SEGMENT_RE = /^[\w.-]{1,200}$/;
 

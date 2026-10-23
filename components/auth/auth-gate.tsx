@@ -6,6 +6,7 @@ import { AgendaEventsProvider } from "@/contexts/agenda-events-context";
 import { UserProfileProvider } from "@/contexts/user-profile-context";
 import { SocialPostsProvider } from "@/contexts/social-posts-context";
 import { SocialFollowersProvider } from "@/contexts/social-followers-context";
+import { SolicitacoesProvider } from "@/contexts/solicitacoes-context";
 import { ProfileOnboardingDialog } from "@/components/settings/profile-onboarding-dialog";
 import { PasswordOnboardingDialog } from "@/components/settings/password-onboarding-dialog";
 import { usePathname, useRouter } from "next/navigation";
@@ -63,7 +64,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
     <UserProfileProvider>
       <AgendaEventsProvider>
         <SocialPostsProvider>
-          <SocialFollowersProvider>{children}</SocialFollowersProvider>
+          <SocialFollowersProvider>
+            <SolicitacoesProvider>{children}</SolicitacoesProvider>
+          </SocialFollowersProvider>
         </SocialPostsProvider>
       </AgendaEventsProvider>
       <ProfileOnboardingDialog />

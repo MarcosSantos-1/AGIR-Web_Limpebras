@@ -4,6 +4,7 @@ import { useNovaAcao } from "@/components/acao/nova-acao-provider";
 import { useConteudoSocialModal } from "@/components/redes-sociais/conteudo-social-modal-provider";
 import { Plus, ChevronDown, Waypoints, RefreshCcw, Sparkles } from "lucide-react";
 import { NotificationsMenu } from "@/components/layout/notifications-menu";
+import { SolicitacoesMenu } from "@/components/layout/solicitacoes-menu";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -87,6 +88,7 @@ export function Header({ title, subtitle }: HeaderProps) {
           </DropdownMenuContent>
         </DropdownMenu>
 
+        <SolicitacoesMenu />
         <NotificationsMenu />
       </div>
     </header>

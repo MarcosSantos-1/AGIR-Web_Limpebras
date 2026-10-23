@@ -1,12 +1,14 @@
 import * as admin from "firebase-admin";
 import { readFileSync } from "node:fs";
+import { getApps, initializeApp } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
 
 /**
  * Inicializa Firebase Admin uma única vez (Node / Route Handlers).
  * Usa as mesmas variáveis que `npm run seed:firestore`.
  */
 export function getFirebaseAdminApp(): admin.app.App {
-  if (admin.apps.length > 0) {
+  if (admin.apps.some((app) => app?.name === "[DEFAULT]")) {
     return admin.app();
   }
 
@@ -34,6 +36,10 @@ export function getFirebaseAdminApp(): admin.app.App {
 }
 
 export async function verifyIdToken(idToken: string): Promise<admin.auth.DecodedIdToken> {
-  const app = getFirebaseAdminApp();
-  return admin.auth(app).verifyIdToken(idToken);
+  // Token verification uses Google's public certificates, not a service account.
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim();
+  if (!projectId) throw new Error("FIREBASE_AUTH_PROJECT_MISSING");
+  const name = `agir-token-verifier-${projectId}`;
+  const app = getApps().find((item) => item.name === name) ?? initializeApp({ projectId }, name);
+  return getAuth(app).verifyIdToken(idToken);
 }
