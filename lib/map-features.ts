@@ -143,11 +143,9 @@ function codigoEcoponto(f: EcoFeature, seen: Set<string>): string {
   if (s && CODIGO_SUB_NUMERO.test(s)) {
     return ensureUniqueId(s, seen);
   }
-  const sp = f.subprefeitura?.trim();
   const idx = f.id.includes(":") ? f.id.split(":").pop() : f.id;
-  const base = sp
-    ? `${sp}-${idx ?? f.id}`
-    : (s ?? f.name?.trim() ?? f.id);
+  // Não usa sigla-número (CV-1, MG-0): esse formato é o código do ponto viciado.
+  const base = `ECO-${idx ?? f.id}`;
   return ensureUniqueId(base, seen);
 }
 
@@ -325,11 +323,6 @@ export function getMapaPointById(
   const m = MAPA_MARKERS.find((p) => p.id === id);
   if (m) return m;
   return MAPA_POLYGONS.find((p) => p.id === id) ?? null;
-}
-
-/** Ids de todos os marcadores estáticos (evitar colisão com pontos adicionados). */
-export function allStaticMapMarkerIds(): Set<string> {
-  return new Set(MAPA_MARKERS.map((m) => m.id));
 }
 
 /**

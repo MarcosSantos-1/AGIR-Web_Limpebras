@@ -62,6 +62,7 @@ import { EquipeIntegrantesField } from "@/components/acao/equipe-integrantes-fie
 import { LinksPostagemEditor } from "@/components/acao-registro/post-links";
 import { integrantesFromAgendaEvent } from "@/lib/agenda/equipe-parsing";
 import { useCustomPontosViciados } from "@/contexts/custom-pontos-viciados-context";
+import { pontoViciadoCodigoEmUsoNoMapa } from "@/lib/ponto-viciado-codigo";
 import { useAuth } from "@/contexts/auth-context";
 import { useUserProfile } from "@/contexts/user-profile-context";
 import type { HistoryRecordDoc } from "@/data/history-records";
@@ -1443,7 +1444,8 @@ function RevitalizacaoDialog({
   /** Pré-seleção ao abrir em modo "nova" (ex.: sidebar do mapa). */
   preferredPontoViciadoId?: string;
 }) {
-  const { pontosVicioFormOptions, addPontoViciado } = useCustomPontosViciados();
+  const { pontosVicioFormOptions, customPontoEntries, addPontoViciado } =
+    useCustomPontosViciados();
   const [situacaoRev, setSituacaoRev] = React.useState<
     "agendar" | "finalizado"
   >("agendar");
@@ -1552,7 +1554,16 @@ function RevitalizacaoDialog({
       setNewPontoError("Informe o código do ponto.");
       return;
     }
-    if (pontosVicioFormOptions.some((p) => p.id === codigo)) {
+    if (
+      pontoViciadoCodigoEmUsoNoMapa(
+        codigo,
+        customPontoEntries.map((entry) => ({
+          firestoreDocId: entry.firestoreDocId,
+          pointId: entry.point?.id ?? null,
+          ocultoCodigo: entry.ocultoCodigo ?? null,
+        })),
+      )
+    ) {
       setNewPontoError("Já existe um ponto com este código.");
       return;
     }
@@ -1596,7 +1607,7 @@ function RevitalizacaoDialog({
     newPontoSubregionalId,
     newPontoLat,
     newPontoLng,
-    pontosVicioFormOptions,
+    customPontoEntries,
     addPontoViciado,
     user?.uid,
     resetNewPontoForm,

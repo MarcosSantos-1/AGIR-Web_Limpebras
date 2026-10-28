@@ -10,6 +10,7 @@ import {
 import type { MapDisplayPoint } from "@/lib/map-features";
 import { buildMapDisplayPontoViciado } from "@/lib/custom-ponto-viciado-storage";
 import { getFirebaseDb } from "@/lib/firebase";
+import { normalizePontoViciadoCodigo } from "@/lib/ponto-viciado-codigo";
 
 export const CUSTOM_PONTOS_VICIOS_COLLECTION = "customPontosViciados";
 
@@ -33,8 +34,9 @@ export type CustomPontoViciadoEntry = {
 };
 
 function snapToEntry(docId: string, data: Record<string, unknown>): CustomPontoViciadoEntry | null {
-  const codigo =
-    typeof data.codigo === "string" ? data.codigo.trim() : "";
+  const codigo = normalizePontoViciadoCodigo(
+    typeof data.codigo === "string" ? data.codigo : "",
+  );
   if (data.oculto === true && codigo) {
     return { firestoreDocId: docId, point: null, ocultoCodigo: codigo };
   }
@@ -101,7 +103,7 @@ export async function addCustomPontoViciado(
   const db = getFirebaseDb();
   const now = Date.now();
   const ref = await addDoc(collection(db, CUSTOM_PONTOS_VICIOS_COLLECTION), {
-    codigo: payload.codigo.trim(),
+    codigo: normalizePontoViciadoCodigo(payload.codigo),
     subprefeitura: payload.subprefeitura.trim(),
     address: payload.address.trim(),
     lat: payload.lat,
@@ -120,7 +122,7 @@ export async function updateCustomPontoViciado(
   const db = getFirebaseDb();
   const r = doc(db, CUSTOM_PONTOS_VICIOS_COLLECTION, firestoreDocId);
   await updateDoc(r, {
-    codigo: payload.codigo.trim(),
+    codigo: normalizePontoViciadoCodigo(payload.codigo),
     subprefeitura: payload.subprefeitura.trim(),
     address: payload.address.trim(),
     lat: payload.lat,
@@ -137,8 +139,10 @@ export async function deleteCustomPontoViciado(firestoreDocId: string): Promise<
 /** Esconde um ponto do catálogo (planilha) para toda a equipe. */
 export async function hidePontoViciadoCodigo(codigo: string): Promise<void> {
   const db = getFirebaseDb();
+  const normalized = normalizePontoViciadoCodigo(codigo);
+  if (!normalized) return;
   await addDoc(collection(db, CUSTOM_PONTOS_VICIOS_COLLECTION), {
-    codigo: codigo.trim(),
+    codigo: normalized,
     oculto: true,
     updatedAtMs: Date.now(),
   });
@@ -148,5 +152,8 @@ export function firebaseDocIdForPontoCodigo(
   entries: CustomPontoViciadoEntry[],
   codigo: string,
 ): string | undefined {
-  return entries.find((e) => e.point?.id === codigo)?.firestoreDocId;
+  const target = normalizePontoViciadoCodigo(codigo);
+  return entries.find(
+    (e) => e.point && normalizePontoViciadoCodigo(e.point.id) === target,
+  )?.firestoreDocId;
 }

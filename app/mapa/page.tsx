@@ -58,7 +58,6 @@ import {
   mergeMapMarkers,
   resolveMapaItem,
   agendaEventsToMapDisplayPoints,
-  allStaticMapMarkerIds,
   type MapDisplayPoint,
   type MapPolygon,
 } from "@/lib/map-features";
@@ -75,10 +74,12 @@ import {
   subregionalMeta,
   type SubregionalId,
 } from "@/lib/constants/subregionais";
+import { firebaseDocIdForPontoCodigo } from "@/lib/firestore/custom-pontos-viciados";
 import {
-  firebaseDocIdForPontoCodigo,
-  type CustomPontoViciadoEntry,
-} from "@/lib/firestore/custom-pontos-viciados";
+  MSG_PONTO_VICIADO_CODIGO_EM_USO,
+  normalizePontoViciadoCodigo,
+  pontoViciadoCodigoEmUsoNoMapa,
+} from "@/lib/ponto-viciado-codigo";
 import type {
   OperationalMapPoint,
   OperationalMapFlyTo,
@@ -292,24 +293,6 @@ function searchMapCatalog(
     });
 }
 
-function reservedCodigosForPv(
-  customEntries: CustomPontoViciadoEntry[],
-  editingFirestoreDocId: string | null,
-): Set<string> {
-  const s = new Set<string>(allStaticMapMarkerIds());
-  for (const e of customEntries) {
-    if (
-      editingFirestoreDocId &&
-      e.firestoreDocId === editingFirestoreDocId
-    ) {
-      continue;
-    }
-    if (!e.point) continue;
-    s.add(e.point.id);
-  }
-  return s;
-}
-
 export default function MapaPage() {
   return (
     <AppShell title="Mapa Operacional" subtitle="Visualização territorial">
@@ -421,7 +404,9 @@ function MapaPageContent() {
   const allMarkers = useMemo(
     () =>
       [...agendaMarkers, ...mergedMarkers].filter(
-        (p) => p.type !== "ponto-viciado" || !pontosOcultos.has(p.id),
+        (p) =>
+          p.type !== "ponto-viciado" ||
+          !pontosOcultos.has(normalizePontoViciadoCodigo(p.id)),
       ),
     [agendaMarkers, mergedMarkers, pontosOcultos],
   );
@@ -633,27 +618,28 @@ function MapaPageContent() {
       return;
     }
 
-    const reserved = reservedCodigosForPv(
-      customPontoEntries,
-      editingFirestoreDocId,
-    );
-    if (editingFirestoreDocId) {
-      const own = customPontoEntries.find(
-        (e) => e.firestoreDocId === editingFirestoreDocId,
-      );
-      if (own?.point) reserved.delete(own.point.id);
-    }
-    if (editingSourceCodigo) reserved.delete(editingSourceCodigo);
-    const preferred = addPvCodigo.trim();
-    if (!preferred) {
+    const finalCodigo = normalizePontoViciadoCodigo(addPvCodigo);
+    if (!finalCodigo) {
       toast.error("Indique o código do ponto.");
       return;
     }
-    if (reserved.has(preferred)) {
-      toast.error("Este código já está em uso neste mapa.");
+    if (
+      pontoViciadoCodigoEmUsoNoMapa(
+        finalCodigo,
+        customPontoEntries.map((entry) => ({
+          firestoreDocId: entry.firestoreDocId,
+          pointId: entry.point?.id ?? null,
+          ocultoCodigo: entry.ocultoCodigo ?? null,
+        })),
+        {
+          firestoreDocId: editingFirestoreDocId,
+          sourceCodigo: editingSourceCodigo,
+        },
+      )
+    ) {
+      toast.error(MSG_PONTO_VICIADO_CODIGO_EM_USO);
       return;
     }
-    const finalCodigo = preferred;
 
     if (!addPvSubregionalId) {
       toast.error("Selecione a subregional.");
@@ -676,14 +662,17 @@ function MapaPageContent() {
         });
         toast.success(`Ponto «${finalCodigo}» atualizado.`);
       } else {
-        await addPontoViciado({
-          codigo: finalCodigo,
-          subprefeitura: subprefeituraLabel,
-          address: addr,
-          lat: addPvPosition[0],
-          lng: addPvPosition[1],
-          createdByUid: user?.uid,
-        });
+        await addPontoViciado(
+          {
+            codigo: finalCodigo,
+            subprefeitura: subprefeituraLabel,
+            address: addr,
+            lat: addPvPosition[0],
+            lng: addPvPosition[1],
+            createdByUid: user?.uid,
+          },
+          { editingSourceCodigo },
+        );
         toast.success(`Ponto «${finalCodigo}» guardado para toda a equipa.`);
       }
       resetPvModal();
@@ -694,7 +683,11 @@ function MapaPageContent() {
       );
     } catch (e) {
       console.error(e);
-      toast.error("Não foi possível guardar. Verifique sessão Firebase.");
+      toast.error(
+        e instanceof Error && e.message === MSG_PONTO_VICIADO_CODIGO_EM_USO
+          ? e.message
+          : "Não foi possível guardar. Verifique sessão Firebase.",
+      );
     } finally {
       setPvSaving(false);
     }
