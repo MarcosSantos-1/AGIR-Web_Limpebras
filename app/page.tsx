@@ -28,18 +28,16 @@ export default function DashboardPage() {
       <QuickActions />
 
       {/* Main Grid */}
-      <div className="mt-4 grid grid-cols-12 gap-6">
-        {/* Left Column */}
-        <div className="col-span-8 space-y-6">
+      <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="min-w-0 space-y-6 lg:col-span-8">
           <WeekSummary />
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
             <ImportantVisits />
             <SocialContentSchedule />
           </div>
         </div>
 
-        {/* Right Column */}
-        <div className="col-span-4 space-y-6">
+        <div className="min-w-0 space-y-6 lg:col-span-4">
           <QuickCalendar
             selectedDate={checklistDate}
             onSelectDate={setChecklistDate}

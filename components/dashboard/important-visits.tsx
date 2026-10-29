@@ -22,7 +22,7 @@ export function ImportantVisits() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.4 }}
-      className="rounded-3xl border border-zinc-100 bg-white p-6 shadow-card dark:border-zinc-800 dark:bg-zinc-900"
+      className="min-w-0 rounded-3xl border border-zinc-100 bg-white p-4 shadow-card dark:border-zinc-800 dark:bg-zinc-900 sm:p-6"
     >
       <div className="mb-5 flex items-center justify-between">
         <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Ações / Visitas</h3>

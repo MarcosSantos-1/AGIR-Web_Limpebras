@@ -132,7 +132,7 @@ export function QuickCalendar({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.4 }}
-      className="rounded-3xl border border-zinc-100 bg-white p-5 shadow-card dark:border-zinc-800 dark:bg-zinc-900"
+      className="min-w-0 rounded-3xl border border-zinc-100 bg-white p-4 shadow-card dark:border-zinc-800 dark:bg-zinc-900 sm:p-5"
     >
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">{title}</h3>

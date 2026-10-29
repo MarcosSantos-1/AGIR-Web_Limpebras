@@ -10,6 +10,12 @@ export function subscribeDiagnostics(period: string, next: (records: Diagnostic[
     (snapshot) => next(snapshot.docs.map((d) => ({ ...d.data(), id: d.id }) as Diagnostic).sort(sortDiagnostics)), error);
 }
 
+export function subscribeDiagnosticsByPoint(pointId: string, next: (records: Diagnostic[]) => void, error: (error: Error) => void) {
+  const code = pointId.trim();
+  return onSnapshot(query(collection(getFirebaseDb(), DIAGNOSTICOS_COLLECTION), where("pointId", "==", code)),
+    (snapshot) => next(snapshot.docs.map((d) => ({ ...d.data(), id: d.id }) as Diagnostic).sort(sortDiagnostics)), error);
+}
+
 export async function saveDiagnostic(record: Diagnostic, responsibleName: string) {
   const user = getFirebaseAuth().currentUser;
   if (!user) throw new Error("Entre na sua conta para salvar.");

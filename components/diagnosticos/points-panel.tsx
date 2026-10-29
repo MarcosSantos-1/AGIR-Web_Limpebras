@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { deleteDiagnostic, historicalRequest, subscribeDiagnostics } from "@/lib/firestore/diagnosticos";
 import { FIELDS, diagnosticStatus, localToday, newDiagnostic, type Diagnostic, type HistoricalSource } from "@/lib/diagnosticos";
 import { DiagnosticEditor, draftKey, inputClass } from "./diagnostic-editor";
+import { SurveyOnboarding } from "./survey-onboarding";
 import { deleteStoredFilesByPublicUrls } from "@/lib/storage/delete-stored-files";
 
 function downloadJson(records: Diagnostic[]) {
@@ -131,7 +132,8 @@ export function PointsPanel() {
     finally { setBusy(false); }
   }
 
-  if (editor) return <DiagnosticEditor key={editor.record.id} initial={editor.record} readOnly={editor.readOnly} onClose={() => setEditor(null)} onSaved={(record) => { setEditor(null); if (record.period !== period) { setCloudReady(false); setRecords([]); } setPeriod(record.period); switchTab("firebase"); }} />;
+  if (editor?.readOnly) return <DiagnosticEditor key={editor.record.id} initial={editor.record} readOnly onClose={() => setEditor(null)} onSaved={(record) => { setEditor(null); if (record.period !== period) { setCloudReady(false); setRecords([]); } setPeriod(record.period); switchTab("firebase"); }} />;
+  if (editor) return <SurveyOnboarding key={editor.record.id} presentation="page" draftScope="account" initial={editor.record} onClose={() => setEditor(null)} onSaved={(record) => { setEditor(null); if (record.period !== period) { setCloudReady(false); setRecords([]); } setPeriod(record.period); switchTab("firebase"); }} />;
 
   return <div className="space-y-6">
     <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">

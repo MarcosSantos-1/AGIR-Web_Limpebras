@@ -2,6 +2,7 @@ import { strict as assert } from "node:assert";
 import { test } from "node:test";
 import historical from "../data/diagnosticos/historical.json";
 import { FIELDS, diagnosticErrors, fieldVersion, newDiagnostic, periodForDate, type Diagnostic } from "../lib/diagnosticos";
+import { activityChoices, impactChoices, materializeVistoria, volumeChoices } from "../lib/vistoria-form";
 import { sanitizeStorageObjectKey } from "../lib/storage/storage-object-key";
 
 function visit(): Diagnostic {
@@ -48,14 +49,53 @@ test("draft allows incomplete inspection but requires identity, address and date
   assert.ok(errors.codigo && errors.endereco && errors.dataChecagem);
 });
 
-test("completion keeps unknown answers distinct and requires an explanation if unassessed", () => {
+test("completion asks for the vistoria essentials and an explanation if unassessed", () => {
   const r = visit();
   const errors = diagnosticErrors(r, true);
-  assert.ok(errors.riscoAves);
+  assert.ok(errors.statusTrimestral);
+  assert.ok(errors.volume);
+  assert.ok(errors.impactoPedestres);
+  assert.ok(errors.impactoVeiculos);
+  assert.ok(errors.termoVistoria);
+  assert.ok(errors.latitude);
   assert.ok(errors.notes);
-  assert.equal(errors.statusTrimestral, undefined);
+  assert.equal(errors.riscoAves, undefined);
+  assert.equal(errors.tipoLogradouro, undefined);
   r.answers.riscoAves = "Não sei responder.";
-  assert.ok(diagnosticErrors(r).riscoAves); // not an allowed answer for this specific battery
+  assert.ok(diagnosticErrors(r).riscoAves);
+});
+
+test("vistoria checklist fills official answers and leaves the paper's omitted questions blank", () => {
+  const r = visit();
+  r.kind = "trimestral";
+  r.answers.latitude = -23.49;
+  r.answers.longitude = -46.68;
+  r.answers.subprefeitura = "Casa Verde";
+  r.answers.statusTrimestral = activityChoices(r.questionnaireVersion)[0].value;
+  r.answers.volume = volumeChoices(r.questionnaireVersion)[1].value;
+  r.answers.impactoPedestres = impactChoices("impactoPedestres", r.questionnaireVersion)[0].value;
+  r.answers.impactoVeiculos = impactChoices("impactoVeiculos", r.questionnaireVersion)[3].value;
+  r.answers.termoVistoria = "sim";
+  r.answers.residuoEntulho = "Sim.";
+  r.answers.vistoriaDanosVia = "Sim.";
+  r.observedStatus = "com-residuos";
+  const ready = materializeVistoria(r);
+  assert.equal(ready.answers.residuoEntulho, "Sim.");
+  assert.equal(ready.answers.residuoDomiciliar, "Não.");
+  assert.equal(ready.answers.riscoErosao, "Sim.");
+  assert.equal(ready.answers.vistoriaErosao, "Não.");
+  assert.equal(ready.answers.subregional, "casa-verde");
+  assert.equal(ready.answers.tipoLogradouro, undefined);
+  assert.equal(ready.observedStatus, "com-residuos");
+  assert.deepEqual(diagnosticErrors(ready, true), {});
+
+  r.answers.statusTrimestral = activityChoices(r.questionnaireVersion)[1].value;
+  const inactive = materializeVistoria(r);
+  assert.equal(inactive.answers.limpezas, 0);
+  assert.ok(String(inactive.answers.volume).startsWith("Não se aplica"));
+  assert.ok(String(inactive.answers.residuoDomiciliar).startsWith("Não se aplica"));
+  assert.equal(inactive.answers.residuoEntulho, "Sim.");
+  assert.equal(inactive.observedStatus, "sem-residuos");
 });
 
 test("quarterly inactive status requires zero cleanings, and period must match", () => {

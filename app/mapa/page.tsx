@@ -91,6 +91,7 @@ import { toast } from "sonner";
 import { useNovaAcao } from "@/components/acao/nova-acao-provider";
 import { subscribeHistoryRecords } from "@/lib/firestore/history";
 import type { HistoryRecordDoc } from "@/data/history-records";
+import { PontoDiagnosticoCard } from "@/components/map/ponto-diagnostico-card";
 import { buildPontoViciadoHistoryIndex, historyCardForAgendaId } from "@/lib/map/ponto-viciado-history";
 import {
   classifyPontoViciado,
@@ -490,6 +491,16 @@ function MapaPageContent() {
     );
   };
 
+  const focusPontosViciados = () => {
+    setSearchMode("pontos-viciados");
+    setGeocodeError(null);
+    setGeocodeAlternatives(null);
+    setCatalogAlternatives(null);
+    setSelectedTypes(["ponto-viciado"]);
+    setPvFaixas(Object.keys(PV_FAIXA_VISUAL) as PvFaixa[]);
+    setTypesPopoverOpen(false);
+  };
+
   const getTypeConfig = (item: MapItem) => {
     const base = pointTypes.find((t) => t.id === item.type) ?? pointTypes[0];
     if (item.type !== "ponto-viciado") return base;
@@ -500,7 +511,6 @@ function MapaPageContent() {
       ...base,
       color: vis.tailwindBg,
       textColor: vis.tailwindText,
-      label: vis.label,
     };
   };
 
@@ -918,8 +928,8 @@ function MapaPageContent() {
           className="relative z-0 flex min-h-0 flex-1 flex-col gap-3"
         >
           {/* isolate: z-index dos overlays fica local e não cobre modais (Dialog z-50+) */}
-          <div className="relative z-0 isolate h-[calc(100vh-11rem)] min-h-[640px] flex-1 overflow-hidden rounded-3xl bg-zinc-200 shadow-lg dark:bg-zinc-800">
-            <div className="absolute inset-0 z-0 h-full w-full min-h-[640px]">
+          <div className="relative z-0 isolate h-[calc(100dvh-16.5rem)] min-h-[360px] flex-1 overflow-hidden rounded-3xl bg-zinc-200 shadow-lg dark:bg-zinc-800 md:h-[calc(100vh-11rem)] md:min-h-[640px]">
+            <div className="absolute inset-0 z-0 h-full w-full">
               <OperationalMap
                 baseLayer={mapBase}
                 points={mapLayerPoints}
@@ -1175,10 +1185,21 @@ function MapaPageContent() {
                   </div>
                 </PopoverContent>
               </Popover>
+              <Button
+                type="button"
+                variant="secondary"
+                className="pointer-events-auto h-12 gap-2 rounded-xl border border-zinc-200/80 bg-white/95 px-4 shadow-md backdrop-blur-sm hover:bg-white dark:border-zinc-700 dark:bg-zinc-900/95 dark:hover:bg-zinc-800"
+                onClick={focusPontosViciados}
+              >
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-500">
+                  <i className="fa-solid fa-trash-can text-xs text-white" aria-hidden />
+                </span>
+                <span className="text-sm font-medium text-zinc-800 dark:text-zinc-100">Pontos viciados</span>
+              </Button>
             </div>
 
             <div className="pointer-events-none absolute right-4 top-4 z-20 flex flex-col items-end gap-2">
-              <div className="pointer-events-auto rounded-xl bg-white/90 px-4 py-2 shadow-md backdrop-blur-sm dark:bg-zinc-900/90">
+              <div className="pointer-events-auto hidden rounded-xl bg-white/90 px-4 py-2 shadow-md backdrop-blur-sm dark:bg-zinc-900/90 md:block">
                 <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   {visibleCount}
                 </span>
@@ -1256,11 +1277,21 @@ function MapaPageContent() {
         </motion.div>
 
         {selectedItem && (
+          <button
+            type="button"
+            aria-label="Fechar detalhes"
+            className="fixed inset-0 z-[55] bg-black/40 md:hidden"
+            onClick={() => setSelectedId(null)}
+          />
+        )}
+        {selectedItem && (
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="w-80 shrink-0"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="fixed inset-x-0 bottom-0 z-[60] max-h-[min(86dvh,760px)] w-full overflow-y-auto rounded-t-3xl border border-zinc-200 bg-zinc-50 p-3 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl dark:border-zinc-800 dark:bg-zinc-950 md:static md:z-auto md:max-h-[calc(100vh-8rem)] md:w-80 md:shrink-0 md:overflow-y-auto md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:dark:bg-transparent"
           >
+            <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-zinc-300 md:hidden dark:bg-zinc-600" aria-hidden />
+            <div className="flex flex-col gap-4">
             <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
               <div className="mb-4 flex items-start justify-between">
                 <div className="flex items-center gap-3">
@@ -1430,19 +1461,16 @@ function MapaPageContent() {
                     </span>
                   </div>
                 ) : null}
-                {selectedItem.detailLines &&
-                  selectedItem.detailLines.length > 0 && (
+                {(() => {
+                  const lines = (selectedItem.detailLines ?? []).filter((d) => {
+                    if (d.label === "Nº de limpezas") return false;
+                    if (d.label === "Volumetria" && selectedItem.type === "ponto-viciado") return false;
+                    return true;
+                  });
+                  if (!lines.length) return null;
+                  return (
                     <ul className="space-y-2 border-t border-zinc-100 pt-3 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-300">
-                      {selectedItem.detailLines
-                        .filter((d) => {
-                          if (d.label === "Nº de limpezas") return false;
-                          if (d.label !== "Volumetria") return true;
-                          if (selectedItem.type !== "ponto-viciado") return true;
-                          return !pvHistoryByCodigo.get(
-                            selectedItem.id.toUpperCase(),
-                          )?.pesoKg;
-                        })
-                        .map((d) => (
+                      {lines.map((d) => (
                         <li key={`${d.label}-${d.value}`}>
                           <span className="font-medium text-zinc-700 dark:text-zinc-200">
                             {d.label}:
@@ -1451,7 +1479,8 @@ function MapaPageContent() {
                         </li>
                       ))}
                     </ul>
-                  )}
+                  );
+                })()}
               </div>
 
               {(() => {
@@ -1551,6 +1580,14 @@ function MapaPageContent() {
                   </Button>
                 </div>
               ) : null}
+            </div>
+            {selectedItem.type === "ponto-viciado" ? (
+              <PontoDiagnosticoCard
+                pointId={selectedItem.id}
+                catalogueVolume={"volumetria" in selectedItem ? selectedItem.volumetria : undefined}
+                catalogueInactive={selectedItem.status === "inativo"}
+              />
+            ) : null}
             </div>
           </motion.div>
         )}

@@ -12,7 +12,6 @@ import {
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { defaultMapView } from "@/lib/constants/map";
 import type { MapPolygon } from "@/lib/map-features";
 import { cn } from "@/lib/utils";
 
@@ -170,32 +169,9 @@ function MapPlacementClickHandler({
   return null;
 }
 
-function FitBoundsToData({
-  points,
-  polygons,
-}: {
-  points: OperationalMapPoint[];
-  polygons: MapPolygon[];
-}) {
-  const map = useMap();
-
-  useEffect(() => {
-    const b = L.latLngBounds([]);
-    for (const p of points) {
-      b.extend(p.position);
-    }
-    for (const poly of polygons) {
-      for (const pos of poly.positions) {
-        b.extend(pos);
-      }
-    }
-    if (b.isValid()) {
-      map.fitBounds(b, { padding: [40, 40], maxZoom: 14 });
-    }
-  }, [map, points, polygons]);
-
-  return null;
-}
+/** Santana / Tucuruvi. O enquadramento automático puxava pontos fora de São Paulo. */
+const ZONA_NORTE_CENTER: [number, number] = [-23.495, -46.628];
+const ZONA_NORTE_ZOOM = 12;
 
 function FlyToSearchResult({
   target,
@@ -226,17 +202,15 @@ export function OperationalMap({
 }: OperationalMapProps) {
   return (
     <MapContainer
-      center={defaultMapView.center}
-      zoom={defaultMapView.zoom}
+      center={ZONA_NORTE_CENTER}
+      zoom={ZONA_NORTE_ZOOM}
       className={cn(
-        "z-0 h-full min-h-[640px] w-full",
+        "z-0 h-full w-full",
         placementMode && "cursor-crosshair",
       )}
-      style={{ minHeight: 640 }}
       scrollWheelZoom
       zoomControl={false}
     >
-      <FitBoundsToData points={points} polygons={polygons} />
       <FlyToSearchResult target={flyTo} />
       <MapPlacementClickHandler
         active={placementMode && !!onPlacementClick}

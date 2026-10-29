@@ -158,7 +158,7 @@ export function DailyChecklist({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.5 }}
-      className="rounded-3xl border border-zinc-100 bg-white p-5 shadow-card dark:border-zinc-800 dark:bg-zinc-900"
+      className="min-w-0 rounded-3xl border border-zinc-100 bg-white p-4 shadow-card dark:border-zinc-800 dark:bg-zinc-900 sm:p-5"
     >
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0">

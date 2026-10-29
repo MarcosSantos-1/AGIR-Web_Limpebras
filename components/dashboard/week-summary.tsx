@@ -32,9 +32,9 @@ export function WeekSummary() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3 }}
-      className="rounded-3xl border border-zinc-100 bg-white p-6 shadow-card dark:border-zinc-800 dark:bg-zinc-900"
+      className="min-w-0 overflow-hidden rounded-3xl border border-zinc-100 bg-white p-4 shadow-card dark:border-zinc-800 dark:bg-zinc-900 sm:p-6"
     >
-      <div className="mb-5 flex items-center justify-between">
+      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Resumo da Semana</h3>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 dark:text-zinc-500">{weekLabel}</p>
@@ -48,7 +48,8 @@ export function WeekSummary() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-5 gap-3">
+      <div className="overflow-x-auto">
+      <div className="grid min-w-[34rem] grid-cols-5 gap-3 md:min-w-0">
         {weekData.map((day) => {
           const isToday = day.iso === todayIso;
           return (
@@ -136,6 +137,7 @@ export function WeekSummary() {
             </div>
           );
         })}
+      </div>
       </div>
     </motion.div>
   );

@@ -16,7 +16,8 @@ import { saveLevantamento, cancelLevantamento, enrollSurveyPoints, subscribeLeva
 import { QUESTIONNAIRE_VERSION, localToday, newDiagnostic, periodForDate, type Diagnostic, type HistoricalSource } from "@/lib/diagnosticos";
 import { buildLevantamentoWorkbook, newestByPoint, periodDates, periodLabel, periodFromTitle, surveyProgress, type Levantamento } from "@/lib/levantamentos";
 import { mergeSurveyRows } from "@/lib/levantamento-rows";
-import { DiagnosticEditor, inputClass } from "./diagnostic-editor";
+import { inputClass } from "./diagnostic-editor";
+import { SurveyOnboarding } from "./survey-onboarding";
 import { PointsPanel } from "./points-panel";
 
 const currentPeriod = periodForDate(localToday());
@@ -131,7 +132,7 @@ function LevantamentosPanel() {
     finally { setBusy(""); }
   }
 
-  if (editor) return <DiagnosticEditor key={editor.id} initial={editor} onClose={() => setEditor(null)} onSaved={() => setEditor(null)} />;
+  if (editor) return <SurveyOnboarding key={editor.id} presentation="page" draftScope="account" initial={editor} onClose={() => setEditor(null)} onSaved={() => setEditor(null)} />;
   if (activeSelected) {
     const survey = activeSelected;
     const updates = newestByPoint(surveyRecords(survey, records));

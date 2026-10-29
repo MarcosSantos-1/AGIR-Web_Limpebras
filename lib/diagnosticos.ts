@@ -1,4 +1,5 @@
 import metadata from "@/data/diagnosticos/fields.json";
+import { VISTORIA_REVIEW_KEYS } from "@/lib/vistoria-keys";
 
 export const DIAGNOSTICOS_COLLECTION = "diagnosticos";
 export const QUESTIONNAIRE_VERSION = "2026-T3-rev-20261019";
@@ -61,19 +62,27 @@ export function diagnosticErrors(record: Diagnostic, complete = false, original?
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date)) || new Date(`${date}T12:00:00Z`).toISOString().slice(0, 10) !== date) errors.dataChecagem = "Informe uma data válida.";
   if (!/^\d{4}-T[1-4]$/.test(record.period)) errors.period = "Use uma competência como 2026-T3.";
   if (record.kind === "trimestral" && !errors.dataChecagem && periodForDate(date) !== record.period) errors.period = "A checagem deve pertencer ao trimestre informado.";
+  const inactive = String(a.statusTrimestral ?? "").toLowerCase().includes("inativo");
   for (const field of FIELDS) {
-    if (record.kind === "visita" && field.quarterly) continue;
     const value = a[field.key];
     const missing = value === undefined || value === "";
-    const optional = field.key === "complemento" || (field.key === "outroLogradouro" && a.tipoLogradouro !== "Outros.");
-    if (complete && missing && !optional) errors[field.key] = "Preencha ou selecione uma resposta.";
     if (missing) continue;
-    const unchangedHistoricalValue = !complete && original?.source && original.answers[field.key] === value;
-    if (field.type === "select" && !fieldVersion(field, record.questionnaireVersion).options.includes(String(value)) && !unchangedHistoricalValue) errors[field.key] = "Escolha uma alternativa desta versão do questionário.";
+    const unchanged = Boolean(original?.source) && original?.answers[field.key] === value;
+    const preserved = unchanged && (!complete || !VISTORIA_REVIEW_KEYS.has(field.key));
+    if (field.type === "select" && !fieldVersion(field, record.questionnaireVersion).options.includes(String(value)) && !preserved) errors[field.key] = "Escolha uma alternativa desta versão do questionário.";
     if (field.type === "number") {
       const n = Number(value);
       if (!Number.isFinite(n) || (field.key === "limpezas" && (!Number.isInteger(n) || n < 0)) || (field.key === "latitude" && Math.abs(n) > 90) || (field.key === "longitude" && Math.abs(n) > 180)) errors[field.key] = "Informe um número válido dentro dos limites.";
     }
+  }
+  if (complete) {
+    if (!String(a.statusTrimestral ?? "").trim()) errors.statusTrimestral = "Diga se o ponto está ativo.";
+    if (!inactive && (a.volume === undefined || a.volume === "" || String(a.volume).startsWith("Não se aplica"))) errors.volume = "Informe a volumetria do ponto.";
+    if (a.impactoPedestres === undefined || a.impactoPedestres === "") errors.impactoPedestres = "Escolha o impacto na circulação de pedestres.";
+    if (a.impactoVeiculos === undefined || a.impactoVeiculos === "") errors.impactoVeiculos = "Escolha o impacto no tráfego de veículos.";
+    if (a.termoVistoria !== "sim") errors.termoVistoria = "Confirme o responsável pela vistoria.";
+    if (a.latitude === undefined || a.latitude === "") errors.latitude = "As coordenadas do ponto não foram registradas.";
+    if (a.longitude === undefined || a.longitude === "") errors.longitude = "As coordenadas do ponto não foram registradas.";
   }
   if (complete && record.kind === "visita" && record.observedStatus === "nao-avaliado" && !record.notes.trim()) errors.notes = "Explique por que o local não pôde ser avaliado.";
   if (record.kind === "trimestral" && String(a.statusTrimestral ?? "").includes("inativo") && a.limpezas !== undefined && a.limpezas !== "" && Number(a.limpezas) !== 0) errors.limpezas = "O modelo exige zero limpezas para ponto inativo no trimestre.";
