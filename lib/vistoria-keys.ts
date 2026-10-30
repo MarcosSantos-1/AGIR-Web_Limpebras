@@ -15,6 +15,7 @@ export const VISTORIA_YES_NO_KEYS = [
   "riscoAgua",
   "riscoOdor",
   "riscoQueimada",
+  "proximidadeConteiner",
   "proximidadePlaca",
   "proximidadeCatadores",
   "proximidadeCirculacaoRua",

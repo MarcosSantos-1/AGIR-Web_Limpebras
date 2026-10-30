@@ -13,8 +13,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useAuth } from "@/contexts/auth-context";
 import { historicalRequest } from "@/lib/firestore/diagnosticos";
 import { saveLevantamento, cancelLevantamento, enrollSurveyPoints, subscribeLevantamentos, subscribeQuarterlyDiagnostics } from "@/lib/firestore/levantamentos";
+import { subscribePontoFichas } from "@/lib/firestore/ponto-fichas";
 import { QUESTIONNAIRE_VERSION, localToday, newDiagnostic, periodForDate, type Diagnostic, type HistoricalSource } from "@/lib/diagnosticos";
-import { buildLevantamentoWorkbook, newestByPoint, periodDates, periodLabel, periodFromTitle, surveyProgress, type Levantamento } from "@/lib/levantamentos";
+import { buildLevantamentoWorkbook, newestByPoint, OPERACAO_LEVANTAMENTO_NOTA, periodDates, periodLabel, periodFromTitle, surveyProgress, type Levantamento } from "@/lib/levantamentos";
+import type { PontoFichaDraft } from "@/lib/ponto-ficha";
 import { mergeSurveyRows } from "@/lib/levantamento-rows";
 import { inputClass } from "./diagnostic-editor";
 import { SurveyOnboarding } from "./survey-onboarding";
@@ -41,6 +43,7 @@ function LevantamentosPanel() {
   const [sources, setSources] = useState<HistoricalSource[]>([]);
   const [metadata, setMetadata] = useState<Levantamento[]>([]);
   const [records, setRecords] = useState<Diagnostic[]>([]);
+  const [fichas, setFichas] = useState<Map<string, PontoFichaDraft>>(new Map());
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
   const [cloudError, setCloudError] = useState("");
@@ -68,7 +71,8 @@ function LevantamentosPanel() {
     historicalRequest().then((result) => { if (active) { setSources(result.sources); setReady(true); setError(""); } }).catch((e) => { if (active) { setError(e.message); setReady(true); } });
     const offMeta = subscribeLevantamentos((items) => { setMetadata(items); setMetaReady(true); }, (e) => { setCloudError(e.message); setMetaReady(true); });
     const offRecords = subscribeQuarterlyDiagnostics((items) => { setRecords(items); setCloudReady(true); }, (e) => { setCloudError(e.message); setCloudReady(false); });
-    return () => { active = false; offMeta(); offRecords(); };
+    const offFichas = subscribePontoFichas((items) => setFichas(items), () => setFichas(new Map()));
+    return () => { active = false; offMeta(); offRecords(); offFichas(); };
   }, [user, retry]);
 
   const surveys = useMemo(() => {
@@ -108,7 +112,7 @@ function LevantamentosPanel() {
     try {
       if (!cloudReady || cloudError) throw new Error("Aguarde a leitura das atualizações do Firebase antes de baixar a planilha.");
       const base = await loadBaseline(survey);
-      const rows = buildSurveyRows(survey, allPoints, base, records);
+      const rows = buildSurveyRows(survey, allPoints, base, records, fichas);
       const workbook = await buildLevantamentoWorkbook(rows, survey.sourceId ?? QUESTIONNAIRE_VERSION);
       const buffer = await workbook.xlsx.writeBuffer();
       const url = URL.createObjectURL(new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
@@ -132,19 +136,19 @@ function LevantamentosPanel() {
     finally { setBusy(""); }
   }
 
-  if (editor) return <SurveyOnboarding key={editor.id} presentation="page" draftScope="account" initial={editor} onClose={() => setEditor(null)} onSaved={() => setEditor(null)} />;
+  if (editor) return <SurveyOnboarding key={editor.id} presentation="page" draftScope="account" survey={activeSelected} initial={editor} onClose={() => setEditor(null)} onSaved={() => setEditor(null)} />;
   if (activeSelected) {
     const survey = activeSelected;
     const updates = newestByPoint(surveyRecords(survey, records));
     const originals = new Map(baseline.map((r) => [r.pointId, r]));
     const historicalRows = survey.sourceId ? mergeSurveyRows(baseline, [...updates.values()]) : [];
     const codes = new Set([...(survey.sourceId ? historicalRows.map((r) => r.pointId) : survey.expectedCodes), ...updates.keys()]);
-    const rows = buildSurveyRows(survey, allPoints, baseline, records);
+    const rows = buildSurveyRows(survey, allPoints, baseline, records, fichas);
     const shown = rows.filter((row) => (!search || `${row.pointId} ${row.answers.endereco}`.toLowerCase().includes(search.toLowerCase())) && (filter === "todos" || (filter === "pendente" ? !updates.has(row.pointId) : row.state === filter)));
     const progress = surveyProgress([...codes], [...updates.values()]);
     return <div className="space-y-5">
       <div className="flex flex-wrap justify-between gap-2"><Button variant="ghost" onClick={() => setSelected(null)}><ArrowLeft className="mr-2 h-4 w-4" />Todos os levantamentos</Button><Button variant="outline" asChild><Link href={`/diagnosticos/mapa?levantamento=${encodeURIComponent(survey.id)}`}><MapIcon className="mr-2 h-4 w-4" />Ver no mapa</Link></Button></div>
-      <div className="rounded-3xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-6 dark:border-emerald-900 dark:from-emerald-950 dark:to-zinc-900"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-widest text-emerald-700">Levantamento trimestral</p><h2 className="mt-2 text-2xl font-semibold">{survey.title}</h2><p className="mt-2 flex items-center gap-2 text-sm text-zinc-500"><CalendarDays className="h-4 w-4" />{periodDates(survey.period)}</p></div><Button disabled={!!busy} onClick={() => void download(survey)}><ArrowDownToLine className="mr-2 h-4 w-4" />Baixar planilha</Button></div><p className="mt-5 text-sm">{survey.status === "em-preenchimento" ? `${progress.completed} de ${progress.total} pontos concluídos · ${progress.percent}%` : `${codes.size} pontos no levantamento histórico`}</p></div>
+      <div className="rounded-3xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-6 dark:border-emerald-900 dark:from-emerald-950 dark:to-zinc-900"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-widest text-emerald-700">Levantamento trimestral</p><h2 className="mt-2 text-2xl font-semibold">{survey.title}</h2><p className="mt-2 flex items-center gap-2 text-sm text-zinc-500"><CalendarDays className="h-4 w-4" />{periodDates(survey.period)}</p></div><Button disabled={!!busy} onClick={() => void download(survey)}><ArrowDownToLine className="mr-2 h-4 w-4" />Baixar planilha</Button></div><p className="mt-5 text-sm">{survey.status === "em-preenchimento" ? `${progress.completed} de ${progress.total} pontos concluídos · ${progress.percent}%` : `${codes.size} pontos no levantamento histórico`}</p>{!survey.sourceId && <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm leading-relaxed text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">{OPERACAO_LEVANTAMENTO_NOTA}</p>}</div>
       {cloudError && <p role="alert" className="rounded-xl bg-orange-50 p-4 text-sm text-orange-900">Não foi possível carregar as atualizações: {cloudError}</p>}
       <div className="flex flex-wrap gap-3"><div className="relative min-w-48 flex-1"><Search className="absolute left-3 top-3.5 h-4 w-4 text-zinc-400" /><input aria-label="Buscar ponto no levantamento" className={`${inputClass} pl-9`} placeholder="Buscar código ou endereço" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} /></div><select aria-label="Filtrar preenchimento" className={`${inputClass} sm:w-52`} value={filter} onChange={(e) => { setFilter(e.target.value); setPage(1); }}><option value="todos">Todos os pontos</option><option value="pendente">Ainda não atualizados</option><option value="rascunho">Rascunhos</option><option value="concluido">Concluídos</option></select>{!survey.sourceId && <Button disabled={!cloudReady || !!cloudError} onClick={() => { const r = newDiagnostic(); setEditor({ ...r, kind: "trimestral", period: survey.period, sourceId: survey.id, answers: { lote: "Lote 3", antiguidade: "“Novo”, surgiu durante este trimestre." } }); }}><Plus className="mr-2 h-4 w-4" />Ponto novo</Button>}</div>
       <p className="text-xs text-zinc-500">{shown.length} pontos · Os dados cadastrais anteriores são referências. Cada conclusão confirma o preenchimento deste trimestre.</p>
@@ -173,7 +177,7 @@ function LevantamentosPanel() {
         {working && <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400" />}
         <div className={`p-5 sm:p-6 ${working ? "lg:flex lg:items-start lg:gap-8" : ""}`}>
           <div className="flex min-w-0 flex-1 items-start gap-4"><div className={`relative rounded-2xl p-4 ${working ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950" : "bg-slate-100 text-slate-500 dark:bg-zinc-800"}`}><FileSpreadsheet className="h-8 w-8" />{working && <span className="absolute -right-1 -top-1 rounded-full border-2 border-white bg-emerald-500 p-1"><Pencil className="h-3 w-3 text-white" /></span>}</div><div className="min-w-0"><div className="mb-2 flex flex-wrap items-center gap-2"><span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${working ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950" : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800"}`}>{working ? <Clock3 className="h-3.5 w-3.5" /> : <CheckCheck className="h-3.5 w-3.5" />}{working ? "Em preenchimento" : "Levantamento histórico"}</span>{survey.sourceId?.includes("rev-") && <span className="rounded-full bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-700">Revisão · 19/10/2026</span>}</div><h3 className="text-xl font-semibold tracking-tight">{survey.title}</h3><p className="mt-2 flex items-center gap-1.5 text-xs text-zinc-500"><CalendarDays className="h-3.5 w-3.5 shrink-0" />{periodDates(survey.period)}</p>{source?.checkedFrom && <p className="mt-1 text-xs text-zinc-400">Checagens: {brDate(source.checkedFrom)} a {brDate(source.checkedTo)}</p>}</div></div>
-          <div className={`mt-5 ${working ? "lg:mt-0 lg:w-80" : ""}`}><div className="mb-3 flex flex-wrap items-center gap-4 text-sm"><span className="flex items-center gap-1.5 text-zinc-600 dark:text-zinc-300"><MapPin className="h-4 w-4 text-zinc-400" /><strong>{total}</strong> pontos</span><span className="flex items-center gap-1.5 text-xs font-medium text-orange-600"><Sparkles className="h-4 w-4" />{newCount} novos</span></div>{working && <div className="mb-4"><div className="mb-2 flex items-center justify-between text-xs"><span className="text-zinc-500">{available ? `${progress.completed} de ${total} concluídos` : "Carregando progresso…"}</span><strong className="text-lg text-emerald-700">{available ? `${total ? Math.round(progress.completed / total * 100) : 0}%` : "—"}</strong></div><div role="progressbar" aria-label={`Conclusão de ${survey.title}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={available ? progress.percent : undefined} className="h-2.5 overflow-hidden rounded-full bg-emerald-100 dark:bg-emerald-950"><div className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-teal-400 transition-[width] duration-500" style={{ width: `${available ? progress.percent : 0}%` }} /></div></div>}
+          <div className={`mt-5 ${working ? "lg:mt-0 lg:w-80" : ""}`}><div className="mb-3 flex flex-wrap items-center gap-4 text-sm"><span className="flex items-center gap-1.5 text-zinc-600 dark:text-zinc-300"><MapPin className="h-4 w-4 text-zinc-400" /><strong>{total}</strong> pontos</span><span className="flex items-center gap-1.5 text-xs font-medium text-orange-600"><Sparkles className="h-4 w-4" />{newCount} novos</span></div>{working && <p className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">{OPERACAO_LEVANTAMENTO_NOTA}</p>}{working && <div className="mb-4"><div className="mb-2 flex items-center justify-between text-xs"><span className="text-zinc-500">{available ? `${progress.completed} de ${total} concluídos` : "Carregando progresso…"}</span><strong className="text-lg text-emerald-700">{available ? `${total ? Math.round(progress.completed / total * 100) : 0}%` : "—"}</strong></div><div role="progressbar" aria-label={`Conclusão de ${survey.title}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={available ? progress.percent : undefined} className="h-2.5 overflow-hidden rounded-full bg-emerald-100 dark:bg-emerald-950"><div className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-teal-400 transition-[width] duration-500" style={{ width: `${available ? progress.percent : 0}%` }} /></div></div>}
             <div className="flex flex-wrap gap-2"><Button disabled={!!busy} variant={working ? "default" : "outline"} className={`rounded-xl ${working ? "bg-emerald-600 text-white hover:bg-emerald-700" : ""}`} onClick={() => void openSurvey(survey)}>{busy === survey.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FolderOpen className="mr-2 h-4 w-4" />}{working ? "Continuar preenchimento" : "Abrir levantamento"}<ArrowRight className="ml-2 h-3.5 w-3.5" /></Button><Button aria-label={`Baixar ${survey.title}${survey.sourceId?.includes("rev-") ? " revisão 19/10" : ""}`} title="Baixar Excel com as 49 colunas originais" variant="outline" className="rounded-xl" disabled={!!busy || !available} onClick={() => void download(survey)}><ArrowDownToLine className="h-4 w-4" /></Button><Button asChild variant="outline" className="rounded-xl"><Link aria-label={`Ver ${survey.title} no mapa`} href={`/diagnosticos/mapa?levantamento=${encodeURIComponent(survey.id)}`}><MapIcon className="h-4 w-4" /></Link></Button></div>
           </div>
         </div>
@@ -189,7 +193,7 @@ function LevantamentosPanel() {
       if (surveys.some(s => s.status === "em-preenchimento")) { toast.error("Conclua ou cancele o levantamento em preenchimento antes de criar outro."); return; }
       if (surveys.some((s) => !s.sourceId && s.period === newPeriod)) { toast.info("Já existe um levantamento de preenchimento para esse trimestre."); setCreating(false); return; }
       setBusy("create");
-      try { await saveLevantamento({ id: `levantamento-${newPeriod}-${crypto.randomUUID()}`, period: newPeriod, title: periodLabel(newPeriod), expectedCodes: allPoints.map(p => p.id), status: "em-preenchimento", notes: "", revision: 0 }); setCreating(false); toast.success("Levantamento criado."); } catch (e) { toast.error(e instanceof Error ? e.message : "Falha ao criar."); } finally { setBusy(""); }
+      try { await saveLevantamento({ id: `levantamento-${newPeriod}-${crypto.randomUUID()}`, period: newPeriod, title: periodLabel(newPeriod), expectedCodes: allPoints.map(p => p.id), status: "em-preenchimento", notes: "", revision: 0, openedAtMs: Date.now() }); setCreating(false); toast.success("Levantamento criado."); } catch (e) { toast.error(e instanceof Error ? e.message : "Falha ao criar."); } finally { setBusy(""); }
     }}><Plus className="mr-2 h-4 w-4" />Criar levantamento</Button></DialogContent></Dialog>
   </div>;
 }

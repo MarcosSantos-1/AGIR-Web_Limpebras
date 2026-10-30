@@ -3,6 +3,7 @@ import { test } from "node:test";
 import historical from "../data/diagnosticos/historical.json";
 import { FIELDS, diagnosticErrors, fieldVersion, newDiagnostic, periodForDate, type Diagnostic } from "../lib/diagnosticos";
 import { activityChoices, impactChoices, materializeVistoria, volumeChoices } from "../lib/vistoria-form";
+import { fichaOptions } from "../lib/ponto-ficha";
 import { sanitizeStorageObjectKey } from "../lib/storage/storage-object-key";
 
 function visit(): Diagnostic {
@@ -10,6 +11,17 @@ function visit(): Diagnostic {
   record.answers = { ...record.answers, codigo: "CV-001", endereco: "Avenida de teste, 100" };
   record.pointId = "CV-001";
   return record;
+}
+
+function fillFicha(record: Diagnostic) {
+  const version = record.questionnaireVersion;
+  record.answers.complemento = "Canteiro central";
+  record.answers.tipoLogradouro = fichaOptions("tipoLogradouro", version)[0];
+  record.answers.topografia = fichaOptions("topografia", version)[0];
+  record.answers.ocupacao = fichaOptions("ocupacao", version)[0];
+  for (const key of ["entornoBueiro", "entornoRio", "entornoEncosta", "entornoTerreno", "entornoSemSaida", "entornoMuro"] as const) {
+    record.answers[key] = fichaOptions(key, version).find((option) => option === "Não.") ?? "Não.";
+  }
 }
 
 test("historical revisions stay separate, deterministic and complete", () => {
@@ -78,6 +90,7 @@ test("vistoria checklist fills official answers and leaves the paper's omitted q
   r.answers.termoVistoria = "sim";
   r.answers.residuoEntulho = "Sim.";
   r.answers.vistoriaDanosVia = "Sim.";
+  fillFicha(r);
   r.observedStatus = "com-residuos";
   const ready = materializeVistoria(r);
   assert.equal(ready.answers.residuoEntulho, "Sim.");
@@ -85,17 +98,50 @@ test("vistoria checklist fills official answers and leaves the paper's omitted q
   assert.equal(ready.answers.riscoErosao, "Sim.");
   assert.equal(ready.answers.vistoriaErosao, "Não.");
   assert.equal(ready.answers.subregional, "casa-verde");
-  assert.equal(ready.answers.tipoLogradouro, undefined);
+  assert.equal(ready.answers.lote, "Lote 3");
+  assert.ok(String(ready.answers.revitalizacao).startsWith("Sem revitalização"));
+  assert.equal(ready.answers.coleta, undefined);
+  assert.equal(ready.answers.limpezas, undefined);
   assert.equal(ready.observedStatus, "com-residuos");
   assert.deepEqual(diagnosticErrors(ready, true), {});
 
+  const revived = materializeVistoria(r, { openDate: "2000-01-01", events: [{ type: "revitalizacao", status: "concluido", date: String(r.answers.dataChecagem), title: "Revitalização — CV-001" }] });
+  assert.ok(String(revived.answers.revitalizacao).includes("Revitaliza SP"));
+  const earlier = materializeVistoria(r, { openDate: "2099-01-01", events: [{ type: "revitalizacao", status: "concluido", date: "2020-01-01", title: "Revitalização — CV-001" }] });
+  assert.ok(String(earlier.answers.revitalizacao).startsWith("Sem revitalização"));
+
   r.answers.statusTrimestral = activityChoices(r.questionnaireVersion)[1].value;
-  const inactive = materializeVistoria(r);
+  const inactive = materializeVistoria(r, { openDate: "2026-10-01", events: [{ type: "revitalizacao", status: "concluido", date: "2026-10-02", title: "Revitalização — CV-001" }] });
   assert.equal(inactive.answers.limpezas, 0);
+  assert.ok(String(inactive.answers.coleta).toLowerCase().includes("inativo"));
+  assert.ok(String(inactive.answers.revitalizacao).toLowerCase().includes("inativo"));
   assert.ok(String(inactive.answers.volume).startsWith("Não se aplica"));
   assert.ok(String(inactive.answers.residuoDomiciliar).startsWith("Não se aplica"));
   assert.equal(inactive.answers.residuoEntulho, "Sim.");
   assert.equal(inactive.observedStatus, "sem-residuos");
+});
+
+test("a quarterly vistoria cannot be finished while the point profile is incomplete", () => {
+  const r = visit();
+  r.kind = "trimestral";
+  r.answers.latitude = -23.49;
+  r.answers.longitude = -46.68;
+  r.answers.statusTrimestral = activityChoices(r.questionnaireVersion)[0].value;
+  r.answers.volume = volumeChoices(r.questionnaireVersion)[1].value;
+  r.answers.impactoPedestres = impactChoices("impactoPedestres", r.questionnaireVersion)[0].value;
+  r.answers.impactoVeiculos = impactChoices("impactoVeiculos", r.questionnaireVersion)[0].value;
+  r.answers.termoVistoria = "sim";
+  const gap = diagnosticErrors(materializeVistoria(r), true);
+  assert.equal(gap.complemento, undefined);
+  assert.ok(gap.tipoLogradouro && gap.topografia && gap.ocupacao && gap.entornoBueiro);
+  assert.equal(materializeVistoria(r).answers.proximidadeConteiner, "Não.");
+  r.answers.proximidadeConteiner = "Sim.";
+  assert.equal(materializeVistoria(r).answers.proximidadeConteiner, "Sim.");
+  fillFicha(r);
+  r.answers.tipoLogradouro = fichaOptions("tipoLogradouro", r.questionnaireVersion).find((option) => option.startsWith("Outros")) ?? "Outros.";
+  assert.ok(diagnosticErrors(materializeVistoria(r), true).outroLogradouro);
+  r.answers.outroLogradouro = "Córrego canalizado";
+  assert.equal(diagnosticErrors(materializeVistoria(r), true).outroLogradouro, undefined);
 });
 
 test("quarterly inactive status requires zero cleanings, and period must match", () => {

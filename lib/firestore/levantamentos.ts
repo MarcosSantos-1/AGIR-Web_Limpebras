@@ -28,7 +28,9 @@ export async function saveLevantamento(record: Levantamento) {
       if (active.exists() && active.data().status === "em-preenchimento") throw new Error("Outro levantamento foi iniciado. Atualize a página.");
     }
     if ((current.exists() ? current.data().revision : 0) !== record.revision) throw new Error("O levantamento foi atualizado por outra pessoa. Abra novamente para editar.");
-    tx.set(ref, { ...record, type: "diagnostico-levantamento", revision: record.revision + 1, updatedByUid: uid, updatedAtMs: Date.now() });
+    const previousOpened = current.exists() && typeof current.data().openedAtMs === "number" ? current.data().openedAtMs : undefined;
+    const openedAtMs = previousOpened ?? record.openedAtMs ?? (record.status === "em-preenchimento" ? Date.now() : undefined);
+    tx.set(ref, { ...record, ...(openedAtMs !== undefined ? { openedAtMs } : {}), type: "diagnostico-levantamento", revision: record.revision + 1, updatedByUid: uid, updatedAtMs: Date.now() });
     if (record.status === "em-preenchimento") tx.set(lockRef, { activeId: record.id });
     else if (lock.data()?.activeId === record.id) tx.set(lockRef, { activeId: null });
   });

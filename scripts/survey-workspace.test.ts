@@ -1,7 +1,8 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
 import { buildSurveyRows, distanceMeters, pointDiagnostic, recordsForSurvey, surveyCodes, surveyPointState } from "../lib/survey-workspace";
-import { periodFromTitle, surveyProgress, type Levantamento } from "../lib/levantamentos";
+import { periodFromTitle, surveyOpenDate, surveyProgress, type Levantamento } from "../lib/levantamentos";
+import { emptyFichaDraft, fichaOptions } from "../lib/ponto-ficha";
 import type { MapDisplayPoint } from "../lib/map-features";
 import { assertSingleOpenSurvey, assertZeroCompleted } from "../lib/survey-lifecycle";
 
@@ -34,7 +35,19 @@ test("prefill preserves saved answers and uses current catalogue location", () =
   assert.equal(prepared.answers.latitude, point.position[0]);
   assert.equal(prepared.answers.distrito, "Limão");
   assert.equal(prepared.answers.entornoRio, "Sim.");
+  assert.equal(prepared.answers.lote, "Lote 3");
   assert.equal(prepared.answers.volume, undefined);
+  original.answers.lote = "Lote 1";
+  assert.equal(pointDiagnostic(point, survey, original).answers.lote, "Lote 3");
+  const ficha = emptyFichaDraft();
+  ficha.complemento = "Praça";
+  ficha.tipoLogradouro = fichaOptions("tipoLogradouro")[0];
+  original.answers.complemento = "Texto antigo";
+  original.answers.outroLogradouro = "Córrego canalizado";
+  const withFicha = pointDiagnostic(point, survey, original, ficha);
+  assert.equal(withFicha.answers.complemento, "Praça");
+  assert.equal(withFicha.answers.tipoLogradouro, ficha.tipoLogradouro);
+  assert.equal(withFicha.answers.outroLogradouro, undefined);
   const saved = { ...prepared, revision: 2, notes: "Persistido", state: "concluido" as const };
   const rows = buildSurveyRows(survey, [point], [original], [saved]);
   assert.equal(rows[0].notes, "Persistido");
@@ -54,6 +67,12 @@ test("survey records never borrow completion from a previous quarter or revision
   const record = pointDiagnostic(point, survey);
   assert.equal(recordsForSurvey(survey, [record, { ...record, sourceId: "another-survey", state: "concluido" }]).length, 1);
   assert.equal(recordsForSurvey(survey, [{ ...record, sourceId: "campo", period: "2026-T3" }]).length, 0);
+});
+
+test("survey opening date counts from the day the filling started", () => {
+  assert.equal(surveyOpenDate({ period: "2026-T4" }), "2026-10-01");
+  assert.equal(surveyOpenDate({ period: "2026-T1" }), "2026-01-01");
+  assert.equal(surveyOpenDate({ period: "2026-T4", openedAtMs: Date.UTC(2026, 9, 20, 15) }), "2026-10-20");
 });
 
 test("GPS proximity uses geographic distance in metres", () => {

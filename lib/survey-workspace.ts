@@ -2,6 +2,7 @@ import type { MapDisplayPoint } from "@/lib/map-features";
 import { FIELDS, localToday, periodForDate, QUESTIONNAIRE_VERSION, type Diagnostic } from "@/lib/diagnosticos";
 import { newestByPoint, type Levantamento } from "@/lib/levantamentos";
 import { mergeSurveyRows } from "@/lib/levantamento-rows";
+import { overlayFichaAnswers, type PontoFichaDraft } from "@/lib/ponto-ficha";
 
 export const SURVEY_COLORS = { concluido: "#16a34a", pendente: "#eab308", inativo: "#71717a" };
 
@@ -11,16 +12,17 @@ export function recordsForSurvey(survey: Levantamento, records: Diagnostic[]) {
 export function surveyCodes(survey: Levantamento, points: MapDisplayPoint[]) {
   return [...new Set([...survey.expectedCodes, ...(survey.status === "em-preenchimento" && !survey.sourceId ? points.map((p) => p.id) : [])])];
 }
-export function pointDiagnostic(point: MapDisplayPoint, survey: Levantamento, baseline?: Diagnostic): Diagnostic {
+export function pointDiagnostic(point: MapDisplayPoint, survey: Levantamento, baseline?: Diagnostic, ficha?: PontoFichaDraft | null): Diagnostic {
   const answers: Diagnostic["answers"] = { codigo: point.id, endereco: point.address, latitude: point.position[0], longitude: point.position[1], subprefeitura: point.subprefeitura ?? "", sigla: point.id.split("-")[0], lote: "Lote 3" };
   if (baseline) for (const f of FIELDS) if ((f.step === 0 && f.key !== "dataChecagem" || f.step === 2) && baseline.answers[f.key] !== undefined) answers[f.key] = baseline.answers[f.key];
+  const merged = overlayFichaAnswers(answers, ficha, "overwrite");
   // Current catalogue address/GPS take precedence over outdated historical entries.
-  Object.assign(answers, { codigo: point.id, endereco: point.address, latitude: point.position[0], longitude: point.position[1] });
-  if (periodForDate(localToday()) === survey.period) answers.dataChecagem = localToday();
-  answers.antiguidade = baseline ? "“Antigo”, já existia no(s) trimestre(s) anterior(es)." : "“Novo”, surgiu durante este trimestre.";
-  return { id: `${survey.id}-${point.id}`, schemaVersion: 1, questionnaireVersion: QUESTIONNAIRE_VERSION, kind: "trimestral", period: survey.period, state: "rascunho", pointId: point.id, answers, observedStatus: "nao-avaliado", notes: "", photos: [], sourceId: survey.id, revision: 0 };
+  Object.assign(merged, { codigo: point.id, endereco: point.address, latitude: point.position[0], longitude: point.position[1], lote: "Lote 3" });
+  if (periodForDate(localToday()) === survey.period) merged.dataChecagem = localToday();
+  merged.antiguidade = baseline ? "“Antigo”, já existia no(s) trimestre(s) anterior(es)." : "“Novo”, surgiu durante este trimestre.";
+  return { id: `${survey.id}-${point.id}`, schemaVersion: 1, questionnaireVersion: QUESTIONNAIRE_VERSION, kind: "trimestral", period: survey.period, state: "rascunho", pointId: point.id, answers: merged, observedStatus: "nao-avaliado", notes: "", photos: [], sourceId: survey.id, revision: 0 };
 }
-export function buildSurveyRows(survey: Levantamento, points: MapDisplayPoint[], baseline: Diagnostic[], records: Diagnostic[]) {
+export function buildSurveyRows(survey: Levantamento, points: MapDisplayPoint[], baseline: Diagnostic[], records: Diagnostic[], fichas?: ReadonlyMap<string, PontoFichaDraft>) {
   const updates = recordsForSurvey(survey, records);
   if (survey.sourceId) return mergeSurveyRows(baseline, updates);
   const byCode = new Map(points.map((p) => [p.id, p]));
@@ -28,13 +30,14 @@ export function buildSurveyRows(survey: Levantamento, points: MapDisplayPoint[],
   const saved = newestByPoint(updates);
   const codes = new Set([...surveyCodes(survey, points), ...saved.keys()]);
   return [...codes].flatMap((code) => {
+    const ficha = fichas?.get(code) ?? null;
     const existing = saved.get(code);
-    if (existing) return [existing];
+    if (existing) return [{ ...existing, answers: overlayFichaAnswers(existing.answers, ficha, "fill-empty") }];
     const point = byCode.get(code);
-    if (point) return [pointDiagnostic(point, survey, originals.get(code))];
+    if (point) return [pointDiagnostic(point, survey, originals.get(code), ficha)];
     const original = originals.get(code);
     if (!original) return [];
-    return [pointDiagnostic({ id: code, type: "ponto-viciado", address: String(original.answers.endereco ?? ""), title: code, status: "ativo", position: [Number(original.answers.latitude), Number(original.answers.longitude)], lastAction: null, responsible: null, recurrent: false, occurrences: 0 }, survey, original)];
+    return [pointDiagnostic({ id: code, type: "ponto-viciado", address: String(original.answers.endereco ?? ""), title: code, status: "ativo", position: [Number(original.answers.latitude), Number(original.answers.longitude)], lastAction: null, responsible: null, recurrent: false, occurrences: 0 }, survey, original, ficha)];
   });
 }
 export function surveyPointState(record: Diagnostic, baseline?: Diagnostic, catalogueInactive = false): keyof typeof SURVEY_COLORS {

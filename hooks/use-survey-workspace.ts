@@ -6,8 +6,10 @@ import { useCustomPontosViciados } from "@/contexts/custom-pontos-viciados-conte
 import { MAPA_MARKERS } from "@/lib/map-features";
 import { historicalRequest, subscribeDiagnostics } from "@/lib/firestore/diagnosticos";
 import { enrollSurveyPoints, subscribeLevantamentos } from "@/lib/firestore/levantamentos";
+import { subscribePontoFichas } from "@/lib/firestore/ponto-fichas";
 import { localToday, periodForDate, type Diagnostic } from "@/lib/diagnosticos";
 import type { Levantamento } from "@/lib/levantamentos";
+import type { PontoFichaDraft } from "@/lib/ponto-ficha";
 import { buildSurveyRows, recordsForSurvey } from "@/lib/survey-workspace";
 
 export function useSurveyWorkspace(surveyId?: string | null) {
@@ -16,6 +18,7 @@ export function useSurveyWorkspace(surveyId?: string | null) {
   const [surveys, setSurveys] = useState<Levantamento[]>([]);
   const [records, setRecords] = useState<Diagnostic[]>([]);
   const [baseline, setBaseline] = useState<Diagnostic[]>([]);
+  const [fichas, setFichas] = useState<Map<string, PontoFichaDraft>>(new Map());
   const [ready, setReady] = useState({ meta: false, records: false, history: false });
   const [error, setError] = useState("");
   const [loadedPeriod, setLoadedPeriod] = useState("");
@@ -30,7 +33,8 @@ export function useSurveyWorkspace(surveyId?: string | null) {
   useEffect(() => {
     if (!user) return;
     const offMeta = subscribeLevantamentos((items) => { setSurveys(items); setReady((r) => ({ ...r, meta: true })); }, (e) => setError(e.message));
-    return offMeta;
+    const offFichas = subscribePontoFichas((items) => setFichas(items), () => setFichas(new Map()));
+    return () => { offMeta(); offFichas(); };
   }, [user]);
 
   useEffect(() => {
@@ -55,7 +59,7 @@ export function useSurveyWorkspace(surveyId?: string | null) {
     enrollSurveyPoints(survey.id, points.map((p) => p.id)).catch((e) => setError(e.message));
   }, [survey, points, pointsReady]);
 
-  const rows = useMemo(() => survey ? buildSurveyRows(survey, points, baseline, records) : [], [survey, points, baseline, records]);
+  const rows = useMemo(() => survey ? buildSurveyRows(survey, points, baseline, records, fichas) : [], [survey, points, baseline, records, fichas]);
   const historyMatches = !survey?.sourceId || baseline.every((record) => record.sourceId === survey.sourceId);
   return { survey, surveys, rows, points, baseline, records: survey ? recordsForSurvey(survey, records) : [], ready: ready.meta && ready.records && loadedPeriod === period && ready.history && historyMatches && pointsReady, error };
 }

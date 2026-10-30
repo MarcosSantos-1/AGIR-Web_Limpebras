@@ -1,4 +1,5 @@
 import metadata from "@/data/diagnosticos/fields.json";
+import { fichaDraftFromAnswers, fichaErrors } from "@/lib/ponto-ficha";
 import { VISTORIA_REVIEW_KEYS } from "@/lib/vistoria-keys";
 
 export const DIAGNOSTICOS_COLLECTION = "diagnosticos";
@@ -83,6 +84,7 @@ export function diagnosticErrors(record: Diagnostic, complete = false, original?
     if (a.termoVistoria !== "sim") errors.termoVistoria = "Confirme o responsável pela vistoria.";
     if (a.latitude === undefined || a.latitude === "") errors.latitude = "As coordenadas do ponto não foram registradas.";
     if (a.longitude === undefined || a.longitude === "") errors.longitude = "As coordenadas do ponto não foram registradas.";
+    if (record.kind === "trimestral") Object.assign(errors, fichaErrors(fichaDraftFromAnswers(a), record.questionnaireVersion));
   }
   if (complete && record.kind === "visita" && record.observedStatus === "nao-avaliado" && !record.notes.trim()) errors.notes = "Explique por que o local não pôde ser avaliado.";
   if (record.kind === "trimestral" && String(a.statusTrimestral ?? "").includes("inativo") && a.limpezas !== undefined && a.limpezas !== "" && Number(a.limpezas) !== 0) errors.limpezas = "O modelo exige zero limpezas para ponto inativo no trimestre.";

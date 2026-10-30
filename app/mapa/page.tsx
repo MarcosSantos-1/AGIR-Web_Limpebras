@@ -75,6 +75,8 @@ import {
   type SubregionalId,
 } from "@/lib/constants/subregionais";
 import { firebaseDocIdForPontoCodigo } from "@/lib/firestore/custom-pontos-viciados";
+import { deletePontoFicha, getPontoFicha, savePontoFicha } from "@/lib/firestore/ponto-fichas";
+import { emptyFichaDraft, FICHA_PARTS, fichaPartError, type PontoFichaDraft } from "@/lib/ponto-ficha";
 import {
   MSG_PONTO_VICIADO_CODIGO_EM_USO,
   normalizePontoViciadoCodigo,
@@ -92,6 +94,7 @@ import { useNovaAcao } from "@/components/acao/nova-acao-provider";
 import { subscribeHistoryRecords } from "@/lib/firestore/history";
 import type { HistoryRecordDoc } from "@/data/history-records";
 import { PontoDiagnosticoCard } from "@/components/map/ponto-diagnostico-card";
+import { PontoFichaFields } from "@/components/pontos/ponto-ficha-fields";
 import { buildPontoViciadoHistoryIndex, historyCardForAgendaId } from "@/lib/map/ponto-viciado-history";
 import {
   classifyPontoViciado,
@@ -391,6 +394,9 @@ function MapaPageContent() {
   const pvHoldStart = useRef<number | null>(null);
   const pvHoldFrame = useRef<number | null>(null);
   const [pvSubregionalErro, setPvSubregionalErro] = useState(false);
+  const [pvStep, setPvStep] = useState(0);
+  const [pvFicha, setPvFicha] = useState<PontoFichaDraft>(emptyFichaDraft);
+  const pvFichaRequest = useRef("");
 
   const mergedMarkers = useMemo(
     () => mergeMapMarkers(customPontosViciados, MAPA_MARKERS),
@@ -559,6 +565,9 @@ function MapaPageContent() {
     setPvSaving(false);
     setReverseGeoLoading(false);
     setPvSubregionalErro(false);
+    setPvStep(0);
+    setPvFicha(emptyFichaDraft());
+    pvFichaRequest.current = "";
   };
 
   const startAddPontoFlow = () => {
@@ -614,7 +623,13 @@ function MapaPageContent() {
     setAddPvPosition(item.position ?? null);
     setPickPvLocationMode(false);
     setPvSubregionalErro(false);
+    setPvStep(0);
+    setPvFicha(emptyFichaDraft());
+    pvFichaRequest.current = item.id;
     setAddPvOpen(true);
+    void getPontoFicha(item.id).then((draft) => {
+      if (pvFichaRequest.current === item.id && draft) setPvFicha(draft);
+    });
   };
 
   const savePontoFirebase = async () => {
@@ -684,6 +699,10 @@ function MapaPageContent() {
           { editingSourceCodigo },
         );
         toast.success(`Ponto «${finalCodigo}» guardado para toda a equipa.`);
+      }
+      await savePontoFicha(finalCodigo, pvFicha);
+      if (editingSourceCodigo && normalizePontoViciadoCodigo(editingSourceCodigo) !== finalCodigo) {
+        await deletePontoFicha(editingSourceCodigo);
       }
       resetPvModal();
       setAddPvOpen(false);
@@ -1600,19 +1619,18 @@ function MapaPageContent() {
           if (!open) resetPvModal();
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-h-[min(920px,92dvh)] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
-              {editingFirestoreDocId
+              {editingFirestoreDocId || editingSourceCodigo
                 ? "Editar ponto viciado"
                 : "Novo ponto viciado"}
             </DialogTitle>
             <DialogDescription>
-              <strong>Código</strong>, <strong>endereço</strong> (nome do local)
-              e <strong>subregional</strong> são obrigatórios. A localização
-              geográfica vem do toque no mapa.
+              Passo {pvStep + 1} de 4. O lote deste ponto é o Lote 3.
             </DialogDescription>
           </DialogHeader>
+          {pvStep === 0 ? (
           <div className="grid gap-3 py-2">
             <div className="space-y-1.5">
               <Label htmlFor="pv-codigo">Código *</Label>
@@ -1711,7 +1729,17 @@ function MapaPageContent() {
               className="space-y-1.5 sm:col-span-1"
             />
           </div>
+          ) : (
+            <div className="py-2">
+              <PontoFichaFields part={FICHA_PARTS[pvStep - 1]} draft={pvFicha} disabled={pvSaving} onChange={setPvFicha} />
+            </div>
+          )}
           <DialogFooter>
+            {pvStep > 0 && (
+              <Button type="button" variant="outline" disabled={pvSaving} onClick={() => setPvStep((step) => step - 1)}>
+                Voltar
+              </Button>
+            )}
             <Button
               type="button"
               variant="outline"
@@ -1726,10 +1754,30 @@ function MapaPageContent() {
             <Button
               type="button"
               disabled={pvSaving || reverseGeoLoading}
-              onClick={() => void savePontoFirebase()}
+              onClick={() => {
+                if (pvStep === 0) {
+                  if (!addPvEndereco.trim()) { toast.error("Indique o endereço."); return; }
+                  if (!addPvPosition) { toast.error("Defina a posição."); return; }
+                  const finalCodigo = normalizePontoViciadoCodigo(addPvCodigo);
+                  if (!finalCodigo) { toast.error("Indique o código do ponto."); return; }
+                  if (pontoViciadoCodigoEmUsoNoMapa(finalCodigo, customPontoEntries.map((entry) => ({ firestoreDocId: entry.firestoreDocId, pointId: entry.point?.id ?? null, ocultoCodigo: entry.ocultoCodigo ?? null })), { firestoreDocId: editingFirestoreDocId, sourceCodigo: editingSourceCodigo })) {
+                    toast.error(MSG_PONTO_VICIADO_CODIGO_EM_USO);
+                    return;
+                  }
+                  if (!addPvSubregionalId) { toast.error("Selecione a subregional."); setPvSubregionalErro(true); return; }
+                  setPvStep(1);
+                  return;
+                }
+                const problem = fichaPartError(pvFicha, FICHA_PARTS[pvStep - 1]);
+                if (problem) { toast.error(problem); return; }
+                if (pvStep < 3) { setPvStep(pvStep + 1); return; }
+                void savePontoFirebase();
+              }}
             >
               {pvSaving ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
+              ) : pvStep < 3 ? (
+                "Continuar"
               ) : (
                 "Guardar"
               )}

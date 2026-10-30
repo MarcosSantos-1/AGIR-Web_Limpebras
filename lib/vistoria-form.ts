@@ -1,6 +1,21 @@
 import { isSubregionalId, subregionalIdFromSubprefeitura } from "@/lib/constants/subregionais";
 import { FIELDS, fieldVersion, localToday, type Diagnostic } from "@/lib/diagnosticos";
+import { extractPontoViciadoCodigoFromRecord } from "@/lib/map/ponto-viciado-history";
 import { VISTORIA_YES_NO_KEYS } from "@/lib/vistoria-keys";
+
+export type VistoriaAutomationEvent = { type: string; status: string; date: string; title?: string; observations?: string };
+
+export type VistoriaAutomation = { openDate: string; events: VistoriaAutomationEvent[] };
+
+export function pointHadRevitalizacao(codigo: string, openDate: string, checkDate: string, events: VistoriaAutomationEvent[]) {
+  const code = codigo.trim().toUpperCase();
+  if (!code || !/^\d{4}-\d{2}-\d{2}$/.test(openDate) || !/^\d{4}-\d{2}-\d{2}$/.test(checkDate)) return false;
+  return events.some((event) => {
+    if (event.type !== "revitalizacao" || event.status !== "concluido") return false;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(event.date) || event.date < openDate || event.date > checkDate) return false;
+    return extractPontoViciadoCodigoFromRecord(event) === code;
+  });
+}
 
 export type VistoriaCheck = { key: string; label: string };
 
@@ -28,6 +43,7 @@ export const CONDICOES: VistoriaCheck[] = [
   { key: "riscoQueimada", label: "Vestígio de queimada" },
   { key: "vistoriaErosao", label: "Sinais de erosão do terreno" },
   { key: "vistoriaDanosVia", label: "Danos à calçada e/ou à via" },
+  { key: "proximidadeConteiner", label: "Caçamba da Loga" },
 ];
 
 export const PROXIMIDADES: VistoriaCheck[] = [
@@ -125,7 +141,7 @@ export function withAutomaticContext(record: Diagnostic): Diagnostic {
     const siglas = optionsFor("sigla", record.questionnaireVersion);
     if (siglas.includes(prefix)) answers.sigla = prefix;
   }
-  if (!answers.lote) answers.lote = "Lote 3";
+  answers.lote = "Lote 3";
   const regional = subregionalIdFromSubprefeitura(String(answers.subprefeitura ?? ""));
   if (regional) answers.subregional = regional;
   else if (answers.subregional !== undefined && !isSubregionalId(answers.subregional)) delete answers.subregional;
@@ -136,8 +152,32 @@ export function withAutomaticContext(record: Diagnostic): Diagnostic {
   return { ...record, answers, pointId: code || record.pointId };
 }
 
+/** Status, revitalização, coleta e limpezas saem da situação do ponto e da agenda, sem combo extra. */
+export function applyQuarterlyAutomation(record: Diagnostic, automation?: VistoriaAutomation): Diagnostic {
+  const answers = { ...record.answers, lote: "Lote 3" };
+  const version = record.questionnaireVersion;
+  const inactive = pointIsInactive({ answers });
+  const revitalizacao = optionsFor("revitalizacao", version);
+  const coleta = optionsFor("coleta", version);
+  if (inactive) {
+    answers.revitalizacao = revitalizacao.find((option) => option.toLowerCase().includes("inativo")) ?? "Não se aplica (inativo).";
+    answers.coleta = coleta.find((option) => option.toLowerCase().includes("inativo")) ?? "Não se aplica (inativo).";
+    answers.limpezas = 0;
+  } else {
+    const checkDate = String(answers.dataChecagem ?? "");
+    const openDate = automation?.openDate || checkDate;
+    const had = pointHadRevitalizacao(String(answers.codigo ?? record.pointId), openDate, checkDate, automation?.events ?? []);
+    answers.revitalizacao = had
+      ? revitalizacao.find((option) => option.includes("Revitaliza SP")) ?? "Com revitalização vinculada ao Projeto Revitaliza SP."
+      : revitalizacao.find((option) => option.startsWith("Sem revitalização")) ?? "Sem revitalização.";
+    delete answers.coleta;
+    delete answers.limpezas;
+  }
+  return { ...record, answers };
+}
+
 /** Converte a lista da vistoria nas alternativas oficiais. Itens não marcados viram “Não.” */
-export function materializeVistoria(record: Diagnostic): Diagnostic {
+export function materializeVistoria(record: Diagnostic, automation?: VistoriaAutomation): Diagnostic {
   const base = withAutomaticContext(record);
   const answers = { ...base.answers };
   const inactive = pointIsInactive(base);
@@ -159,10 +199,10 @@ export function materializeVistoria(record: Diagnostic): Diagnostic {
     if (VIRTUAL_KEYS.has(key)) continue;
     if (answers[key] === "") delete answers[key];
   }
-  return {
+  return applyQuarterlyAutomation({
     ...base,
     answers,
     pointId: String(answers.codigo ?? base.pointId),
     observedStatus: inactive ? "sem-residuos" : "com-residuos",
-  };
+  }, automation);
 }

@@ -56,13 +56,16 @@ import {
 } from "lucide-react";
 import { DatePickerField } from "@/components/forms/date-picker-field";
 import { SubregionalSelectField } from "@/components/forms/subregional-select-field";
+import { PontoFichaFields } from "@/components/pontos/ponto-ficha-fields";
 import { TimePickerField } from "@/components/forms/time-picker-field";
 import { ActionPhotoDropzone } from "@/components/acao-registro/action-photo-dropzone";
 import { EquipeIntegrantesField } from "@/components/acao/equipe-integrantes-field";
 import { LinksPostagemEditor } from "@/components/acao-registro/post-links";
 import { integrantesFromAgendaEvent } from "@/lib/agenda/equipe-parsing";
 import { useCustomPontosViciados } from "@/contexts/custom-pontos-viciados-context";
-import { pontoViciadoCodigoEmUsoNoMapa } from "@/lib/ponto-viciado-codigo";
+import { savePontoFicha } from "@/lib/firestore/ponto-fichas";
+import { emptyFichaDraft, FICHA_PARTS, fichaErrors, fichaPartError, type PontoFichaDraft } from "@/lib/ponto-ficha";
+import { pontoViciadoCodigoEmUsoNoMapa, normalizePontoViciadoCodigo } from "@/lib/ponto-viciado-codigo";
 import { useAuth } from "@/contexts/auth-context";
 import { useUserProfile } from "@/contexts/user-profile-context";
 import type { HistoryRecordDoc } from "@/data/history-records";
@@ -1470,6 +1473,8 @@ function RevitalizacaoDialog({
   const [newPontoSearching, setNewPontoSearching] = React.useState(false);
   const [newPontoMapFlyTo, setNewPontoMapFlyTo] =
     React.useState<ModalLocationMiniMapFlyTo | null>(null);
+  const [newPontoStep, setNewPontoStep] = React.useState(0);
+  const [newPontoFicha, setNewPontoFicha] = React.useState<PontoFichaDraft>(emptyFichaDraft);
   const newPontoFlyNonce = React.useRef(0);
 
   const resetNewPontoForm = React.useCallback(() => {
@@ -1482,6 +1487,8 @@ function RevitalizacaoDialog({
     setNewPontoError(null);
     setNewPontoSearchQuery("");
     setNewPontoMapFlyTo(null);
+    setNewPontoStep(0);
+    setNewPontoFicha(emptyFichaDraft());
   }, []);
 
   const handleNewPontoSearch = React.useCallback(async () => {
@@ -1582,6 +1589,11 @@ function RevitalizacaoDialog({
       setNewPontoError("Busque ou clique no mapa para definir a localização.");
       return;
     }
+    const fichaProblem = Object.values(fichaErrors(newPontoFicha))[0];
+    if (fichaProblem) {
+      setNewPontoError(fichaProblem);
+      return;
+    }
     setNewPontoSaving(true);
     try {
       await addPontoViciado({
@@ -1592,6 +1604,7 @@ function RevitalizacaoDialog({
         lng: newPontoLng,
         createdByUid: user?.uid,
       });
+      await savePontoFicha(normalizePontoViciadoCodigo(codigo), newPontoFicha);
       setPontoViciadoId(codigo);
       resetNewPontoForm();
     } catch (err) {
@@ -1607,11 +1620,32 @@ function RevitalizacaoDialog({
     newPontoSubregionalId,
     newPontoLat,
     newPontoLng,
+    newPontoFicha,
     customPontoEntries,
     addPontoViciado,
-    user?.uid,
+    user,
     resetNewPontoForm,
   ]);
+
+  const advanceNewPonto = React.useCallback(() => {
+    setNewPontoError(null);
+    if (newPontoStep === 0) {
+      if (!newPontoCodigo.trim()) { setNewPontoError("Informe o código do ponto."); return; }
+      if (pontoViciadoCodigoEmUsoNoMapa(newPontoCodigo, customPontoEntries.map((entry) => ({ firestoreDocId: entry.firestoreDocId, pointId: entry.point?.id ?? null, ocultoCodigo: entry.ocultoCodigo ?? null })))) {
+        setNewPontoError("Já existe um ponto com este código.");
+        return;
+      }
+      if (!newPontoSubregionalId) { setNewPontoError("Selecione a subprefeitura."); return; }
+      if (!newPontoAddress.trim()) { setNewPontoError("Informe o endereço (nome do local, cruzamento ou referência)."); return; }
+      if (newPontoLat == null || newPontoLng == null) { setNewPontoError("Busque ou clique no mapa para definir a localização."); return; }
+      setNewPontoStep(1);
+      return;
+    }
+    const problem = fichaPartError(newPontoFicha, FICHA_PARTS[newPontoStep - 1]);
+    if (problem) { setNewPontoError(problem); return; }
+    if (newPontoStep < 3) { setNewPontoStep(newPontoStep + 1); return; }
+    void handleSaveNewPonto();
+  }, [newPontoStep, newPontoCodigo, newPontoAddress, newPontoSubregionalId, newPontoLat, newPontoLng, newPontoFicha, customPontoEntries, handleSaveNewPonto]);
   const [revFotoUrls, setRevFotoUrls] = React.useState<string[]>([]);
   const [linksPostagemText, setLinksPostagemText] = React.useState("");
   const [panfletagemRealizada, setPanfletagemRealizada] = React.useState(false);
@@ -2158,7 +2192,7 @@ function RevitalizacaoDialog({
                   <div className="mt-4 space-y-3 rounded-2xl border-2 border-dashed border-violet-200 bg-violet-50/40 p-4">
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-semibold text-violet-900">
-                        Cadastrar novo ponto viciado
+                        Cadastrar novo ponto viciado · passo {newPontoStep + 1} de 4
                       </p>
                       <Button
                         type="button"
@@ -2175,6 +2209,7 @@ function RevitalizacaoDialog({
                         {newPontoError}
                       </p>
                     )}
+                    {newPontoStep === 0 ? (<>
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="space-y-1.5">
                         <Label className="text-xs text-zinc-600 dark:text-zinc-400">
@@ -2271,23 +2306,35 @@ function RevitalizacaoDialog({
                       onMapClick={handleNewPontoMapClick}
                     />
                     <p className="text-[10px] text-zinc-500 dark:text-zinc-400">
-                      Clique no mapa para ajustar a localização exata.
+                      Clique no mapa para ajustar a localização exata. O lote deste ponto é o Lote 3.
                     </p>
+                    </> ) : (
+                      <PontoFichaFields part={FICHA_PARTS[newPontoStep - 1]} draft={newPontoFicha} disabled={newPontoSaving} onChange={setNewPontoFicha} />
+                    )}
+                    <div className="flex gap-2">
+                      {newPontoStep > 0 && (
+                        <Button type="button" variant="outline" className="h-9 rounded-xl" disabled={newPontoSaving} onClick={() => { setNewPontoError(null); setNewPontoStep((step) => step - 1); }}>
+                          Voltar
+                        </Button>
+                      )}
                     <Button
                       type="button"
                       className="h-9 w-full rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-sm text-white hover:opacity-90"
                       disabled={newPontoSaving}
-                      onClick={() => void handleSaveNewPonto()}
+                      onClick={advanceNewPonto}
                     >
                       {newPontoSaving ? (
                         <>
                           <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
                           Salvando…
                         </>
+                      ) : newPontoStep < 3 ? (
+                        "Continuar"
                       ) : (
                         "Salvar ponto e selecionar"
                       )}
                     </Button>
+                    </div>
                   </div>
                 )}
               </SectionBox>
