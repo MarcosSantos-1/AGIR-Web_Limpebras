@@ -1,0 +1,37 @@
+@import "tailwindcss";
+@import "uniwind";
+
+@import "heroui-native/styles";
+
+@source '../node_modules/heroui-native/lib';
+
+@theme {
+  --font-sans: "Geist_400Regular";
+}
+
+/* No iOS, font-weight junto de uma fonte customizada apaga o texto. */
+@utility font-medium {
+  font-family: "Geist_500Medium";
+  font-weight: 400;
+}
+@utility font-semibold {
+  font-family: "Geist_600SemiBold";
+  font-weight: 400;
+}
+@utility font-bold {
+  font-family: "Geist_700Bold";
+  font-weight: 400;
+}
+
+@layer theme {
+  :root {
+    @variant light {
+      --accent: oklch(0.596 0.145 162.5);
+      --accent-foreground: oklch(0.991 0 0);
+    }
+    @variant dark {
+      --accent: oklch(0.74 0.15 162.5);
+      --accent-foreground: oklch(0.18 0.02 162);
+    }
+  }
+}

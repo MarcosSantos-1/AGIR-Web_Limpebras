@@ -136,7 +136,7 @@ export function answersFromFicha(draft: PontoFichaDraft): Record<string, Answer>
 
 /** Copia a ficha para as respostas. `overwrite` troca o que já veio da planilha; `fill-empty` só completa buracos. */
 export function overlayFichaAnswers(answers: Record<string, Answer>, ficha: PontoFichaDraft | null | undefined, mode: "overwrite" | "fill-empty") {
-  const next = { ...answers, lote: "Lote 3" as Answer };
+  const next: Record<string, Answer> = { ...answers, lote: "Lote 3" };
   if (!ficha) return next;
   for (const [key, value] of Object.entries(answersFromFicha(ficha))) {
     if (key === "lote" || value === "") continue;

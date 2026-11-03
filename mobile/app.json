@@ -1,0 +1,63 @@
+{
+  "expo": {
+    "name": "AGIR Campo",
+    "slug": "agir-campo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "agir-campo",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "br.com.agir.campo",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Usamos sua localização para mostrar os pontos de diagnóstico mais próximos.",
+        "NSCameraUsageDescription": "A foto do ponto faz parte da vistoria em campo.",
+        "NSPhotoLibraryUsageDescription": "Você pode anexar uma foto do ponto que já esteja na galeria."
+      }
+    },
+    "android": {
+      "package": "br.com.agir.campo",
+      "softwareKeyboardLayoutMode": "resize",
+      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "CAMERA"],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#6a0eaf"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#6a0eaf"
+        }
+      ],
+      "expo-status-bar",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Usamos sua localização para mostrar os pontos de diagnóstico mais próximos."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Você pode anexar uma foto do ponto que já esteja na galeria.",
+          "cameraPermission": "A foto do ponto faz parte da vistoria em campo."
+        }
+      ]
+    ],
+    "web": {
+      "favicon": "./assets/images/favicon.png"
+    },
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

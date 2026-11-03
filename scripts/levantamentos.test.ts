@@ -1,7 +1,8 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
 import { FIELDS, newDiagnostic } from "../lib/diagnosticos";
-import { buildLevantamentoWorkbook, orderedExportRows, periodDates, surveyProgress } from "../lib/levantamentos";
+import { buildLevantamentoWorkbook } from "../lib/levantamento-workbook";
+import { orderedExportRows, periodDates, surveyProgress } from "../lib/levantamentos";
 import { mergeSurveyRows } from "../lib/levantamento-rows";
 
 test("progress counts completed points rather than fields or duplicate diagnostics", () => {

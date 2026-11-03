@@ -1,6 +1,6 @@
 import { isSubregionalId, subregionalIdFromSubprefeitura } from "@/lib/constants/subregionais";
 import { FIELDS, fieldVersion, localToday, type Diagnostic } from "@/lib/diagnosticos";
-import { extractPontoViciadoCodigoFromRecord } from "@/lib/map/ponto-viciado-history";
+import { extractPontoViciadoCodigoFromRecord } from "@/lib/map/ponto-codigo-from-record";
 import { VISTORIA_YES_NO_KEYS } from "@/lib/vistoria-keys";
 
 export type VistoriaAutomationEvent = { type: string; status: string; date: string; title?: string; observations?: string };
@@ -154,7 +154,7 @@ export function withAutomaticContext(record: Diagnostic): Diagnostic {
 
 /** Status, revitalização, coleta e limpezas saem da situação do ponto e da agenda, sem combo extra. */
 export function applyQuarterlyAutomation(record: Diagnostic, automation?: VistoriaAutomation): Diagnostic {
-  const answers = { ...record.answers, lote: "Lote 3" };
+  const answers: Diagnostic["answers"] = { ...record.answers, lote: "Lote 3" };
   const version = record.questionnaireVersion;
   const inactive = pointIsInactive({ answers });
   const revitalizacao = optionsFor("revitalizacao", version);

@@ -70,7 +70,9 @@ export async function deleteDiagnostic(record: Diagnostic) {
 export async function historicalRequest(sourceId?: string, importRecords = false) {
   const user = getFirebaseAuth().currentUser;
   if (!user) throw new Error("Entre na sua conta para acessar os levantamentos.");
-  const url = `/api/diagnosticos/historico${sourceId ? `?source=${encodeURIComponent(sourceId)}` : ""}`;
+  const configuredBase = typeof process !== "undefined" ? process.env.EXPO_PUBLIC_AGIR_API_URL : undefined;
+  const base = typeof configuredBase === "string" ? configuredBase.replace(/\/$/, "") : "";
+  const url = `${base}/api/diagnosticos/historico${sourceId ? `?source=${encodeURIComponent(sourceId)}` : ""}`;
   const request = async (refresh: boolean) => fetch(url, {
     headers: { Authorization: `Bearer ${await user.getIdToken(refresh)}` }, cache: "no-store",
   });

@@ -16,7 +16,8 @@ import { historicalRequest, saveDiagnostic } from "@/lib/firestore/diagnosticos"
 import { saveLevantamento, cancelLevantamento, enrollSurveyPoints, subscribeLevantamentos, subscribeQuarterlyDiagnostics } from "@/lib/firestore/levantamentos";
 import { subscribePontoFichas } from "@/lib/firestore/ponto-fichas";
 import { QUESTIONNAIRE_VERSION, diagnosticErrors, localToday, newDiagnostic, periodForDate, type Diagnostic, type HistoricalSource } from "@/lib/diagnosticos";
-import { buildLevantamentoWorkbook, newestByPoint, OPERACAO_LEVANTAMENTO_NOTA, periodDates, periodLabel, periodFromTitle, surveyProgress, type Levantamento } from "@/lib/levantamentos";
+import { buildLevantamentoWorkbook } from "@/lib/levantamento-workbook";
+import { newestByPoint, OPERACAO_LEVANTAMENTO_NOTA, periodDates, periodLabel, periodFromTitle, surveyProgress, type Levantamento } from "@/lib/levantamentos";
 import type { PontoFichaDraft } from "@/lib/ponto-ficha";
 import { mergeSurveyRows } from "@/lib/levantamento-rows";
 import { inputClass } from "./diagnostic-editor";
