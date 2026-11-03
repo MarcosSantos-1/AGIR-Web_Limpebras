@@ -3,18 +3,19 @@
 import Link from "next/link";
 import { useCustomPontosViciados } from "@/contexts/custom-pontos-viciados-context";
 import { MAPA_MARKERS } from "@/lib/map-features";
-import { buildSurveyRows, surveyCodes } from "@/lib/survey-workspace";
+import { buildSurveyRows, surveyCodes, surveyPointIsNew, pointDiagnostic } from "@/lib/survey-workspace";
+import { parseLevantamentoFile } from "@/lib/levantamento-import";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDownToLine, ArrowLeft, ArrowRight, CalendarDays, CheckCheck, ChevronDown, ClipboardCheck, Clock3, FileSpreadsheet, FolderOpen, Layers3, Loader2, MapPin, MessageSquareWarning, Pencil, Plus, Search, Sparkles, TriangleAlert, Smartphone, Map as MapIcon, XCircle } from "lucide-react";
+import { ArrowDownToLine, ArrowLeft, ArrowRight, CalendarDays, CheckCheck, ChevronDown, ClipboardCheck, Clock3, FileSpreadsheet, FolderOpen, Layers3, Loader2, MapPin, MessageSquareWarning, Pencil, Plus, Search, Sparkles, TriangleAlert, Smartphone, Map as MapIcon, Upload, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/auth-context";
-import { historicalRequest } from "@/lib/firestore/diagnosticos";
+import { historicalRequest, saveDiagnostic } from "@/lib/firestore/diagnosticos";
 import { saveLevantamento, cancelLevantamento, enrollSurveyPoints, subscribeLevantamentos, subscribeQuarterlyDiagnostics } from "@/lib/firestore/levantamentos";
 import { subscribePontoFichas } from "@/lib/firestore/ponto-fichas";
-import { QUESTIONNAIRE_VERSION, localToday, newDiagnostic, periodForDate, type Diagnostic, type HistoricalSource } from "@/lib/diagnosticos";
+import { QUESTIONNAIRE_VERSION, diagnosticErrors, localToday, newDiagnostic, periodForDate, type Diagnostic, type HistoricalSource } from "@/lib/diagnosticos";
 import { buildLevantamentoWorkbook, newestByPoint, OPERACAO_LEVANTAMENTO_NOTA, periodDates, periodLabel, periodFromTitle, surveyProgress, type Levantamento } from "@/lib/levantamentos";
 import type { PontoFichaDraft } from "@/lib/ponto-ficha";
 import { mergeSurveyRows } from "@/lib/levantamento-rows";
@@ -63,7 +64,9 @@ function LevantamentosPanel() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("todos");
   const [page, setPage] = useState(1);
+  const [previousCodes, setPreviousCodes] = useState<Set<string> | null>(null);
   const cache = useRef(new Map<string, Diagnostic[]>());
+  const importRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -75,6 +78,16 @@ function LevantamentosPanel() {
     return () => { active = false; offMeta(); offRecords(); offFichas(); };
   }, [user, retry]);
 
+  useEffect(() => {
+    const latest = sources.at(-1);
+    if (!user || !latest) return;
+    let active = true;
+    historicalRequest(latest.id).then((result) => {
+      if (active) setPreviousCodes(new Set((result.records ?? []).map((row: Diagnostic) => row.pointId)));
+    }).catch(() => { if (active) setPreviousCodes(null); });
+    return () => { active = false; };
+  }, [user, sources]);
+
   const surveys = useMemo(() => {
     const items: Levantamento[] = sources.map((source) => ({ id: `levantamento-hist-${source.id}`, sourceId: source.id, period: source.period, title: periodLabel(source.period), status: "concluido", expectedCodes: [], notes: "", revision: 0 }));
     const merged = new Map(items.map((item) => [item.id, item]));
@@ -83,6 +96,36 @@ function LevantamentosPanel() {
   }, [sources, metadata, allPoints]);
   useEffect(() => { for (const survey of metadata) { if (survey.status === "em-preenchimento" && !survey.sourceId && allPoints.some(p => !survey.expectedCodes.includes(p.id))) enrollSurveyPoints(survey.id, allPoints.map(p => p.id)).catch(e => toast.error(e.message)); } }, [metadata, allPoints]);
   const activeSelected = selected ? surveys.find((survey) => survey.id === selected.id) ?? selected : null;
+
+  async function importWorkbook(file: File) {
+    const survey = activeSelected;
+    if (!survey || survey.sourceId || survey.status !== "em-preenchimento") { toast.error("Abra o levantamento em preenchimento para importar a planilha."); return; }
+    setBusy("import");
+    try {
+      const parsed = await parseLevantamentoFile(await file.arrayBuffer());
+      if (!parsed.length) throw new Error("Não encontrei linhas com código de ponto, como CV-001.");
+      const current = newestByPoint(surveyRecords(survey, records));
+      const originals = new Map(baseline.map((row) => [row.pointId, row]));
+      const failures: string[] = [];
+      let saved = 0;
+      for (const item of parsed) {
+        const existing = current.get(item.codigo);
+        const point = allPoints.find((entry) => entry.id === item.codigo);
+        const base = existing ?? (point ? pointDiagnostic(point, survey, originals.get(item.codigo), fichas.get(item.codigo)) : null);
+        if (!base || !String(base.answers.endereco ?? item.answers.endereco ?? "").trim()) { failures.push(item.codigo); continue; }
+        const answers = { ...base.answers, ...item.answers, codigo: item.codigo, lote: "Lote 3" };
+        if (!answers.endereco) answers.endereco = String(base.answers.endereco);
+        if (!answers.dataChecagem) answers.dataChecagem = localToday();
+        const next = { ...base, id: existing?.id ?? `${survey.id}-${item.codigo}`, pointId: item.codigo, period: survey.period, kind: "trimestral" as const, sourceId: survey.id, answers, state: "rascunho" as const };
+        if (existing?.state === "concluido" && !Object.keys(diagnosticErrors({ ...next, state: "concluido" }, true)).length) next.state = "concluido";
+        try { await saveDiagnostic(next, user?.email || "Importação da planilha"); saved += 1; }
+        catch { failures.push(item.codigo); }
+      }
+      toast.success(saved ? `${saved} pontos atualizados a partir da planilha.` : "Nenhum ponto foi atualizado.");
+      if (failures.length) toast.warning(`Não atualizei ${failures.length}: ${failures.slice(0, 6).join(", ")}`);
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Não foi possível ler a planilha."); }
+    finally { setBusy(""); if (importRef.current) importRef.current.value = ""; }
+  }
 
   async function loadSource(id: string): Promise<Diagnostic[]> {
     const cached = cache.current.get(id);
@@ -144,14 +187,21 @@ function LevantamentosPanel() {
     const historicalRows = survey.sourceId ? mergeSurveyRows(baseline, [...updates.values()]) : [];
     const codes = new Set([...(survey.sourceId ? historicalRows.map((r) => r.pointId) : survey.expectedCodes), ...updates.keys()]);
     const rows = buildSurveyRows(survey, allPoints, baseline, records, fichas);
-    const shown = rows.filter((row) => (!search || `${row.pointId} ${row.answers.endereco}`.toLowerCase().includes(search.toLowerCase())) && (filter === "todos" || (filter === "pendente" ? !updates.has(row.pointId) : row.state === filter)));
+    const shown = rows.filter((row) => (survey.sourceId || !surveyPointIsNew(row, originals.has(row.pointId))) && (!search || `${row.pointId} ${row.answers.endereco}`.toLowerCase().includes(search.toLowerCase())) && (filter === "todos" || (filter === "pendente" ? !updates.has(row.pointId) : row.state === filter)));
     const progress = surveyProgress([...codes], [...updates.values()]);
     return <div className="space-y-5">
       <div className="flex flex-wrap justify-between gap-2"><Button variant="ghost" onClick={() => setSelected(null)}><ArrowLeft className="mr-2 h-4 w-4" />Todos os levantamentos</Button><Button variant="outline" asChild><Link href={`/diagnosticos/mapa?levantamento=${encodeURIComponent(survey.id)}`}><MapIcon className="mr-2 h-4 w-4" />Ver no mapa</Link></Button></div>
-      <div className="rounded-3xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-6 dark:border-emerald-900 dark:from-emerald-950 dark:to-zinc-900"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-widest text-emerald-700">Levantamento trimestral</p><h2 className="mt-2 text-2xl font-semibold">{survey.title}</h2><p className="mt-2 flex items-center gap-2 text-sm text-zinc-500"><CalendarDays className="h-4 w-4" />{periodDates(survey.period)}</p></div><Button disabled={!!busy} onClick={() => void download(survey)}><ArrowDownToLine className="mr-2 h-4 w-4" />Baixar planilha</Button></div><p className="mt-5 text-sm">{survey.status === "em-preenchimento" ? `${progress.completed} de ${progress.total} pontos concluídos · ${progress.percent}%` : `${codes.size} pontos no levantamento histórico`}</p>{!survey.sourceId && <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm leading-relaxed text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">{OPERACAO_LEVANTAMENTO_NOTA}</p>}</div>
+      <div className="rounded-3xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-6 dark:border-emerald-900 dark:from-emerald-950 dark:to-zinc-900"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-widest text-emerald-700">Levantamento trimestral</p><h2 className="mt-2 text-2xl font-semibold">{survey.title}</h2><p className="mt-2 flex items-center gap-2 text-sm text-zinc-500"><CalendarDays className="h-4 w-4" />{periodDates(survey.period)}</p></div><div className="flex flex-wrap gap-2"><input ref={importRef} className="hidden" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importWorkbook(file); }} />{!survey.sourceId && <Button variant="outline" disabled={!!busy} onClick={() => importRef.current?.click()}><Upload className="mr-2 h-4 w-4" />{busy === "import" ? "Importando…" : "Importar planilha"}</Button>}<Button disabled={!!busy} onClick={() => void download(survey)}><ArrowDownToLine className="mr-2 h-4 w-4" />Baixar planilha</Button></div></div><p className="mt-5 text-sm">{survey.status === "em-preenchimento" ? `${progress.completed} de ${progress.total} pontos concluídos · ${progress.percent}%` : `${codes.size} pontos no levantamento histórico`}</p>{!survey.sourceId && <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm leading-relaxed text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">{OPERACAO_LEVANTAMENTO_NOTA}</p>}</div>
       {cloudError && <p role="alert" className="rounded-xl bg-orange-50 p-4 text-sm text-orange-900">Não foi possível carregar as atualizações: {cloudError}</p>}
       <div className="flex flex-wrap gap-3"><div className="relative min-w-48 flex-1"><Search className="absolute left-3 top-3.5 h-4 w-4 text-zinc-400" /><input aria-label="Buscar ponto no levantamento" className={`${inputClass} pl-9`} placeholder="Buscar código ou endereço" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} /></div><select aria-label="Filtrar preenchimento" className={`${inputClass} sm:w-52`} value={filter} onChange={(e) => { setFilter(e.target.value); setPage(1); }}><option value="todos">Todos os pontos</option><option value="pendente">Ainda não atualizados</option><option value="rascunho">Rascunhos</option><option value="concluido">Concluídos</option></select>{!survey.sourceId && <Button disabled={!cloudReady || !!cloudError} onClick={() => { const r = newDiagnostic(); setEditor({ ...r, kind: "trimestral", period: survey.period, sourceId: survey.id, answers: { lote: "Lote 3", antiguidade: "“Novo”, surgiu durante este trimestre." } }); }}><Plus className="mr-2 h-4 w-4" />Ponto novo</Button>}</div>
-      <p className="text-xs text-zinc-500">{shown.length} pontos · Os dados cadastrais anteriores são referências. Cada conclusão confirma o preenchimento deste trimestre.</p>
+      <p className="text-xs text-zinc-500">{survey.sourceId ? `${shown.length} pontos neste levantamento` : `${shown.length} pontos do levantamento anterior`} · Os dados cadastrais anteriores são referências. Cada conclusão confirma o preenchimento deste trimestre.</p>
+      {!survey.sourceId && (() => {
+        const fresh = rows.filter((row) => surveyPointIsNew(row, originals.has(row.pointId)) && (!search || `${row.pointId} ${row.answers.endereco}`.toLowerCase().includes(search.toLowerCase())));
+        return <section className="rounded-3xl border border-orange-200 bg-orange-50/60 p-5 dark:border-orange-900 dark:bg-orange-950/20"><div className="mb-4 flex flex-wrap items-center justify-between gap-2"><h3 className="flex items-center gap-2 text-lg font-semibold"><Sparkles className="h-5 w-5 text-orange-600" />Novos pontos</h3><span className="rounded-full bg-orange-100 px-3 py-1 text-sm font-semibold text-orange-800 dark:bg-orange-950 dark:text-orange-200">{fresh.length}</span></div><p className="mb-4 text-sm text-zinc-600 dark:text-zinc-300">Pontos que não estavam no levantamento anterior e os cadastrados com este trimestre em preenchimento. Entram na planilha como pontos novos.</p>{fresh.length ? <div className="grid gap-3 lg:grid-cols-2">{fresh.map((row) => {
+          const saved = updates.has(row.pointId);
+          return <article key={row.pointId} className="rounded-2xl border bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900"><div className="flex items-center justify-between gap-2"><h3 className="flex items-center gap-2 font-semibold"><MapPin className="h-4 w-4 text-orange-600" />{row.pointId}</h3><span className={`rounded-full px-2.5 py-1 text-xs ${saved && row.state === "concluido" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-800"}`}>{saved ? row.state === "concluido" ? "Concluído" : "Em preenchimento" : "Pendente"}</span></div><p className="mt-3 text-sm">{String(row.answers.endereco ?? "Endereço a preencher")}</p><div className="mt-3 flex justify-end"><Button size="sm" variant="outline" disabled={!cloudReady || !!cloudError} onClick={() => setEditor(row)}><Pencil className="mr-2 h-3.5 w-3.5" />{saved ? "Consultar / atualizar" : "Preencher"}</Button></div></article>;
+        })}</div> : <p className="text-sm text-zinc-500">Nenhum ponto novo neste levantamento.</p>}</section>;
+      })()}
       <div className="grid gap-3 lg:grid-cols-2">{shown.slice((page - 1) * 20, page * 20).map((row) => {
         const saved = updates.has(row.pointId);
         const isNew = String(row.answers.antiguidade ?? "").toLowerCase().includes("novo") || !originals.has(row.pointId) && !survey.expectedCodes.includes(row.pointId);
@@ -171,9 +221,35 @@ function LevantamentosPanel() {
       const working = survey.status === "em-preenchimento";
       const progress = surveyProgress(survey.expectedCodes, surveyRecords(survey, records));
       const total = working ? survey.expectedCodes.length ? progress.total : source?.count ?? progress.total : source?.count ?? progress.total;
-      const newCount = source?.newCount ?? progress.newPoints;
+      const freshCount = previousCodes ? allPoints.filter((point) => !previousCodes.has(point.id)).length : null;
+      const newCount = working ? freshCount : source?.newCount ?? progress.newPoints;
       const available = cloudReady && metaReady && !cloudError;
-      return <article key={survey.id} className={`relative overflow-hidden rounded-3xl border bg-white shadow-sm transition-shadow hover:shadow-md dark:bg-zinc-900 ${working ? "border-emerald-300 ring-1 ring-emerald-100 dark:border-emerald-800 dark:ring-emerald-950 xl:col-span-2" : "border-zinc-200 dark:border-zinc-800"}`}>
+      if (working) return <article key={survey.id} className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-emerald-600 via-emerald-600 to-teal-700 p-6 text-white shadow-xl shadow-emerald-900/20 sm:p-8 xl:col-span-2">
+        <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-white/10" />
+        <div className="pointer-events-none absolute -bottom-24 left-1/3 h-48 w-48 rounded-full bg-teal-300/20" />
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em]"><Clock3 className="h-3.5 w-3.5" />Em preenchimento</span>
+            <h3 className="mt-4 text-3xl font-semibold tracking-tight">{survey.title}</h3>
+            <p className="mt-2 flex items-center gap-2 text-sm text-emerald-50"><CalendarDays className="h-4 w-4" />{periodDates(survey.period)}</p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <div className="min-w-28 rounded-2xl bg-white/15 px-4 py-3 backdrop-blur-sm"><strong className="block text-3xl leading-none">{total}</strong><span className="mt-1 block text-xs text-emerald-50">pontos</span></div>
+              <div className="min-w-28 rounded-2xl bg-orange-300 px-4 py-3 text-orange-950"><strong className="block text-3xl leading-none">{freshCount ?? "…"}</strong><span className="mt-1 flex items-center gap-1 text-xs font-semibold"><Sparkles className="h-3.5 w-3.5" />novos pontos</span></div>
+            </div>
+          </div>
+          <div className="w-full lg:max-w-sm">
+            <div className="mb-2 flex items-end justify-between gap-3"><span className="text-sm text-emerald-50">{available ? `${progress.completed} de ${total} concluídos` : "Carregando progresso…"}</span><strong className="text-4xl leading-none">{available ? `${total ? Math.round(progress.completed / total * 100) : 0}%` : "—"}</strong></div>
+            <div role="progressbar" aria-label={`Conclusão de ${survey.title}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={available ? progress.percent : undefined} className="h-3 overflow-hidden rounded-full bg-black/15"><div className="h-full rounded-full bg-white transition-[width] duration-500" style={{ width: `${available ? progress.percent : 0}%` }} /></div>
+            <div className="mt-4 flex gap-2">
+              <Button disabled={!!busy} className="h-12 flex-1 rounded-2xl bg-white text-emerald-800 hover:bg-emerald-50" onClick={() => void openSurvey(survey)}>{busy === survey.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FolderOpen className="mr-2 h-4 w-4" />}Continuar preenchimento<ArrowRight className="ml-2 h-4 w-4" /></Button>
+              <Button aria-label={`Baixar ${survey.title}`} title="Baixar Excel com as 49 colunas originais" variant="outline" className="h-12 rounded-2xl border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white" disabled={!!busy || !available} onClick={() => void download(survey)}><ArrowDownToLine className="h-4 w-4" /></Button>
+            </div>
+          </div>
+        </div>
+        <p className="relative mt-6 rounded-2xl bg-black/10 px-4 py-3 text-sm leading-relaxed text-emerald-50">{OPERACAO_LEVANTAMENTO_NOTA}</p>
+        <details className="group relative mt-4 border-t border-white/15 pt-3"><summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-xs font-medium text-emerald-50"><span className="flex items-center gap-2"><MessageSquareWarning className="h-4 w-4" />Observações e atualizações{survey.notes ? <span className="h-1.5 w-1.5 rounded-full bg-orange-300" /> : null}</span><ChevronDown className="h-4 w-4 transition group-open:rotate-180" /></summary><div className="space-y-3 pt-3 text-sm text-emerald-50"><p className="whitespace-pre-wrap">{survey.notes || "Nenhuma observação adicionada pela equipe."}</p><p className="text-xs text-emerald-100/80">{survey.updatedAtMs ? `Atualizado em ${new Date(survey.updatedAtMs).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}` : "Sem atualizações da equipe"}</p><Button size="sm" variant="outline" className="border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white" disabled={!available} onClick={() => setEditingMeta(survey)}><Pencil className="mr-2 h-3.5 w-3.5" />Editar observações e situação</Button>{progress.completed === 0 && <Button size="sm" variant="ghost" className="ml-2 text-orange-100 hover:bg-white/10 hover:text-white" disabled={!available} onClick={() => setCancelling(survey)}><XCircle className="mr-2 h-4 w-4" />Cancelar levantamento</Button>}</div></details>
+      </article>;
+      return <article key={survey.id} className="relative overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900">
         {working && <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400" />}
         <div className={`p-5 sm:p-6 ${working ? "lg:flex lg:items-start lg:gap-8" : ""}`}>
           <div className="flex min-w-0 flex-1 items-start gap-4"><div className={`relative rounded-2xl p-4 ${working ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950" : "bg-slate-100 text-slate-500 dark:bg-zinc-800"}`}><FileSpreadsheet className="h-8 w-8" />{working && <span className="absolute -right-1 -top-1 rounded-full border-2 border-white bg-emerald-500 p-1"><Pencil className="h-3 w-3 text-white" /></span>}</div><div className="min-w-0"><div className="mb-2 flex flex-wrap items-center gap-2"><span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${working ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950" : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800"}`}>{working ? <Clock3 className="h-3.5 w-3.5" /> : <CheckCheck className="h-3.5 w-3.5" />}{working ? "Em preenchimento" : "Levantamento histórico"}</span>{survey.sourceId?.includes("rev-") && <span className="rounded-full bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-700">Revisão · 19/10/2026</span>}</div><h3 className="text-xl font-semibold tracking-tight">{survey.title}</h3><p className="mt-2 flex items-center gap-1.5 text-xs text-zinc-500"><CalendarDays className="h-3.5 w-3.5 shrink-0" />{periodDates(survey.period)}</p>{source?.checkedFrom && <p className="mt-1 text-xs text-zinc-400">Checagens: {brDate(source.checkedFrom)} a {brDate(source.checkedTo)}</p>}</div></div>

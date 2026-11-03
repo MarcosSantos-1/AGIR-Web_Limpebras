@@ -550,7 +550,7 @@ function AgendaPageContent() {
             <ChevronLeft className="h-5 w-5" />
           </button>
 
-          <div className="flex flex-1 justify-center gap-4">
+          <div className="flex flex-1 justify-center gap-1 overflow-x-auto sm:gap-4">
             {weekDates.map((date, index) => {
               const dateStr = date.toISOString().split("T")[0];
               const isTodayCell = dateStr === today;
@@ -562,7 +562,7 @@ function AgendaPageContent() {
                 <button
                   type="button"
                   key={index}
-                  className={`flex flex-col items-center rounded-xl px-4 py-2 transition-all ${
+                  className={`flex min-w-11 flex-col items-center rounded-xl px-2 py-2 transition-all sm:px-4 ${
                     isTodayCell
                       ? "bg-accent-gradient-br text-white"
                       : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
@@ -637,7 +637,7 @@ function AgendaPageContent() {
 
       {/* Week View */}
       {viewMode === "week" && (
-        <div className="grid grid-cols-7 gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-7 md:gap-4">
           {weekDates.map((date, index) => {
             const dayEvents = getEventsForDate(date);
             const dateStr = date.toISOString().split("T")[0];
@@ -649,7 +649,7 @@ function AgendaPageContent() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className={`min-h-[400px] rounded-2xl p-4 ${
+                className={`min-h-0 rounded-2xl p-3 md:min-h-[400px] md:p-4 ${
                   isToday
                     ? "bg-gradient-to-br from-[var(--gradient-start)]/5 to-[var(--gradient-end)]/5 ring-2 ring-[var(--gradient-start)]/20 dark:from-[var(--gradient-start)]/10 dark:to-[var(--gradient-end)]/10"
                     : "border border-zinc-100 bg-white shadow-card dark:border-zinc-800 dark:bg-zinc-900"
@@ -926,7 +926,7 @@ function AgendaPageContent() {
 
       {viewMode === "list" && (
         <div className="mb-4 flex flex-wrap items-end gap-4 rounded-2xl border border-zinc-100 bg-white p-4 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="min-w-[200px] flex-1 max-w-xs">
+          <div className="w-full min-w-0 flex-1 sm:max-w-xs">
             <span className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
               Status
             </span>
@@ -955,7 +955,7 @@ function AgendaPageContent() {
               Data
             </span>
             <div className="flex flex-wrap items-center gap-2">
-              <div className="min-w-[200px]">
+              <div className="min-w-0 w-full sm:min-w-[200px] sm:w-auto">
                 <DatePickerField
                   value={listDateFilter}
                   onChange={(value) => {
@@ -1098,7 +1098,7 @@ function AgendaPageContent() {
                         <Calendar className="h-6 w-6 text-white" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 pr-2">
+          <div className="flex flex-wrap items-center gap-2">
                           <h4 className="font-semibold text-zinc-900 dark:text-zinc-100">
                             {event.title}
                           </h4>

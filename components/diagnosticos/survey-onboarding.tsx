@@ -5,7 +5,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Armchair, ArrowLeft, ArrowRight, Bike, Bird, Bug, Camera, Check, CloudFog, CloudUpload, Construction, Droplets, Factory, Flame, Footprints, HardHat, House, ImagePlus, Loader2, MapPin, Mountain, Rat, Recycle, Save, ShieldAlert, Signpost, Tent, Trash2, Truck, Users, X, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import catalog from "@/data/features-PV.json";
-import { PontoFichaFields } from "@/components/pontos/ponto-ficha-fields";
 import { useAgendaEvents } from "@/contexts/agenda-events-context";
 import { useAuth } from "@/contexts/auth-context";
 import { useUserProfile } from "@/contexts/user-profile-context";
@@ -16,7 +15,7 @@ import { diagnosticErrors, localToday, type Diagnostic } from "@/lib/diagnostico
 import { saveDiagnostic } from "@/lib/firestore/diagnosticos";
 import { savePontoFicha } from "@/lib/firestore/ponto-fichas";
 import { OPERACAO_LEVANTAMENTO_NOTA, surveyOpenDate, type Levantamento } from "@/lib/levantamentos";
-import { fichaDraftFromAnswers, fichaErrors, fichaLockedKeys, isOutrosLogradouro } from "@/lib/ponto-ficha";
+import { fichaDraftFromAnswers } from "@/lib/ponto-ficha";
 import { compressImageFileIfNeeded } from "@/lib/image-compress";
 import { extensionForMime, uploadFileToPath } from "@/lib/storage/upload-helpers";
 import { deleteStoredFilesByPublicUrls } from "@/lib/storage/delete-stored-files";
@@ -55,7 +54,7 @@ const ICONS: Record<string, LucideIcon> = {
 
 const STEPS: { id: "identificacao" | "ficha" | "residuos" | "origens" | "condicoes" | "impactos" | "proximidades" | "revisao"; title: string; help: string }[] = [
   { id: "identificacao", title: "Identificação do ponto", help: "O endereço, as coordenadas e a sub-regional já ficam salvos. A data da checagem é o dia em que você conclui este formulário, com a foto." },
-  { id: "ficha", title: "Ficha do ponto", help: "Estes dados acompanham o ponto em todo levantamento. O que já veio da planilha fica só para leitura. Complete o que estiver vazio para concluir." },
+  { id: "ficha", title: "Ficha do ponto", help: "Dá para corrigir o que já veio da planilha. O complemento é opcional. O restante precisa de uma escolha para concluir." },
   { id: "residuos", title: "1. Tipos de resíduos sólidos presentes", help: "Marque só o que encontrou. Se não houver nenhum destes, pode seguir sem marcar." },
   { id: "origens", title: "2. Possível origem do descarte", help: "Uma leitura do que parece ter gerado o material. Não precisa ter certeza absoluta." },
   { id: "condicoes", title: "3. Condições observadas no ponto", help: "Olhe o ponto e o chão ao redor. Marque o que estiver presente. A caçamba da Loga também: marcado é sim, sem marcar é não." },
@@ -149,9 +148,8 @@ export function SurveyOnboarding({ initial, onClose, onSaved, presentation = "sc
   const scrollRef = useRef<HTMLDivElement>(null);
   const inactive = pointIsInactive(record);
   const photoCount = pending.length + record.photos.length;
-  const steps = record.kind === "trimestral" ? STEPS : STEPS.filter((item) => item.id !== "ficha");
+  const steps = STEPS.filter((item) => item.id !== "ficha");
   const step = steps[index] ?? steps[0];
-  const lockedFicha = useMemo(() => fichaLockedKeys(fichaDraftFromAnswers(initial.answers), initial.questionnaireVersion), [initial]);
   const automation = useMemo(() => ({
     openDate: surveyOpenDate({ period: survey?.period || record.period, openedAtMs: survey?.openedAtMs }),
     events: events.map((event) => ({ type: event.type, status: event.status, date: event.date, title: event.title, observations: event.observations })),
@@ -230,7 +228,6 @@ export function SurveyOnboarding({ initial, onClose, onSaved, presentation = "sc
       if (!String(record.answers.statusTrimestral ?? "").trim()) return "Me conta se o ponto está ativo.";
       if (!inactive && !volumeChoices(record.questionnaireVersion).some((choice) => choice.value === record.answers.volume)) return "Escolha a volumetria que você está vendo.";
     }
-    if (id === "ficha") return Object.values(fichaErrors(fichaDraftFromAnswers(record.answers), record.questionnaireVersion))[0] ?? "";
     if (id === "impactos" && (!record.answers.impactoPedestres || !record.answers.impactoVeiculos)) return "Escolha uma opção para pedestres e outra para veículos.";
     if (id === "revisao" && record.answers.termoVistoria !== "sim") return "Falta só confirmar que a vistoria é sua.";
     return "";
@@ -270,8 +267,11 @@ export function SurveyOnboarding({ initial, onClose, onSaved, presentation = "sc
         setRecord((current) => ({ ...current, photos: next.photos }));
         setPending((items) => items.filter((item) => item.id !== photo.id));
       }
-      if (complete && next.kind === "trimestral") await savePontoFicha(String(next.answers.codigo ?? next.pointId), fichaDraftFromAnswers(next.answers));
       await saveDiagnostic(next, responsible);
+      if (complete && next.kind === "trimestral") {
+        try { await savePontoFicha(String(next.answers.codigo ?? next.pointId), fichaDraftFromAnswers(next.answers)); }
+        catch (error) { toast.warning(error instanceof Error ? error.message : "A vistoria foi salva, mas a ficha do ponto não foi para a nuvem."); }
+      }
       const removed = initial.photos.filter((photo) => !next.photos.some((item) => item.id === photo.id));
       if (removed.length) await deleteStoredFilesByPublicUrls(removed.map((photo) => photo.url)).catch(() => toast.warning("Registro salvo. Algumas fotos removidas ainda aguardam limpeza no armazenamento."));
       try { localStorage.removeItem(storageKey); await writeDraftPhotos(storageKey, []); } catch { /* o servidor já guardou */ }
@@ -360,8 +360,6 @@ export function SurveyOnboarding({ initial, onClose, onSaved, presentation = "sc
             </section>}
             {record.kind === "trimestral" && <p className="rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-950 dark:bg-emerald-950 dark:text-emerald-50"><span className="block text-xs font-semibold uppercase tracking-wide text-emerald-700">Revitalização neste levantamento</span><span className="mt-1 block font-medium">{String(applyQuarterlyAutomation(withAutomaticContext({ ...record, answers: { ...record.answers, dataChecagem: localToday() } }), automation).answers.revitalizacao ?? "")}</span></p>}
           </div>}
-
-          {step.id === "ficha" && <div className="mt-6"><PontoFichaFields draft={fichaDraftFromAnswers(record.answers)} locked={lockedFicha} disabled={busy} onChange={(draft) => { setRecord((current) => { const answers = { ...current.answers, ...draft, lote: "Lote 3" }; if (!isOutrosLogradouro(draft.tipoLogradouro)) delete answers.outroLogradouro; return { ...current, answers }; }); setError(""); }} /></div>}
 
           {step.id === "residuos" && <div className="mt-6 grid gap-2 sm:grid-cols-2">{RESIDUOS.map((item) => <CheckCard key={item.key} item={item} pressed={isMarked(record.answers[item.key])} disabled={busy} onClick={() => toggle(item.key)} />)}</div>}
           {step.id === "origens" && <div className="mt-6 grid gap-2 sm:grid-cols-2">{ORIGENS.map((item) => <CheckCard key={item.key} item={item} pressed={isMarked(record.answers[item.key])} disabled={busy} onClick={() => toggle(item.key)} />)}</div>}

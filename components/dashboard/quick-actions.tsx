@@ -3,7 +3,7 @@
 import { useNovaAcao } from "@/components/acao/nova-acao-provider";
 import { useConteudoSocialModal } from "@/components/redes-sociais/conteudo-social-modal-provider";
 import { motion } from "framer-motion";
-import { Map, Waypoints, RefreshCcw, Sparkles } from "lucide-react";
+import { ClipboardList, Map, Waypoints, RefreshCcw, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 const actionButtons = [
@@ -30,7 +30,7 @@ export function QuickActions() {
       <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-zinc-400">
         Ações Rápidas
       </h3>
-      <div className="grid grid-cols-1 gap-3 sm:flex sm:flex-wrap">
+      <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
         {actionButtons.map((action, index) => (
           <motion.button
             key={action.key}
@@ -41,7 +41,7 @@ export function QuickActions() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => openModal(action.key)}
-            className={`flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r ${action.color} py-3.5 text-sm font-medium text-white shadow-lg transition-all hover:shadow-xl sm:min-w-[140px] sm:flex-1`}
+            className={`flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r ${action.color} px-2 py-3.5 text-center text-sm font-medium leading-tight text-white shadow-lg transition-all hover:shadow-xl sm:min-w-[140px] sm:flex-1 sm:px-4`}
           >
             <action.icon className="h-4 w-4" />
             <span>{action.label}</span>
@@ -55,7 +55,7 @@ export function QuickActions() {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => openConteudoModal()}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 py-3.5 text-sm font-medium text-white shadow-lg transition-all hover:shadow-xl sm:min-w-[140px] sm:flex-1"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-2 py-3.5 text-center text-sm font-medium leading-tight text-white shadow-lg transition-all hover:shadow-xl sm:min-w-[140px] sm:flex-1 sm:px-4"
         >
           <Sparkles className="h-4 w-4" />
           <span>Novo conteúdo</span>
@@ -64,7 +64,21 @@ export function QuickActions() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: (actionButtons.length + 1) * 0.05 }}
-          className="flex w-full sm:min-w-[140px] sm:flex-1"
+          className="flex w-full sm:hidden"
+        >
+          <Link
+            href="/diagnosticos/campo"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 py-3.5 text-sm font-medium text-white shadow-lg transition-all hover:shadow-xl"
+          >
+            <ClipboardList className="h-4 w-4" />
+            <span>Diagnósticos</span>
+          </Link>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: (actionButtons.length + 1) * 0.05 }}
+          className="hidden w-full sm:flex sm:min-w-[140px] sm:flex-1"
         >
           <Link
             href="/mapa"

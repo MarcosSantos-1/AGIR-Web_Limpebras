@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ChevronDown, ClipboardList, Loader2, Pencil } from "lucide-react";
+import { ChevronDown, ClipboardList, Eye, Loader2, Pencil } from "lucide-react";
+import { PhotoGalleryLightbox } from "@/components/evidence/photo-gallery-lightbox";
 import { Button } from "@/components/ui/button";
 import { subscribeDiagnosticsByPoint } from "@/lib/firestore/diagnosticos";
 import type { Diagnostic } from "@/lib/diagnosticos";
@@ -30,14 +31,17 @@ function photoOf(record?: Diagnostic) {
   return record?.photos.find((photo) => photo.url)?.url ?? "";
 }
 
-export function PontoDiagnosticoCard({ pointId, catalogueVolume, catalogueInactive = false }: {
+export function PontoDiagnosticoCard({ pointId, address = "", catalogueVolume, catalogueInactive = false }: {
   pointId: string;
+  address?: string;
   catalogueVolume?: string;
   catalogueInactive?: boolean;
 }) {
   const [records, setRecords] = useState<Diagnostic[] | null>(null);
   const [error, setError] = useState("");
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [photoOpen, setPhotoOpen] = useState(false);
+  const [photoIndex, setPhotoIndex] = useState(0);
 
   useEffect(() => {
     setRecords(null);
@@ -49,7 +53,9 @@ export function PontoDiagnosticoCard({ pointId, catalogueVolume, catalogueInacti
   const latest = records?.[0];
   const filled = latest?.state === "concluido";
   const inactive = latest ? isInactiveRecord(latest) : catalogueInactive;
-  const photo = photoOf(latest) || records?.map(photoOf).find(Boolean) || "";
+  const gallery = (latest?.photos ?? []).filter((photo) => photo.url);
+  const photo = gallery[0]?.url || records?.map(photoOf).find(Boolean) || "";
+  const lightboxPhotos = (gallery.length ? gallery : records?.flatMap((record) => record.photos.filter((item) => item.url)) ?? []).map((item) => ({ src: item.url, alt: `${pointId} ${address}`.trim() }));
   const date = formatDate(latest?.answers.dataChecagem);
   const volume = volumeLabel(latest?.answers.volume, catalogueVolume);
   const older = (records ?? []).slice(1);
@@ -70,8 +76,13 @@ export function PontoDiagnosticoCard({ pointId, catalogueVolume, catalogueInacti
       ) : (
         <>
           {photo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={photo} alt={`Foto do último diagnóstico de ${pointId}`} className="h-36 w-full object-cover" />
+            <button type="button" className="group relative block w-full" onClick={() => { setPhotoIndex(0); setPhotoOpen(true); }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={photo} alt={`Foto do último diagnóstico de ${pointId}`} className="h-36 w-full object-cover" />
+              <span className="absolute inset-0 flex items-center justify-center gap-2 bg-black/45 text-sm font-semibold text-white opacity-0 transition group-hover:opacity-100">
+                <Eye className="h-4 w-4" />Ver foto
+              </span>
+            </button>
           ) : (
             <div className="flex h-20 items-center justify-center bg-white/70 text-xs text-zinc-400 dark:bg-zinc-900/40">Sem foto neste preenchimento</div>
           )}
@@ -120,6 +131,7 @@ export function PontoDiagnosticoCard({ pointId, catalogueVolume, catalogueInacti
           </ul>
         ) : null}
       </div>
+      <PhotoGalleryLightbox open={photoOpen} onOpenChange={setPhotoOpen} title={`${pointId}${address ? ` · ${address}` : ""}`} photos={lightboxPhotos} initialIndex={photoIndex} />
     </section>
   );
 }

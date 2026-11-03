@@ -121,7 +121,7 @@ test("vistoria checklist fills official answers and leaves the paper's omitted q
   assert.equal(inactive.observedStatus, "sem-residuos");
 });
 
-test("a quarterly vistoria cannot be finished while the point profile is incomplete", () => {
+test("field vistoria does not require the permanent point profile", () => {
   const r = visit();
   r.kind = "trimestral";
   r.answers.latitude = -23.49;
@@ -133,15 +133,12 @@ test("a quarterly vistoria cannot be finished while the point profile is incompl
   r.answers.termoVistoria = "sim";
   const gap = diagnosticErrors(materializeVistoria(r), true);
   assert.equal(gap.complemento, undefined);
-  assert.ok(gap.tipoLogradouro && gap.topografia && gap.ocupacao && gap.entornoBueiro);
+  assert.equal(gap.tipoLogradouro, undefined);
+  assert.equal(gap.topografia, undefined);
+  assert.equal(gap.entornoBueiro, undefined);
   assert.equal(materializeVistoria(r).answers.proximidadeConteiner, "Não.");
   r.answers.proximidadeConteiner = "Sim.";
   assert.equal(materializeVistoria(r).answers.proximidadeConteiner, "Sim.");
-  fillFicha(r);
-  r.answers.tipoLogradouro = fichaOptions("tipoLogradouro", r.questionnaireVersion).find((option) => option.startsWith("Outros")) ?? "Outros.";
-  assert.ok(diagnosticErrors(materializeVistoria(r), true).outroLogradouro);
-  r.answers.outroLogradouro = "Córrego canalizado";
-  assert.equal(diagnosticErrors(materializeVistoria(r), true).outroLogradouro, undefined);
 });
 
 test("quarterly inactive status requires zero cleanings, and period must match", () => {

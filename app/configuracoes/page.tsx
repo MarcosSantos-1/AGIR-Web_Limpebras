@@ -102,11 +102,11 @@ export default function ConfiguracoesPage() {
 
   return (
     <AppShell title="Configurações" subtitle="Personalize sua experiência">
-      <div className="flex gap-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:gap-6">
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="w-72 shrink-0"
+          className="w-full shrink-0 lg:w-72"
         >
           <div className="rounded-2xl border border-zinc-100 bg-white p-4 shadow-card dark:border-zinc-800 dark:bg-zinc-900">
             {settingsSections.map((section) => {
@@ -155,7 +155,7 @@ export default function ConfiguracoesPage() {
           key={activeSection}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex-1"
+          className="min-w-0 w-full flex-1"
         >
           {activeSection === "perfil" && (
             <div className="space-y-6">

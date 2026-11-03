@@ -1603,6 +1603,7 @@ function MapaPageContent() {
             {selectedItem.type === "ponto-viciado" ? (
               <PontoDiagnosticoCard
                 pointId={selectedItem.id}
+                address={selectedItem.address}
                 catalogueVolume={"volumetria" in selectedItem ? selectedItem.volumetria : undefined}
                 catalogueInactive={selectedItem.status === "inativo"}
               />
@@ -1627,7 +1628,9 @@ function MapaPageContent() {
                 : "Novo ponto viciado"}
             </DialogTitle>
             <DialogDescription>
-              Passo {pvStep + 1} de 4. O lote deste ponto é o Lote 3.
+              {editingFirestoreDocId || editingSourceCodigo
+                ? "Altere o cadastro. Complemento, tipo de via, topografia e entorno ficam em Configurações avançadas."
+                : `Passo ${pvStep + 1} de 4. O lote deste ponto é o Lote 3.`}
             </DialogDescription>
           </DialogHeader>
           {pvStep === 0 ? (
@@ -1728,6 +1731,13 @@ function MapaPageContent() {
               }
               className="space-y-1.5 sm:col-span-1"
             />
+            {(editingFirestoreDocId || editingSourceCodigo) && (
+              <details className="rounded-xl border border-zinc-200 p-3 dark:border-zinc-700">
+                <summary className="cursor-pointer text-sm font-semibold">Configurações avançadas</summary>
+                <p className="mb-3 mt-2 text-xs text-zinc-500">Complemento, tipo de logradouro, topografia e entorno de até 15 m. O preenchimento de campo não pede estes dados.</p>
+                <PontoFichaFields part="all" draft={pvFicha} disabled={pvSaving} onChange={setPvFicha} />
+              </details>
+            )}
           </div>
           ) : (
             <div className="py-2">
@@ -1735,7 +1745,7 @@ function MapaPageContent() {
             </div>
           )}
           <DialogFooter>
-            {pvStep > 0 && (
+            {pvStep > 0 && !(editingFirestoreDocId || editingSourceCodigo) && (
               <Button type="button" variant="outline" disabled={pvSaving} onClick={() => setPvStep((step) => step - 1)}>
                 Voltar
               </Button>
@@ -1765,6 +1775,7 @@ function MapaPageContent() {
                     return;
                   }
                   if (!addPvSubregionalId) { toast.error("Selecione a subregional."); setPvSubregionalErro(true); return; }
+                  if (editingFirestoreDocId || editingSourceCodigo) { void savePontoFirebase(); return; }
                   setPvStep(1);
                   return;
                 }
@@ -1776,10 +1787,10 @@ function MapaPageContent() {
             >
               {pvSaving ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
-              ) : pvStep < 3 ? (
-                "Continuar"
-              ) : (
+              ) : (editingFirestoreDocId || editingSourceCodigo) || pvStep >= 3 ? (
                 "Guardar"
+              ) : (
+                "Continuar"
               )}
             </Button>
           </DialogFooter>

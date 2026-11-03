@@ -6,6 +6,12 @@ import { overlayFichaAnswers, type PontoFichaDraft } from "@/lib/ponto-ficha";
 
 export const SURVEY_COLORS = { concluido: "#16a34a", pendente: "#eab308", inativo: "#71717a" };
 
+export const SURVEY_NOVO = "“Novo”, surgiu durante este trimestre.";
+
+export function surveyPointIsNew(record: { pointId: string; answers: Record<string, unknown> }, knownBefore: boolean) {
+  return !knownBefore || String(record.answers.antiguidade ?? "").toLowerCase().includes("novo");
+}
+
 export function recordsForSurvey(survey: Levantamento, records: Diagnostic[]) {
   return records.filter((r) => r.kind === "trimestral" && (r.sourceId === (survey.sourceId ?? survey.id) || (!survey.sourceId && r.sourceId === "campo" && r.period === survey.period)));
 }
@@ -19,7 +25,7 @@ export function pointDiagnostic(point: MapDisplayPoint, survey: Levantamento, ba
   // Current catalogue address/GPS take precedence over outdated historical entries.
   Object.assign(merged, { codigo: point.id, endereco: point.address, latitude: point.position[0], longitude: point.position[1], lote: "Lote 3" });
   if (periodForDate(localToday()) === survey.period) merged.dataChecagem = localToday();
-  merged.antiguidade = baseline ? "“Antigo”, já existia no(s) trimestre(s) anterior(es)." : "“Novo”, surgiu durante este trimestre.";
+  merged.antiguidade = baseline ? "“Antigo”, já existia no(s) trimestre(s) anterior(es)." : SURVEY_NOVO;
   return { id: `${survey.id}-${point.id}`, schemaVersion: 1, questionnaireVersion: QUESTIONNAIRE_VERSION, kind: "trimestral", period: survey.period, state: "rascunho", pointId: point.id, answers: merged, observedStatus: "nao-avaliado", notes: "", photos: [], sourceId: survey.id, revision: 0 };
 }
 export function buildSurveyRows(survey: Levantamento, points: MapDisplayPoint[], baseline: Diagnostic[], records: Diagnostic[], fichas?: ReadonlyMap<string, PontoFichaDraft>) {
@@ -32,7 +38,12 @@ export function buildSurveyRows(survey: Levantamento, points: MapDisplayPoint[],
   return [...codes].flatMap((code) => {
     const ficha = fichas?.get(code) ?? null;
     const existing = saved.get(code);
-    if (existing) return [{ ...existing, answers: overlayFichaAnswers(existing.answers, ficha, "fill-empty") }];
+    const knownBefore = originals.has(code);
+    if (existing) {
+      const answers = overlayFichaAnswers(existing.answers, ficha, "fill-empty");
+      if (!knownBefore) answers.antiguidade = SURVEY_NOVO;
+      return [{ ...existing, answers }];
+    }
     const point = byCode.get(code);
     if (point) return [pointDiagnostic(point, survey, originals.get(code), ficha)];
     const original = originals.get(code);
