@@ -63,7 +63,11 @@ import { EquipeIntegrantesField } from "@/components/acao/equipe-integrantes-fie
 import { LinksPostagemEditor } from "@/components/acao-registro/post-links";
 import { integrantesFromAgendaEvent } from "@/lib/agenda/equipe-parsing";
 import { useCustomPontosViciados } from "@/contexts/custom-pontos-viciados-context";
-import { mutatePontoViciado } from "@/lib/ponto-viciado-mutation";
+import {
+  mutatePontoViciado,
+  PontoViciadoIdConflict,
+  previewPontoViciado,
+} from "@/lib/ponto-viciado-mutation";
 import { emptyFichaDraft, FICHA_PARTS, fichaErrors, fichaPartError, type PontoFichaDraft } from "@/lib/ponto-ficha";
 import { useAuth } from "@/contexts/auth-context";
 import { useUserProfile } from "@/contexts/user-profile-context";
@@ -1471,10 +1475,43 @@ function RevitalizacaoDialog({
   const [newPontoStep, setNewPontoStep] = React.useState(0);
   const [newPontoFicha, setNewPontoFicha] = React.useState<PontoFichaDraft>(emptyFichaDraft);
   const newPontoFlyNonce = React.useRef(0);
+  const [newPontoPreview, setNewPontoPreview] = React.useState<{
+    lat: number;
+    lng: number;
+    codigo?: string;
+    error?: string;
+  } | null>(null);
+  const [newPontoPreviewAttempt, setNewPontoPreviewAttempt] = React.useState(0);
+  const currentNewPontoPreview =
+    newPontoPreview?.lat === newPontoLat && newPontoPreview?.lng === newPontoLng
+      ? newPontoPreview
+      : null;
+  const newPontoCode = currentNewPontoPreview?.codigo;
+
+  React.useEffect(() => {
+    if (!open || !addingNewPonto || newPontoLat == null || newPontoLng == null) return;
+    const controller = new AbortController();
+    previewPontoViciado(newPontoLat, newPontoLng, controller.signal)
+      .then(({ codigo }) => {
+        if (!controller.signal.aborted) setNewPontoPreview({ lat: newPontoLat, lng: newPontoLng, codigo });
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) {
+          setNewPontoPreview({
+            lat: newPontoLat,
+            lng: newPontoLng,
+            error: error instanceof Error ? error.message : "Não foi possível consultar o ID.",
+          });
+        }
+      });
+    return () => controller.abort();
+  }, [open, addingNewPonto, newPontoLat, newPontoLng, newPontoPreviewAttempt]);
+
 
   const resetNewPontoForm = React.useCallback(() => {
     setAddingNewPonto(false);
     newPontoRequestId.current = null;
+    setNewPontoPreview(null);
     setNewPontoAddress("");
     setNewPontoLat(null);
     setNewPontoLng(null);
@@ -1561,6 +1598,7 @@ function RevitalizacaoDialog({
       setNewPontoError("Busque ou clique no mapa para definir a localização.");
       return;
     }
+    if (!newPontoCode) return;
     const fichaProblem = Object.values(fichaErrors(newPontoFicha))[0];
     if (fichaProblem) {
       setNewPontoError(fichaProblem);
@@ -1570,6 +1608,7 @@ function RevitalizacaoDialog({
     try {
       const codigo = await mutatePontoViciado({
         action: "create",
+        expectedCode: newPontoCode,
         requestId: (newPontoRequestId.current ??= crypto.randomUUID()),
         address: enderecoNome,
         lat: newPontoLat,
@@ -1579,6 +1618,9 @@ function RevitalizacaoDialog({
       setPontoViciadoId(codigo);
       resetNewPontoForm();
     } catch (err) {
+      if (err instanceof PontoViciadoIdConflict) {
+        setNewPontoPreview({ lat: newPontoLat, lng: newPontoLng, codigo: err.nextCode });
+      }
       setNewPontoError(
         err instanceof Error ? err.message : "Erro ao salvar ponto.",
       );
@@ -1590,6 +1632,7 @@ function RevitalizacaoDialog({
     newPontoLat,
     newPontoLng,
     newPontoFicha,
+    newPontoCode,
     resetNewPontoForm,
   ]);
 
@@ -1598,6 +1641,7 @@ function RevitalizacaoDialog({
     if (newPontoStep === 0) {
       if (!newPontoAddress.trim()) { setNewPontoError("Informe o endereço (nome do local, cruzamento ou referência)."); return; }
       if (newPontoLat == null || newPontoLng == null) { setNewPontoError("Busque ou clique no mapa para definir a localização."); return; }
+      if (!newPontoCode) return;
       setNewPontoStep(1);
       return;
     }
@@ -1605,7 +1649,7 @@ function RevitalizacaoDialog({
     if (problem) { setNewPontoError(problem); return; }
     if (newPontoStep < 3) { setNewPontoStep(newPontoStep + 1); return; }
     void handleSaveNewPonto();
-  }, [newPontoStep, newPontoAddress, newPontoLat, newPontoLng, newPontoFicha, handleSaveNewPonto]);
+  }, [newPontoStep, newPontoAddress, newPontoLat, newPontoLng, newPontoFicha, newPontoCode, handleSaveNewPonto]);
   const [revFotoUrls, setRevFotoUrls] = React.useState<string[]>([]);
   const [linksPostagemText, setLinksPostagemText] = React.useState("");
   const [panfletagemRealizada, setPanfletagemRealizada] = React.useState(false);
@@ -2165,15 +2209,36 @@ function RevitalizacaoDialog({
                         Cancelar
                       </Button>
                     </div>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                      <div className="min-w-28 rounded-xl border border-violet-300 bg-white px-3 py-2 dark:border-violet-700 dark:bg-zinc-900">
+                        <p className="text-xs font-semibold text-violet-700 dark:text-violet-300">ID do ponto</p>
+                        <output aria-label="ID do ponto" className="block font-mono text-2xl font-bold text-violet-900 dark:text-violet-100">
+                          {newPontoCode ?? (newPontoLat == null || newPontoLng == null || currentNewPontoPreview?.error ? "—" : "…")}
+                        </output>
+                      </div>
+                      {newPontoStep === 0 && (
+                        <p className="min-w-40 flex-1 text-xs text-zinc-600 dark:text-zinc-300">
+                          A localização define a subregional e o código é atribuído ao salvar.
+                        </p>
+                      )}
+                    </div>
+                    {currentNewPontoPreview?.error && (
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p role="alert" className="text-xs text-red-700 dark:text-red-300">{currentNewPontoPreview.error}</p>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => {
+                          setNewPontoPreview(null);
+                          setNewPontoPreviewAttempt((attempt) => attempt + 1);
+                        }}>
+                          Tentar novamente
+                        </Button>
+                      </div>
+                    )}
                     {newPontoError && (
                       <p className="rounded-lg border border-red-200 bg-red-50/80 px-3 py-2 text-xs font-medium text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
                         {newPontoError}
                       </p>
                     )}
                     {newPontoStep === 0 ? (<>
-                    <p className="text-xs text-zinc-600 dark:text-zinc-300">
-                      A localização define a subregional e o código é atribuído ao salvar.
-                    </p>
                     <div className="space-y-1.5">
                       <Label className="text-xs text-zinc-600 dark:text-zinc-400">
                         Endereço <RequiredStar />
@@ -2254,7 +2319,7 @@ function RevitalizacaoDialog({
                     <Button
                       type="button"
                       className="h-9 w-full rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-sm text-white hover:opacity-90"
-                      disabled={newPontoSaving}
+                      disabled={newPontoSaving || (newPontoLat != null && newPontoLng != null && !newPontoCode)}
                       onClick={advanceNewPonto}
                     >
                       {newPontoSaving ? (
