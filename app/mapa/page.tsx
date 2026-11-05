@@ -49,7 +49,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/contexts/auth-context";
 import { useAgendaEvents } from "@/contexts/agenda-events-context";
 import { useCustomPontosViciados } from "@/contexts/custom-pontos-viciados-context";
 import {
@@ -74,14 +73,21 @@ import {
   subregionalMeta,
   type SubregionalId,
 } from "@/lib/constants/subregionais";
-import { firebaseDocIdForPontoCodigo } from "@/lib/firestore/custom-pontos-viciados";
-import { deletePontoFicha, getPontoFicha, savePontoFicha } from "@/lib/firestore/ponto-fichas";
+import { getPontoFicha } from "@/lib/firestore/ponto-fichas";
 import { emptyFichaDraft, FICHA_PARTS, fichaPartError, type PontoFichaDraft } from "@/lib/ponto-ficha";
+import { normalizePontoViciadoCodigo } from "@/lib/ponto-viciado-codigo";
 import {
-  MSG_PONTO_VICIADO_CODIGO_EM_USO,
-  normalizePontoViciadoCodigo,
-  pontoViciadoCodigoEmUsoNoMapa,
-} from "@/lib/ponto-viciado-codigo";
+  mutatePontoViciado,
+  PontoViciadoIdConflict,
+  previewPontoViciado,
+} from "@/lib/ponto-viciado-mutation";
+import {
+  MSG_FORA_DO_LOTE,
+  SUBREGIONAIS_MAPA,
+  SUBREGIONAL_MAP_COLORS,
+  subregionalFromCoordinates,
+  type SubregionaisGeoJson,
+} from "@/lib/map/subregionais";
 import type {
   OperationalMapPoint,
   OperationalMapFlyTo,
@@ -307,16 +313,11 @@ export default function MapaPage() {
 
 /** Conteúdo dentro do AppShell — precisa do NovaAcaoProvider para o CTA Revitalização. */
 function MapaPageContent() {
-  const { user } = useAuth();
   const { events: agendaEvents } = useAgendaEvents();
   const { openModal } = useNovaAcao();
   const {
     customPontosViciados,
-    customPontoEntries,
     pontosOcultos,
-    addPontoViciado,
-    updatePontoViciado,
-    deletePontoViciadoByCodigo,
   } = useCustomPontosViciados();
 
   const [historyRecords, setHistoryRecords] = useState<HistoryRecordDoc[]>([]);
@@ -336,6 +337,24 @@ function MapaPageContent() {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([
     ...DEFAULT_MAP_LAYER_TYPES,
   ]);
+  const [showSubregionais, setShowSubregionais] = useState(false);
+  const [subregionais, setSubregionais] = useState<SubregionaisGeoJson | null>(null);
+  const [subregionaisFailed, setSubregionaisFailed] = useState(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/subregionais", { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) throw new Error();
+        return response.json();
+      })
+      .then(setSubregionais)
+      .catch(() => {
+        if (!controller.signal.aborted) setSubregionaisFailed(true);
+      });
+    return () => controller.abort();
+  }, []);
+
   const [typesPopoverOpen, setTypesPopoverOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchPulseId, setSearchPulseId] = useState<string | null>(null);
@@ -365,14 +384,10 @@ function MapaPageContent() {
 
   const [pickPvLocationMode, setPickPvLocationMode] = useState(false);
   const [addPvOpen, setAddPvOpen] = useState(false);
-  const [editingFirestoreDocId, setEditingFirestoreDocId] = useState<
-    string | null
-  >(null);
   /** Código do ponto aberto na edição, inclusive os que só existem na planilha. */
   const [editingSourceCodigo, setEditingSourceCodigo] = useState<string | null>(
     null,
   );
-  const [addPvCodigo, setAddPvCodigo] = useState("");
   const [addPvEndereco, setAddPvEndereco] = useState("");
   /** Endereço geocodificado completo (clique no mapa) — só exibição. */
   const [addPvGeocodedLocation, setAddPvGeocodedLocation] = useState("");
@@ -382,6 +397,34 @@ function MapaPageContent() {
   const [addPvPosition, setAddPvPosition] = useState<
     [number, number] | null
   >(null);
+  const requestIdRef = useRef<string | null>(null);
+  const [previewAttempt, setPreviewAttempt] = useState(0);
+  const [pvPreview, setPvPreview] = useState<{
+    position: [number, number];
+    codigo?: string;
+    subregional?: string;
+    error?: string;
+  } | null>(null);
+  const currentPreview = pvPreview?.position === addPvPosition ? pvPreview : null;
+
+  useEffect(() => {
+    if (!addPvOpen || editingSourceCodigo || !addPvPosition) return;
+    const controller = new AbortController();
+    previewPontoViciado(...addPvPosition, controller.signal)
+      .then((result) => {
+        if (!controller.signal.aborted) setPvPreview({ ...result, position: addPvPosition });
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) {
+          setPvPreview({
+            position: addPvPosition,
+            error: error instanceof Error ? error.message : "Não foi possível consultar o ID.",
+          });
+        }
+      });
+    return () => controller.abort();
+  }, [addPvOpen, editingSourceCodigo, addPvPosition, previewAttempt]);
+
   const [reverseGeoLoading, setReverseGeoLoading] = useState(false);
   const [pvSaving, setPvSaving] = useState(false);
   const [pvDeleteOpen, setPvDeleteOpen] = useState(false);
@@ -475,9 +518,6 @@ function MapaPageContent() {
     selectedId,
   );
 
-  const firebasePvDocId = selectedId
-    ? firebaseDocIdForPontoCodigo(customPontoEntries, selectedId)
-    : undefined;
 
   const placementActive = pickPvLocationMode;
 
@@ -553,9 +593,9 @@ function MapaPageContent() {
   }
 
   const resetPvModal = () => {
-    setEditingFirestoreDocId(null);
+    requestIdRef.current = null;
+    setPvPreview(null);
     setEditingSourceCodigo(null);
-    setAddPvCodigo("");
     setAddPvEndereco("");
     setAddPvGeocodedLocation("");
     setAddPvSubregionalId("");
@@ -581,17 +621,20 @@ function MapaPageContent() {
   const handlePlacementPick = async (lat: number, lng: number) => {
     if (!pickPvLocationMode) return;
 
+    if (subregionais && !subregionalFromCoordinates(subregionais, lat, lng)) {
+      toast.error(MSG_FORA_DO_LOTE);
+      return;
+    }
+
     setPickPvLocationMode(false);
     setAddPvPosition([lat, lng]);
 
     setReverseGeoLoading(true);
     try {
-      setAddPvCodigo("");
       setAddPvSubregionalId("");
       setPvSubregionalErro(false);
       setAddPvEndereco("");
       setAddPvGeocodedLocation("");
-      setEditingFirestoreDocId(null);
       await reverseGeocodeAndFill(lat, lng);
       setAddPvOpen(true);
     } finally {
@@ -611,10 +654,7 @@ function MapaPageContent() {
     const item =
       selectedItem?.type === "ponto-viciado" ? selectedItem : null;
     if (!item || item.type !== "ponto-viciado") return;
-    const fb = firebaseDocIdForPontoCodigo(customPontoEntries, item.id);
-    setEditingFirestoreDocId(fb ?? null);
     setEditingSourceCodigo(item.id);
-    setAddPvCodigo(item.id);
     setAddPvEndereco(item.address ?? "");
     setAddPvGeocodedLocation("");
     setAddPvSubregionalId(
@@ -643,67 +683,37 @@ function MapaPageContent() {
       return;
     }
 
-    const finalCodigo = normalizePontoViciadoCodigo(addPvCodigo);
-    if (!finalCodigo) {
-      toast.error("Indique o código do ponto.");
-      return;
-    }
-    if (
-      pontoViciadoCodigoEmUsoNoMapa(
-        finalCodigo,
-        customPontoEntries.map((entry) => ({
-          firestoreDocId: entry.firestoreDocId,
-          pointId: entry.point?.id ?? null,
-          ocultoCodigo: entry.ocultoCodigo ?? null,
-        })),
-        {
-          firestoreDocId: editingFirestoreDocId,
-          sourceCodigo: editingSourceCodigo,
-        },
-      )
-    ) {
-      toast.error(MSG_PONTO_VICIADO_CODIGO_EM_USO);
-      return;
-    }
+    if (!editingSourceCodigo && !currentPreview?.codigo) return;
 
-    if (!addPvSubregionalId) {
+    if (editingSourceCodigo && !addPvSubregionalId) {
       toast.error("Selecione a subregional.");
       setPvSubregionalErro(true);
       return;
     }
     setPvSubregionalErro(false);
 
-    const subprefeituraLabel = subregionalMeta(addPvSubregionalId).label;
-
     setPvSaving(true);
     try {
-      if (editingFirestoreDocId) {
-        await updatePontoViciado(editingFirestoreDocId, {
-          codigo: finalCodigo,
-          subprefeitura: subprefeituraLabel,
-          address: addr,
-          lat: addPvPosition[0],
-          lng: addPvPosition[1],
-        });
-        toast.success(`Ponto «${finalCodigo}» atualizado.`);
-      } else {
-        await addPontoViciado(
-          {
-            codigo: finalCodigo,
-            subprefeitura: subprefeituraLabel,
-            address: addr,
-            lat: addPvPosition[0],
-            lng: addPvPosition[1],
-            createdByUid: user?.uid,
-          },
-          { editingSourceCodigo },
-        );
-        toast.success(`Ponto «${finalCodigo}» guardado para toda a equipa.`);
-      }
-      await savePontoFicha(finalCodigo, pvFicha);
-      if (editingSourceCodigo && normalizePontoViciadoCodigo(editingSourceCodigo) !== finalCodigo) {
-        await deletePontoFicha(editingSourceCodigo);
-      }
+      const details = {
+        address: addr,
+        lat: addPvPosition[0],
+        lng: addPvPosition[1],
+        ficha: pvFicha,
+      };
+      const finalCodigo = editingSourceCodigo
+        ? await mutatePontoViciado({
+            ...details,
+            action: "edit",
+            codigo: editingSourceCodigo,
+            subprefeitura: subregionalMeta(addPvSubregionalId || undefined).label,
+          })
+        : await mutatePontoViciado({
+            ...details,
+            action: "create",
+            expectedCode: currentPreview?.codigo,
+            requestId: (requestIdRef.current ??= crypto.randomUUID()),
+          });
+      toast.success(finalCodigo + (editingSourceCodigo ? " atualizado." : " cadastrado para toda a equipe."));
       resetPvModal();
       setAddPvOpen(false);
       setSelectedId(finalCodigo);
@@ -711,9 +721,18 @@ function MapaPageContent() {
         prev.includes("ponto-viciado") ? prev : [...prev, "ponto-viciado"],
       );
     } catch (e) {
-      console.error(e);
+      if (e instanceof PontoViciadoIdConflict) {
+        setPvPreview({
+          position: addPvPosition,
+          subregional: currentPreview?.subregional,
+          codigo: e.nextCode,
+        });
+        setPvStep(0);
+      } else {
+        console.error(e);
+      }
       toast.error(
-        e instanceof Error && e.message === MSG_PONTO_VICIADO_CODIGO_EM_USO
+        e instanceof Error
           ? e.message
           : "Não foi possível guardar. Verifique sessão Firebase.",
       );
@@ -801,7 +820,7 @@ function MapaPageContent() {
     if (!selectedId) return;
     setPvDeleting(true);
     try {
-      await deletePontoViciadoByCodigo(selectedId);
+      await mutatePontoViciado({ action: "delete", codigo: selectedId });
       toast.success(`Ponto «${selectedId}» eliminado.`);
       setSelectedId(null);
       setPvDeleteOpen(false);
@@ -952,6 +971,7 @@ function MapaPageContent() {
               <OperationalMap
                 baseLayer={mapBase}
                 points={mapLayerPoints}
+                subregionais={showSubregionais ? subregionais : null}
                 polygons={filteredPolygons}
                 selectedId={selectedId}
                 pulseId={searchPulseId}
@@ -1098,8 +1118,8 @@ function MapaPageContent() {
                     type="button"
                     variant="secondary"
                     className="pointer-events-auto h-12 gap-2 rounded-xl border border-zinc-200/80 bg-white/95 px-4 shadow-md backdrop-blur-sm hover:bg-white dark:border-zinc-700 dark:bg-zinc-900/95 dark:hover:bg-zinc-800"
-                    aria-label="Camadas — tipos de ponto"
-                    title="Camadas — tipos de ponto"
+                    aria-label="Camadas"
+                    title="Camadas"
                   >
                     <Layers className="h-5 w-5 text-zinc-700 dark:text-zinc-300" />
                     <span className="text-sm font-medium text-zinc-800 dark:text-zinc-100">
@@ -1111,11 +1131,11 @@ function MapaPageContent() {
                   align="start"
                   side="right"
                   sideOffset={8}
-                  className="z-50 w-72 space-y-4 border-zinc-200 bg-white p-5 shadow-card dark:border-zinc-800 dark:bg-zinc-900"
+                  className="z-50 max-h-[var(--radix-popover-content-available-height)] w-72 space-y-4 overflow-y-auto border-zinc-200 bg-white p-5 shadow-card dark:border-zinc-800 dark:bg-zinc-900"
                 >
                   <div className="flex items-center justify-between border-b border-zinc-100 pb-3 dark:border-zinc-800">
                     <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
-                      Tipos de Ponto
+                      Camadas do mapa
                     </h3>
                     <Layers className="h-4 w-4 text-zinc-400" />
                   </div>
@@ -1201,6 +1221,29 @@ function MapaPageContent() {
                         </div>
                       );
                     })}
+                    <div className="border-t border-zinc-100 pt-2 dark:border-zinc-800">
+                      <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm font-medium">
+                        Subregionais
+                        <input
+                          type="checkbox"
+                          checked={showSubregionais}
+                          disabled={!subregionais}
+                          onChange={(event) => setShowSubregionais(event.target.checked)}
+                        />
+                      </label>
+                      {subregionaisFailed ? (
+                        <p className="px-3 text-xs text-red-600">Não foi possível carregar as subregionais.</p>
+                      ) : (
+                        <div className="flex gap-3 px-3 text-xs">
+                          {SUBREGIONAIS_MAPA.map(({ abbrev, label }) => (
+                            <span key={abbrev} title={label} className="flex items-center gap-1">
+                              <span className="size-2 rounded-full" style={{ background: SUBREGIONAL_MAP_COLORS[abbrev] }} />
+                              {abbrev}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </PopoverContent>
               </Popover>
@@ -1616,6 +1659,7 @@ function MapaPageContent() {
       <Dialog
         open={addPvOpen}
         onOpenChange={(open) => {
+          if (pvSaving) return;
           setAddPvOpen(open);
           if (!open) resetPvModal();
         }}
@@ -1623,28 +1667,38 @@ function MapaPageContent() {
         <DialogContent className="max-h-[min(920px,92dvh)] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
-              {editingFirestoreDocId || editingSourceCodigo
+              {editingSourceCodigo
                 ? "Editar ponto viciado"
                 : "Novo ponto viciado"}
             </DialogTitle>
-            <DialogDescription>
-              {editingFirestoreDocId || editingSourceCodigo
+            <DialogDescription className={editingSourceCodigo ? undefined : "sr-only"}>
+              {editingSourceCodigo
                 ? "Altere o cadastro. Complemento, tipo de via, topografia e entorno ficam em Configurações avançadas."
-                : `Passo ${pvStep + 1} de 4. O lote deste ponto é o Lote 3.`}
+                : "Cadastro de ponto viciado"}
             </DialogDescription>
           </DialogHeader>
           {pvStep === 0 ? (
           <div className="grid gap-3 py-2">
             <div className="space-y-1.5">
-              <Label htmlFor="pv-codigo">Código *</Label>
+              <Label htmlFor="pv-codigo">ID do ponto</Label>
               <Input
                 id="pv-codigo"
-                value={addPvCodigo}
-                onChange={(e) => setAddPvCodigo(e.target.value)}
-                placeholder="ex.: CV-200"
-                autoComplete="off"
-                disabled={pvSaving}
+                value={editingSourceCodigo ?? currentPreview?.codigo ?? ""}
+                placeholder={currentPreview?.error ? "ID indisponível" : "Consultando…"}
+                className="border-[var(--gradient-start)] bg-zinc-50 font-mono text-lg font-semibold dark:bg-zinc-900"
+                readOnly
               />
+              {currentPreview?.error && (
+                <div className="flex items-center justify-between gap-2">
+                  <p role="alert" className="text-xs text-red-600 dark:text-red-400">{currentPreview.error}</p>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => {
+                    setPvPreview(null);
+                    setPreviewAttempt((attempt) => attempt + 1);
+                  }}>
+                    Tentar novamente
+                  </Button>
+                </div>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="pv-endereco">Endereço *</Label>
@@ -1673,6 +1727,11 @@ function MapaPageContent() {
                         {addPvGeocodedLocation}
                       </p>
                     ) : null}
+                    {currentPreview?.subregional && (
+                      <p className="text-sm font-medium text-zinc-800 dark:text-zinc-100">
+                        {currentPreview.subregional}
+                      </p>
+                    )}
                     {pvPreviousPosition ? (
                       <p className="text-sm text-red-600 line-through decoration-red-500/80 dark:text-red-400">
                         {pvPreviousPosition[0].toFixed(6)},{" "}
@@ -1711,27 +1770,29 @@ function MapaPageContent() {
                 A posição deve vir do toque no mapa ao criar o ponto.
               </p>
             )}
-            <SubregionalSelectField
-              id="pv-subregional"
-              value={addPvSubregionalId}
-              onChange={(v) => {
-                setAddPvSubregionalId(v);
-                setPvSubregionalErro(false);
-              }}
-              error={pvSubregionalErro}
-              disabled={pvSaving}
-              excludeIds={["interno"]}
-              hideFooterText
-              showAbbrevPrefix
-              labelSuffix={
-                <>
-                  {" "}
-                  <span className="text-red-600">*</span>
-                </>
-              }
-              className="space-y-1.5 sm:col-span-1"
-            />
-            {(editingFirestoreDocId || editingSourceCodigo) && (
+            {editingSourceCodigo && (
+              <SubregionalSelectField
+                id="pv-subregional"
+                value={addPvSubregionalId}
+                onChange={(v) => {
+                  setAddPvSubregionalId(v);
+                  setPvSubregionalErro(false);
+                }}
+                error={pvSubregionalErro}
+                disabled={pvSaving}
+                excludeIds={["interno"]}
+                hideFooterText
+                showAbbrevPrefix
+                labelSuffix={
+                  <>
+                    {" "}
+                    <span className="text-red-600">*</span>
+                  </>
+                }
+                className="space-y-1.5 sm:col-span-1"
+              />
+            )}
+            {editingSourceCodigo && (
               <details className="rounded-xl border border-zinc-200 p-3 dark:border-zinc-700">
                 <summary className="cursor-pointer text-sm font-semibold">Configurações avançadas</summary>
                 <p className="mb-3 mt-2 text-xs text-zinc-500">Complemento, tipo de logradouro, topografia e entorno de até 15 m. O preenchimento de campo não pede estes dados.</p>
@@ -1745,7 +1806,7 @@ function MapaPageContent() {
             </div>
           )}
           <DialogFooter>
-            {pvStep > 0 && !(editingFirestoreDocId || editingSourceCodigo) && (
+            {pvStep > 0 && !editingSourceCodigo && (
               <Button type="button" variant="outline" disabled={pvSaving} onClick={() => setPvStep((step) => step - 1)}>
                 Voltar
               </Button>
@@ -1763,19 +1824,12 @@ function MapaPageContent() {
             </Button>
             <Button
               type="button"
-              disabled={pvSaving || reverseGeoLoading}
+              disabled={pvSaving || reverseGeoLoading || pvGeoUpdating || (!editingSourceCodigo && !currentPreview?.codigo)}
               onClick={() => {
                 if (pvStep === 0) {
                   if (!addPvEndereco.trim()) { toast.error("Indique o endereço."); return; }
                   if (!addPvPosition) { toast.error("Defina a posição."); return; }
-                  const finalCodigo = normalizePontoViciadoCodigo(addPvCodigo);
-                  if (!finalCodigo) { toast.error("Indique o código do ponto."); return; }
-                  if (pontoViciadoCodigoEmUsoNoMapa(finalCodigo, customPontoEntries.map((entry) => ({ firestoreDocId: entry.firestoreDocId, pointId: entry.point?.id ?? null, ocultoCodigo: entry.ocultoCodigo ?? null })), { firestoreDocId: editingFirestoreDocId, sourceCodigo: editingSourceCodigo })) {
-                    toast.error(MSG_PONTO_VICIADO_CODIGO_EM_USO);
-                    return;
-                  }
-                  if (!addPvSubregionalId) { toast.error("Selecione a subregional."); setPvSubregionalErro(true); return; }
-                  if (editingFirestoreDocId || editingSourceCodigo) { void savePontoFirebase(); return; }
+                  if (editingSourceCodigo) { void savePontoFirebase(); return; }
                   setPvStep(1);
                   return;
                 }
@@ -1787,7 +1841,7 @@ function MapaPageContent() {
             >
               {pvSaving ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (editingFirestoreDocId || editingSourceCodigo) || pvStep >= 3 ? (
+              ) : editingSourceCodigo || pvStep >= 3 ? (
                 "Guardar"
               ) : (
                 "Continuar"

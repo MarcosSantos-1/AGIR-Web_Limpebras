@@ -71,3 +71,35 @@ export function pontoViciadoCodigoEmUsoNoMapa(
     editing,
   );
 }
+
+/** Reutiliza códigos excluídos antes de avançar além da maior numeração conhecida. */
+export function nextPontoViciadoCodigo(
+  prefix: string,
+  activeCodes: ReadonlySet<string>,
+  deletedCodes: ReadonlySet<string>,
+): string {
+  const numbers = new Set<number>();
+  let max = 0;
+  let reusable: { code: string; number: number } | undefined;
+
+  for (const code of activeCodes) {
+    const [sigla, suffix, extra] = code.split("-");
+    if (sigla !== prefix || extra !== undefined || !/^\d+$/.test(suffix)) continue;
+    const number = Number(suffix);
+    if (!Number.isSafeInteger(number)) continue;
+    numbers.add(number);
+    max = Math.max(max, number);
+  }
+
+  for (const code of deletedCodes) {
+    const [sigla, suffix, extra] = code.split("-");
+    if (sigla !== prefix || extra !== undefined || !/^\d+$/.test(suffix)) continue;
+    const number = Number(suffix);
+    if (!Number.isSafeInteger(number)) continue;
+    max = Math.max(max, number);
+    if (!numbers.has(number) && (!reusable || number < reusable.number)) {
+      reusable = { code, number };
+    }
+  }
+  return reusable?.code ?? `${prefix}-${String(max + 1).padStart(3, "0")}`;
+}

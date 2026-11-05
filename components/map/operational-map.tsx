@@ -6,13 +6,16 @@ import {
   TileLayer,
   LayerGroup,
   Marker,
+  Pane,
   Polygon,
+  Tooltip,
   useMap,
   useMapEvents,
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { MapPolygon } from "@/lib/map-features";
+import { SUBREGIONAL_MAP_COLORS, type SubregionaisGeoJson } from "@/lib/map/subregionais";
 import { cn } from "@/lib/utils";
 
 export type OperationalMapPoint = {
@@ -121,6 +124,7 @@ export type OperationalMapFlyTo = {
 type OperationalMapProps = {
   points: OperationalMapPoint[];
   polygons: MapPolygon[];
+  subregionais?: SubregionaisGeoJson | null;
   selectedId: string | null;
   onSelectId: (id: string) => void;
   /** Pin que pulsa depois de uma busca (ex.: ponto viciado escolhido). */
@@ -191,6 +195,7 @@ function FlyToSearchResult({
 export function OperationalMap({
   points,
   polygons,
+  subregionais,
   selectedId,
   onSelectId,
   pulseId = null,
@@ -242,6 +247,26 @@ export function OperationalMap({
           maxNativeZoom={19}
         />
       )}
+
+      <Pane name="subregionais" style={{ zIndex: 350, pointerEvents: "none" }}>
+        {subregionais?.features.map(({ properties, geometry }) => {
+          const sigla = properties.sg_subprefeitura;
+          const color = SUBREGIONAL_MAP_COLORS[sigla];
+          return (
+            <Polygon
+              key={sigla}
+              positions={geometry.coordinates.map((ring) => ring.map(([lng, lat]): L.LatLngTuple => [lat, lng]))}
+              pathOptions={{ color, weight: 2, fillOpacity: 0.24, interactive: false }}
+            >
+              <Tooltip permanent direction="center" pane="subregionais">
+                <strong style={{ color: sigla === "JT" ? "white" : "#18181b", backgroundColor: color, padding: "2px 5px" }}>
+                  {sigla}
+                </strong>
+              </Tooltip>
+            </Polygon>
+          );
+        })}
+      </Pane>
 
       {polygons.map((poly) => {
         const isSel = selectedId === poly.id;

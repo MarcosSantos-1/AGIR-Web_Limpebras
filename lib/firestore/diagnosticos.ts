@@ -27,7 +27,7 @@ export async function saveDiagnostic(record: Diagnostic, responsibleName: string
   const { latitude, longitude } = record.answers;
   if (!record.source && !catalogueCodes.has(record.pointId) && typeof latitude === "number" && typeof longitude === "number" && Number.isFinite(latitude) && Number.isFinite(longitude)) {
     const existing = await getDocs(query(collection(db, "customPontosViciados"), where("codigo", "==", record.pointId)));
-    if (existing.empty) newPointRef = doc(db, "customPontosViciados", `diagnostico-${record.pointId}`);
+    if (existing.empty) newPointRef = doc(db, "customPontosViciados", record.pointId);
   }
   await runTransaction(db, async (tx) => {
     const snapshot = await tx.get(ref);

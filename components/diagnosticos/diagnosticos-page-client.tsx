@@ -114,10 +114,10 @@ function LevantamentosPanel() {
         const point = allPoints.find((entry) => entry.id === item.codigo);
         const base = existing ?? (point ? pointDiagnostic(point, survey, originals.get(item.codigo), fichas.get(item.codigo)) : null);
         if (!base || !String(base.answers.endereco ?? item.answers.endereco ?? "").trim()) { failures.push(item.codigo); continue; }
-        const answers = { ...base.answers, ...item.answers, codigo: item.codigo, lote: "Lote 3" };
+        const answers: Diagnostic["answers"] = { ...base.answers, ...item.answers, codigo: item.codigo, lote: "Lote 3" };
         if (!answers.endereco) answers.endereco = String(base.answers.endereco);
         if (!answers.dataChecagem) answers.dataChecagem = localToday();
-        const next = { ...base, id: existing?.id ?? `${survey.id}-${item.codigo}`, pointId: item.codigo, period: survey.period, kind: "trimestral" as const, sourceId: survey.id, answers, state: "rascunho" as const };
+        const next: Diagnostic = { ...base, id: existing?.id ?? `${survey.id}-${item.codigo}`, pointId: item.codigo, period: survey.period, kind: "trimestral", sourceId: survey.id, answers, state: "rascunho" };
         if (existing?.state === "concluido" && !Object.keys(diagnosticErrors({ ...next, state: "concluido" }, true)).length) next.state = "concluido";
         try { await saveDiagnostic(next, user?.email || "Importação da planilha"); saved += 1; }
         catch { failures.push(item.codigo); }

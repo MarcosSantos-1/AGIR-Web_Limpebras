@@ -63,9 +63,8 @@ import { EquipeIntegrantesField } from "@/components/acao/equipe-integrantes-fie
 import { LinksPostagemEditor } from "@/components/acao-registro/post-links";
 import { integrantesFromAgendaEvent } from "@/lib/agenda/equipe-parsing";
 import { useCustomPontosViciados } from "@/contexts/custom-pontos-viciados-context";
-import { savePontoFicha } from "@/lib/firestore/ponto-fichas";
+import { mutatePontoViciado } from "@/lib/ponto-viciado-mutation";
 import { emptyFichaDraft, FICHA_PARTS, fichaErrors, fichaPartError, type PontoFichaDraft } from "@/lib/ponto-ficha";
-import { pontoViciadoCodigoEmUsoNoMapa, normalizePontoViciadoCodigo } from "@/lib/ponto-viciado-codigo";
 import { useAuth } from "@/contexts/auth-context";
 import { useUserProfile } from "@/contexts/user-profile-context";
 import type { HistoryRecordDoc } from "@/data/history-records";
@@ -1447,8 +1446,7 @@ function RevitalizacaoDialog({
   /** Pré-seleção ao abrir em modo "nova" (ex.: sidebar do mapa). */
   preferredPontoViciadoId?: string;
 }) {
-  const { pontosVicioFormOptions, customPontoEntries, addPontoViciado } =
-    useCustomPontosViciados();
+  const { pontosVicioFormOptions } = useCustomPontosViciados();
   const [situacaoRev, setSituacaoRev] = React.useState<
     "agendar" | "finalizado"
   >("agendar");
@@ -1460,11 +1458,8 @@ function RevitalizacaoDialog({
   const { profile } = useUserProfile();
 
   const [addingNewPonto, setAddingNewPonto] = React.useState(false);
-  const [newPontoCodigo, setNewPontoCodigo] = React.useState("");
+  const newPontoRequestId = React.useRef<string | null>(null);
   const [newPontoAddress, setNewPontoAddress] = React.useState("");
-  const [newPontoSubregionalId, setNewPontoSubregionalId] = React.useState<
-    SubregionalId | ""
-  >("");
   const [newPontoLat, setNewPontoLat] = React.useState<number | null>(null);
   const [newPontoLng, setNewPontoLng] = React.useState<number | null>(null);
   const [newPontoSaving, setNewPontoSaving] = React.useState(false);
@@ -1479,9 +1474,8 @@ function RevitalizacaoDialog({
 
   const resetNewPontoForm = React.useCallback(() => {
     setAddingNewPonto(false);
-    setNewPontoCodigo("");
+    newPontoRequestId.current = null;
     setNewPontoAddress("");
-    setNewPontoSubregionalId("");
     setNewPontoLat(null);
     setNewPontoLng(null);
     setNewPontoError(null);
@@ -1556,28 +1550,6 @@ function RevitalizacaoDialog({
 
   const handleSaveNewPonto = React.useCallback(async () => {
     setNewPontoError(null);
-    const codigo = newPontoCodigo.trim();
-    if (!codigo) {
-      setNewPontoError("Informe o código do ponto.");
-      return;
-    }
-    if (
-      pontoViciadoCodigoEmUsoNoMapa(
-        codigo,
-        customPontoEntries.map((entry) => ({
-          firestoreDocId: entry.firestoreDocId,
-          pointId: entry.point?.id ?? null,
-          ocultoCodigo: entry.ocultoCodigo ?? null,
-        })),
-      )
-    ) {
-      setNewPontoError("Já existe um ponto com este código.");
-      return;
-    }
-    if (!newPontoSubregionalId) {
-      setNewPontoError("Selecione a subprefeitura.");
-      return;
-    }
     const enderecoNome = newPontoAddress.trim();
     if (!enderecoNome) {
       setNewPontoError(
@@ -1596,15 +1568,14 @@ function RevitalizacaoDialog({
     }
     setNewPontoSaving(true);
     try {
-      await addPontoViciado({
-        codigo,
+      const codigo = await mutatePontoViciado({
+        action: "create",
+        requestId: (newPontoRequestId.current ??= crypto.randomUUID()),
         address: enderecoNome,
-        subprefeitura: subregionalMeta(newPontoSubregionalId).label,
         lat: newPontoLat,
         lng: newPontoLng,
-        createdByUid: user?.uid,
+        ficha: newPontoFicha,
       });
-      await savePontoFicha(normalizePontoViciadoCodigo(codigo), newPontoFicha);
       setPontoViciadoId(codigo);
       resetNewPontoForm();
     } catch (err) {
@@ -1615,27 +1586,16 @@ function RevitalizacaoDialog({
       setNewPontoSaving(false);
     }
   }, [
-    newPontoCodigo,
     newPontoAddress,
-    newPontoSubregionalId,
     newPontoLat,
     newPontoLng,
     newPontoFicha,
-    customPontoEntries,
-    addPontoViciado,
-    user,
     resetNewPontoForm,
   ]);
 
   const advanceNewPonto = React.useCallback(() => {
     setNewPontoError(null);
     if (newPontoStep === 0) {
-      if (!newPontoCodigo.trim()) { setNewPontoError("Informe o código do ponto."); return; }
-      if (pontoViciadoCodigoEmUsoNoMapa(newPontoCodigo, customPontoEntries.map((entry) => ({ firestoreDocId: entry.firestoreDocId, pointId: entry.point?.id ?? null, ocultoCodigo: entry.ocultoCodigo ?? null })))) {
-        setNewPontoError("Já existe um ponto com este código.");
-        return;
-      }
-      if (!newPontoSubregionalId) { setNewPontoError("Selecione a subprefeitura."); return; }
       if (!newPontoAddress.trim()) { setNewPontoError("Informe o endereço (nome do local, cruzamento ou referência)."); return; }
       if (newPontoLat == null || newPontoLng == null) { setNewPontoError("Busque ou clique no mapa para definir a localização."); return; }
       setNewPontoStep(1);
@@ -1645,7 +1605,7 @@ function RevitalizacaoDialog({
     if (problem) { setNewPontoError(problem); return; }
     if (newPontoStep < 3) { setNewPontoStep(newPontoStep + 1); return; }
     void handleSaveNewPonto();
-  }, [newPontoStep, newPontoCodigo, newPontoAddress, newPontoSubregionalId, newPontoLat, newPontoLng, newPontoFicha, customPontoEntries, handleSaveNewPonto]);
+  }, [newPontoStep, newPontoAddress, newPontoLat, newPontoLng, newPontoFicha, handleSaveNewPonto]);
   const [revFotoUrls, setRevFotoUrls] = React.useState<string[]>([]);
   const [linksPostagemText, setLinksPostagemText] = React.useState("");
   const [panfletagemRealizada, setPanfletagemRealizada] = React.useState(false);
@@ -2199,6 +2159,7 @@ function RevitalizacaoDialog({
                         variant="ghost"
                         size="sm"
                         className="h-7 text-xs text-zinc-500 dark:text-zinc-400"
+                        disabled={newPontoSaving}
                         onClick={resetNewPontoForm}
                       >
                         Cancelar
@@ -2210,36 +2171,9 @@ function RevitalizacaoDialog({
                       </p>
                     )}
                     {newPontoStep === 0 ? (<>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="space-y-1.5">
-                        <Label className="text-xs text-zinc-600 dark:text-zinc-400">
-                          Código <RequiredStar />
-                        </Label>
-                        <Input
-                          className="h-9 border-zinc-200 text-sm dark:border-zinc-700"
-                          placeholder="Ex.: CV-001"
-                          value={newPontoCodigo}
-                          onChange={(e) => setNewPontoCodigo(e.target.value)}
-                        />
-                      </div>
-                      <SubregionalSelectField
-                        id="new-ponto-subprefeitura"
-                        label="Subprefeitura"
-                        value={newPontoSubregionalId}
-                        onChange={setNewPontoSubregionalId}
-                        disabled={newPontoSaving}
-                        excludeIds={["interno"]}
-                        hideFooterText
-                        showAbbrevPrefix
-                        labelSuffix={
-                          <>
-                            {" "}
-                            <RequiredStar />
-                          </>
-                        }
-                        className="space-y-1.5 sm:col-span-1 [&_label]:text-xs"
-                      />
-                    </div>
+                    <p className="text-xs text-zinc-600 dark:text-zinc-300">
+                      A localização define a subregional e o código é atribuído ao salvar.
+                    </p>
                     <div className="space-y-1.5">
                       <Label className="text-xs text-zinc-600 dark:text-zinc-400">
                         Endereço <RequiredStar />
