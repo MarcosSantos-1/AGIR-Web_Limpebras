@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Image, Pressable, Text, TextInput, View } from "react-native";
+import { Image, Text, TextInput, View } from "react-native";
+import { FeedbackPressable as Pressable } from "./feedback-pressable";
 import type { FieldPoint } from "@/features/format";
 
 const STATE_COLOR = { concluido: "#16a34a", pendente: "#eab308", inativo: "#71717a" } as const;

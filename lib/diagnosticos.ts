@@ -1,5 +1,5 @@
 import metadata from "@/data/diagnosticos/fields.json";
-import { VISTORIA_REVIEW_KEYS } from "@/lib/vistoria-keys";
+import { VISTORIA_REVIEW_KEYS, VISTORIA_YES_NO_KEYS } from "@/lib/vistoria-keys";
 
 export const DIAGNOSTICOS_COLLECTION = "diagnosticos";
 export const QUESTIONNAIRE_VERSION = "2026-T3-rev-20261019";
@@ -34,6 +34,29 @@ export type DiagnosticField = {
 };
 export const FIELDS = metadata as DiagnosticField[];
 
+const INACTIVE_STATUS = "Permaneceu “inativo”, não recebeu descarte irregular de resíduos.";
+const INACTIVE_ANSWER = "Não se aplica (inativo).";
+const INACTIVE_VEHICLES = "Não se aplica (inativo; e/ou beco, escadaria, passagem e/ou viela não trafegável por automóveis, caminhões e/ou motocicletas; e/ou outros).";
+export const INACTIVE_AUTOMATIC_KEYS = new Set<string>([
+  "revitalizacao", "coleta", "limpezas", "volume", ...VISTORIA_YES_NO_KEYS,
+  "riscoErosao", "impactoPedestres", "impactoVeiculos",
+]);
+
+export function pointIsInactive(record: Pick<Diagnostic, "answers">) {
+  return String(record.answers.statusTrimestral ?? "").toLowerCase().includes("inativo");
+}
+
+export function withInactiveAnswers(record: Diagnostic): Diagnostic {
+  if (!pointIsInactive(record)) return record;
+  const answers: Diagnostic["answers"] = { ...record.answers, statusTrimestral: INACTIVE_STATUS };
+  for (const key of INACTIVE_AUTOMATIC_KEYS) answers[key] = INACTIVE_ANSWER;
+  answers.impactoVeiculos = INACTIVE_VEHICLES;
+  answers.limpezas = 0;
+  delete answers.vistoriaErosao;
+  delete answers.vistoriaDanosVia;
+  return { ...record, answers, observedStatus: "sem-residuos" };
+}
+
 export function fieldVersion(field: DiagnosticField, version: string) {
   return field.versions[version] ?? field.versions[QUESTIONNAIRE_VERSION];
 }
@@ -62,7 +85,7 @@ export function diagnosticErrors(record: Diagnostic, complete = false, original?
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date)) || new Date(`${date}T12:00:00Z`).toISOString().slice(0, 10) !== date) errors.dataChecagem = "Informe uma data válida.";
   if (!/^\d{4}-T[1-4]$/.test(record.period)) errors.period = "Use uma competência como 2026-T3.";
   if (record.kind === "trimestral" && !errors.dataChecagem && periodForDate(date) !== record.period) errors.period = "A checagem deve pertencer ao trimestre informado.";
-  const inactive = String(a.statusTrimestral ?? "").toLowerCase().includes("inativo");
+  const inactive = pointIsInactive(record);
   for (const field of FIELDS) {
     const value = a[field.key];
     const missing = value === undefined || value === "";

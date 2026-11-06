@@ -4,15 +4,17 @@ import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import * as Network from "expo-network";
 import { Button, Input } from "heroui-native";
-import { useEffect, useMemo, useState } from "react";
-import { Image, Pressable, ScrollView, Text, View } from "react-native";
+import { useEffect, useMemo, useRef, useState, type ComponentRef } from "react";
+import { ActivityIndicator, Image, ScrollView, Text, View } from "react-native";
+import { FeedbackPressable as Pressable } from "./feedback-pressable";
+import { AnimatedSection } from "./animated-section";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { localToday, diagnosticErrors, type Diagnostic } from "../../../lib/diagnosticos";
 import { saveDiagnostic } from "../../../lib/firestore/diagnosticos";
 import { savePontoFicha } from "../../../lib/firestore/ponto-fichas";
 import { OPERACAO_LEVANTAMENTO_NOTA } from "../../../lib/levantamentos";
 import { fichaDraftFromAnswers } from "../../../lib/ponto-ficha";
-import { CONDICOES, ORIGENS, PROXIMIDADES, RESIDUOS, activityChoices, applyQuarterlyAutomation, impactChoices, isMarked, materializeVistoria, pointIsInactive, volumeChoices, withAutomaticContext, type VistoriaCheck } from "../../../lib/vistoria-form";
+import { CONDICOES, ORIGENS, PROXIMIDADES, RESIDUOS, activityChoices, applyQuarterlyAutomation, impactChoices, isMarked, materializeVistoria, pointIsInactive, setVistoriaActivity, volumeChoices, withAutomaticContext, type VistoriaCheck } from "../../../lib/vistoria-form";
 import { CheckCard, ChoiceButton } from "@/components/choice-button";
 import { PhotoLightbox } from "@/components/photo-lightbox";
 import { PointMiniMap } from "@/components/point-mini-map";
@@ -48,7 +50,7 @@ const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 };
 
 const STEPS: { id: "identificacao" | "residuos" | "origens" | "condicoes" | "impactos" | "proximidades" | "revisao"; title: string; help: string }[] = [
-  { id: "identificacao", title: "Identificação do ponto", help: "O endereço, as coordenadas e a sub-regional já ficam salvos. A data da checagem é o dia em que você conclui este formulário, com a foto." },
+  { id: "identificacao", title: "Identificação do ponto", help: "O endereço, as coordenadas e a sub-regional já ficam salvos. A data da checagem é o dia em que você conclui este formulário." },
   { id: "residuos", title: "1. Tipos de resíduos sólidos presentes", help: "Marque só o que encontrou. Se não houver nenhum destes, pode seguir sem marcar." },
   { id: "origens", title: "2. Possível origem do descarte", help: "Uma leitura do que parece ter gerado o material. Não precisa ter certeza absoluta." },
   { id: "condicoes", title: "3. Condições observadas no ponto", help: "Olhe o ponto e o chão ao redor. Marque o que estiver presente. A caçamba da Loga também: marcado é sim, sem marcar é não." },
@@ -67,7 +69,11 @@ async function compressPhoto(uri: string) {
   return saved.uri;
 }
 
-export function VistoriaWizard({ initial, onClose, onSaved }: { initial: Diagnostic; onClose: () => void; onSaved: () => void }) {
+export function VistoriaWizard({ initial: suppliedInitial, onClose, onSaved }: { initial: Diagnostic; onClose: () => void; onSaved: () => void }) {
+  // Keep the opening revision while editing; live cloud updates must not reset answers.
+  const [initial] = useState(() => suppliedInitial);
+  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
+  const savedRef = useRef(false);
   const insets = useSafeAreaInsets();
   const { user, responsible } = useAuth();
   const { automation } = useWorkspace();
@@ -76,11 +82,22 @@ export function VistoriaWizard({ initial, onClose, onSaved }: { initial: Diagnos
   const [ready, setReady] = useState(false);
   const [index, setIndex] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [busyLabel, setBusyLabel] = useState("");
   const [error, setError] = useState("");
   const [localError, setLocalError] = useState("");
-  const step = STEPS[index] ?? STEPS[0];
   const inactive = pointIsInactive(record);
+  const steps = inactive ? STEPS.filter(({ id }) => id === "identificacao" || id === "revisao") : STEPS;
+  const step = steps[index] ?? steps[0];
   const photoCount = pending.length + record.photos.length;
+  const latestDraft = useRef({ record, pending, ready, uid: user?.uid });
+
+  useEffect(() => { latestDraft.current = { record, pending, ready, uid: user?.uid }; }, [record, pending, ready, user]);
+  useEffect(() => () => {
+    const draft = latestDraft.current;
+    if (!draft.uid || !draft.ready || savedRef.current) return;
+    void writeDraft(draft.uid, draft.record).catch(() => undefined);
+    void writeDraftPhotos(draft.uid, draft.record.id, draft.pending).catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -97,6 +114,7 @@ export function VistoriaWizard({ initial, onClose, onSaved }: { initial: Diagnos
   useEffect(() => {
     if (!user || !ready) return;
     const timer = setTimeout(() => {
+      if (savedRef.current) return;
       writeDraft(user.uid, record).catch(() => setLocalError("Não consegui guardar o rascunho neste aparelho. Envie ao servidor antes de sair."));
       writeDraftPhotos(user.uid, record.id, pending).catch(() => setLocalError("Não consegui guardar as fotos neste aparelho. Mantenha esta tela aberta até enviar."));
     }, 300);
@@ -110,17 +128,13 @@ export function VistoriaWizard({ initial, onClose, onSaved }: { initial: Diagnos
   const regional = subOf(record.answers.subprefeitura);
   const revitalizacao = useMemo(() => String(applyQuarterlyAutomation(withAutomaticContext({ ...record, answers: { ...record.answers, dataChecagem: localToday() } }), automation).answers.revitalizacao ?? ""), [automation, record]);
 
-  function go(next: number) { setIndex(next); setError(""); }
+  function go(next: number) { scrollRef.current?.scrollTo({ y: 0, animated: false }); setIndex(next); setError(""); }
   function toggle(key: string) {
     setRecord((current) => ({ ...current, answers: { ...current.answers, [key]: isMarked(current.answers[key]) ? "" : "Sim." } }));
     setError("");
   }
   function setActive(value: string) {
-    setRecord((current) => {
-      const turningOff = value.toLowerCase().includes("inativo");
-      const volume = turningOff ? "" : String(current.answers.volume ?? "").startsWith("Não se aplica") ? "" : current.answers.volume;
-      return { ...current, observedStatus: turningOff ? "sem-residuos" : "com-residuos", answers: { ...current.answers, statusTrimestral: value, volume: volume ?? "", ...(turningOff ? { limpezas: 0 } : {}) } };
-    });
+    setRecord((current) => setVistoriaActivity(current, value));
     setError("");
   }
   async function addPhotos(fromCamera: boolean) {
@@ -132,6 +146,7 @@ export function VistoriaWizard({ initial, onClose, onSaved }: { initial: Diagnos
     if (result.canceled) return;
     if (result.assets.length + pending.length + record.photos.length > 12) { setError("Dá para anexar até 12 fotos."); return; }
     setBusy(true);
+    setBusyLabel("Preparando fotos…");
     try {
       const next: PendingPhoto[] = [];
       for (const asset of result.assets) {
@@ -147,12 +162,12 @@ export function VistoriaWizard({ initial, onClose, onSaved }: { initial: Diagnos
     finally { setBusy(false); }
   }
   function stepIssue(at: number) {
-    const id = STEPS[at]?.id;
+    const id = steps[at]?.id;
     if (id === "identificacao") {
       if (!/^[A-Z]{1,3}-\d+$/.test(String(record.answers.codigo ?? ""))) return "Informe o código do ponto, como CV-001.";
       if (!String(record.answers.endereco ?? "").trim()) return "Falta o endereço deste ponto.";
       if (!hasCoordinates(record)) return "Este ponto ainda não tem coordenadas no cadastro.";
-      if (photoCount < 1) return "Tire a foto de hoje do ponto para continuar.";
+      if (!inactive && photoCount < 1) return "Tire a foto de hoje do ponto para continuar.";
       if (!String(record.answers.statusTrimestral ?? "").trim()) return "Me conta se o ponto está ativo.";
       if (!inactive && !volumeChoices(record.questionnaireVersion).some((choice) => choice.value === record.answers.volume)) return "Escolha a volumetria que você está vendo.";
     }
@@ -162,7 +177,7 @@ export function VistoriaWizard({ initial, onClose, onSaved }: { initial: Diagnos
   }
   async function save(complete: boolean) {
     if (complete) {
-      for (let at = 0; at < STEPS.length; at += 1) {
+      for (let at = 0; at < steps.length; at += 1) {
         const problem = stepIssue(at);
         if (problem) { go(at); setError(problem); return; }
       }
@@ -177,13 +192,16 @@ export function VistoriaWizard({ initial, onClose, onSaved }: { initial: Diagnos
     const problems = diagnosticErrors(next, complete, initial.source ? initial : undefined);
     if (Object.keys(problems).length) { setError(Object.values(problems)[0] ?? "Revise os campos."); return; }
     setBusy(true);
+    setBusyLabel("Salvando registro…");
     setError("");
     try {
       for (const photo of pending) {
+        setBusyLabel(`Enviando foto ${pending.indexOf(photo) + 1} de ${pending.length}…`);
         const path = `diagnosticos/${record.id}/${photo.id}.jpg`;
         const url = await uploadDiagnosticPhoto(path, photo.uri, photo.mime);
         next = { ...next, photos: [...next.photos, { id: photo.id, key: path, url, caption: "" }] };
       }
+      setBusyLabel("Salvando registro…");
       await saveDiagnostic(next, responsible);
       if (complete && next.kind === "trimestral") {
         try { await savePontoFicha(String(next.answers.codigo ?? next.pointId), fichaDraftFromAnswers(next.answers)); }
@@ -191,6 +209,7 @@ export function VistoriaWizard({ initial, onClose, onSaved }: { initial: Diagnos
       }
       const removed = initial.photos.filter((photo) => !next.photos.some((item) => item.id === photo.id));
       if (removed.length) await deleteStoredFilesByPublicUrls(removed.map((photo) => photo.url)).catch(() => setLocalError("Registro salvo. Algumas fotos removidas ainda aguardam limpeza."));
+      savedRef.current = true;
       if (user) await clearDraft(user.uid, record.id).catch(() => undefined);
       onSaved();
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Falha no envio. Suas respostas foram mantidas."); }
@@ -207,14 +226,15 @@ export function VistoriaWizard({ initial, onClose, onSaved }: { initial: Diagnos
           <Text className="text-base font-semibold text-foreground" numberOfLines={1}>{record.pointId || "Vistoria"}</Text>
           <Text className="text-xs text-muted" numberOfLines={1}>{String(record.answers.endereco || "Vamos registrar este ponto")}</Text>
         </View>
-        <Text accessibilityLabel={`Passo ${index + 1} de ${STEPS.length}`} className="text-xs font-semibold text-accent">{index + 1}/{STEPS.length}</Text>
+        <Text accessibilityLabel={`Passo ${index + 1} de ${steps.length}`} className="text-xs font-semibold text-accent">{index + 1}/{steps.length}</Text>
       </View>
-      <View accessibilityRole="progressbar" accessibilityValue={{ min: 1, max: STEPS.length, now: index + 1 }} className="h-1 bg-accent-soft">
-        <View className="h-full bg-accent" style={{ width: `${((index + 1) / STEPS.length) * 100}%` }} />
+      <View accessibilityRole="progressbar" accessibilityValue={{ min: 1, max: steps.length, now: index + 1 }} className="h-1 bg-accent-soft">
+        <View className="h-full bg-accent" style={{ width: `${((index + 1) / steps.length) * 100}%` }} />
       </View>
-      <ScrollView contentContainerClassName="px-5 py-6 pb-12" keyboardShouldPersistTaps="handled">
+      <ScrollView ref={scrollRef} contentContainerClassName="px-5 py-6 pb-12" keyboardShouldPersistTaps="handled">
+        <AnimatedSection key={step.id}>
         {localError ? <Text accessibilityRole="alert" className="mb-4 rounded-2xl bg-warning/20 p-3 text-sm text-foreground">{localError}</Text> : null}
-        <Text className="text-xs font-semibold uppercase tracking-wider text-accent">Passo {index + 1} de {STEPS.length}</Text>
+        <Text className="text-xs font-semibold uppercase tracking-wider text-accent">Passo {index + 1} de {steps.length}</Text>
         <Text className="mt-2 text-2xl font-semibold leading-tight text-foreground">{step.title}</Text>
         <Text className="mt-2 text-sm leading-5 text-muted">{step.help}</Text>
         {step.id === "identificacao" && <Identification record={record} regional={regional} inactive={inactive} busy={busy} activities={activities} volumes={volumes} revitalizacao={revitalizacao} pending={pending} onCamera={() => void addPhotos(true)} onGallery={() => void addPhotos(false)} onActive={setActive} onVolume={(value) => { setRecord((current) => ({ ...current, answers: { ...current.answers, volume: value } })); setError(""); }} onRemovePending={(id) => setPending((items) => items.filter((item) => item.id !== id))} onRemoveSaved={(id) => setRecord((current) => ({ ...current, photos: current.photos.filter((item) => item.id !== id) }))} />}
@@ -227,12 +247,14 @@ export function VistoriaWizard({ initial, onClose, onSaved }: { initial: Diagnos
         </View>}
         {step.id === "proximidades" && <CheckGrid items={PROXIMIDADES} record={record} busy={busy} onToggle={toggle} />}
         {step.id === "revisao" && <Review record={record} regional={regional} responsible={responsible} busy={busy} onNotes={(notes) => setRecord((current) => ({ ...current, notes }))} onTerm={(checked) => { setRecord((current) => ({ ...current, answers: { ...current.answers, termoVistoria: checked ? "sim" : "" } })); setError(""); }} />}
+        </AnimatedSection>
       </ScrollView>
+      {busy ? <View accessibilityRole="progressbar" accessibilityLabel={busyLabel} className="flex-row items-center justify-center gap-3 bg-surface px-5 py-3"><ActivityIndicator color="#15803d" /><Text accessibilityLiveRegion="polite" className="text-sm text-muted">{busyLabel}</Text></View> : null}
       {error ? <Text accessibilityRole="alert" accessibilityLiveRegion="polite" className="border-t border-danger/30 bg-danger/10 px-5 py-3 text-sm text-danger">{error}</Text> : null}
-      <View style={{ paddingBottom: Math.max(insets.bottom, 12) }} className="flex-row gap-3 border-t border-border bg-surface px-5 pt-3">
+      <View style={{ paddingBottom: insets.bottom + 20 }} className="flex-row gap-3 border-t border-border bg-surface px-5 pt-3">
         <Button variant="secondary" className="min-h-12" isDisabled={busy || !ready} accessibilityLabel="Enviar rascunho" onPress={() => void save(false)}>Rascunho</Button>
-        <Button className="min-h-12 flex-1" isDisabled={busy || !ready} onPress={() => { if (index >= STEPS.length - 1) { void save(true); return; } const problem = stepIssue(index); if (problem) { setError(problem); return; } go(index + 1); }}>
-          {busy ? "Enviando…" : index >= STEPS.length - 1 ? "Concluir vistoria" : "Continuar"}
+        <Button className="min-h-12 flex-1" isDisabled={busy || !ready} onPress={() => { if (index >= steps.length - 1) { void save(true); return; } const problem = stepIssue(index); if (problem) { setError(problem); return; } go(index + 1); }}>
+          {busy ? "Enviando…" : index >= steps.length - 1 ? "Concluir vistoria" : "Continuar"}
         </Button>
       </View>
     </View>
@@ -282,7 +304,7 @@ function Identification(props: {
       </View>
       <View className="gap-3 rounded-3xl border border-dashed border-accent bg-surface p-4">
         <Text className="text-base font-semibold text-foreground">Foto atual do ponto</Text>
-        <Text className="text-sm text-muted">Obrigatória. Toque na foto para ampliar.</Text>
+        <Text className="text-sm text-muted">{inactive ? "Opcional para ponto inativo." : "Obrigatória. Toque na foto para ampliar."}</Text>
         <View className="flex-row gap-2">
           <Button className="min-h-12 flex-1" isDisabled={busy} accessibilityLabel="Tirar foto do ponto" onPress={props.onCamera}>Tirar foto</Button>
           <Button variant="secondary" className="min-h-12 flex-1" isDisabled={busy} accessibilityLabel="Escolher foto da galeria" onPress={props.onGallery}>Galeria</Button>
@@ -297,7 +319,7 @@ function Identification(props: {
         <Text className="text-base font-semibold text-foreground">O ponto está ativo?</Text>
         {activities.map((choice) => <ChoiceButton key={choice.id} letter={choice.id === "sim" ? "S" : "N"} label={choice.id === "sim" ? "Sim, está ativo" : "Não, está inativo"} selected={record.answers.statusTrimestral === choice.value} disabled={busy} onPress={() => props.onActive(choice.value)} />)}
       </View>
-      {inactive ? <Text className="rounded-2xl bg-default p-4 text-sm leading-5 text-muted">Ponto inativo: a volumetria fica como não se aplica. Se você vir resíduos, marque que o ponto está ativo.</Text> : <View accessibilityRole="radiogroup" className="gap-2">
+      {inactive ? <Text className="rounded-2xl bg-default p-4 text-sm leading-5 text-muted">Os campos sobre o descarte serão preenchidos automaticamente. Continue para as observações.</Text> : <View accessibilityRole="radiogroup" className="gap-2">
         <Text className="text-base font-semibold text-foreground">Volumetria do ponto</Text>
         {volumes.map((choice, choiceIndex) => <ChoiceButton key={choice.id} letter={LETTERS[choiceIndex] ?? "?"} label={choice.label} selected={record.answers.volume === choice.value} disabled={busy} onPress={() => props.onVolume(choice.value)} />)}
       </View>}
@@ -320,6 +342,7 @@ function PhotoTile({ uri, label, onOpen, onRemove, disabled }: { uri: string; la
 function Review({ record, regional, responsible, busy, onNotes, onTerm }: { record: Diagnostic; regional: ReturnType<typeof subOf>; responsible: string; busy: boolean; onNotes: (value: string) => void; onTerm: (checked: boolean) => void }) {
   const confirmed = record.answers.termoVistoria === "sim";
   const color = subColor(regional.id);
+  const inactive = pointIsInactive(record);
   const marked = [...RESIDUOS, ...ORIGENS, ...CONDICOES, ...PROXIMIDADES].filter((item) => isMarked(record.answers[item.key]));
   return (
     <View className="mt-6 gap-5">
@@ -333,12 +356,12 @@ function Review({ record, regional, responsible, busy, onNotes, onTerm }: { reco
         </View>
       </View>
       <Text style={{ fontFamily: "Geist_400Regular", fontSize: 14, color: "#52525b" }}>{String(record.answers.endereco ?? "")}</Text>
-      {marked.length ? <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+      {!inactive && (marked.length ? <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
         {marked.map((item) => <View key={item.key} style={{ flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 14, backgroundColor: "#ffffff", paddingHorizontal: 10, paddingVertical: 8 }}>
           <Ionicons name={ICONS[item.key] ?? "ellipse"} size={16} color="#15803d" />
           <Text style={{ fontFamily: "Geist_500Medium", fontSize: 12, color: "#18181b" }}>{item.label}</Text>
         </View>)}
-      </View> : <Text className="text-sm text-muted">Nenhum item marcado nas listas.</Text>}
+      </View> : <Text className="text-sm text-muted">Nenhum item marcado nas listas.</Text>)}
       <View style={{ gap: 8 }}>
         <Text className="text-sm font-medium text-foreground">Observações</Text>
         <Input accessibilityLabel="Observações" editable={!busy} multiline value={record.notes} onChangeText={onNotes} placeholder="Algo que a lista não cobriu? Escreva aqui." className="min-h-32" />

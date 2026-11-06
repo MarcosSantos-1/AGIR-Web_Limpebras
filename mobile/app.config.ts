@@ -22,6 +22,14 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     plugins: [
       ...(config.plugins ?? []),
+      // WorkManager/Room crashes during native startup with R8 in the current SDK.
+      // Keep release builds unoptimized until the Android dependency issue is resolved.
+      ["expo-build-properties", {
+        android: {
+          enableMinifyInReleaseBuilds: false,
+          enableShrinkResourcesInReleaseBuilds: false,
+        },
+      }],
       ...(mapsKey ? [["react-native-maps", { iosGoogleMapsApiKey: mapsKey, androidGoogleMapsApiKey: mapsKey }] as [string, { iosGoogleMapsApiKey: string; androidGoogleMapsApiKey: string }]] : []),
     ],
   };

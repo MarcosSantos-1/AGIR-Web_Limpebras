@@ -1,4 +1,4 @@
-import { FIELDS, fieldVersion, type Diagnostic } from "@/lib/diagnosticos";
+import { FIELDS, fieldVersion, withInactiveAnswers, type Diagnostic } from "@/lib/diagnosticos";
 import { orderedExportRows } from "@/lib/levantamentos";
 
 export async function buildLevantamentoWorkbook(records: Diagnostic[], version: string) {
@@ -20,7 +20,7 @@ export async function buildLevantamentoWorkbook(records: Diagnostic[], version: 
   header.height = 320;
   header.eachCell((cell) => { cell.font = { bold: true, size: 10 }; cell.alignment = { wrapText: true, vertical: "top" }; cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE2E8F0" } }; });
   for (const record of orderedExportRows(records)) {
-    const answers: Diagnostic["answers"] = { ...record.answers, lote: "Lote 3" };
+    const answers: Diagnostic["answers"] = { ...withInactiveAnswers(record).answers, lote: "Lote 3" };
     const row = sheet.addRow(FIELDS.map((field) => answers[field.key] ?? null));
     row.height = 36;
     row.alignment = { wrapText: true, vertical: "middle" };

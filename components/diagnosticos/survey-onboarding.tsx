@@ -20,7 +20,7 @@ import { compressImageFileIfNeeded } from "@/lib/image-compress";
 import { extensionForMime, uploadFileToPath } from "@/lib/storage/upload-helpers";
 import { deleteStoredFilesByPublicUrls } from "@/lib/storage/delete-stored-files";
 import { readDraftPhotos, writeDraftPhotos, type PendingDiagnosticPhoto } from "@/lib/diagnostic-draft-photos";
-import { CONDICOES, ORIGENS, PROXIMIDADES, RESIDUOS, activityChoices, applyQuarterlyAutomation, impactChoices, isMarked, materializeVistoria, pointIsInactive, volumeChoices, withAutomaticContext, type VistoriaCheck, type VistoriaChoice } from "@/lib/vistoria-form";
+import { CONDICOES, ORIGENS, PROXIMIDADES, RESIDUOS, activityChoices, applyQuarterlyAutomation, impactChoices, isMarked, materializeVistoria, pointIsInactive, setVistoriaActivity, volumeChoices, withAutomaticContext, type VistoriaCheck, type VistoriaChoice } from "@/lib/vistoria-form";
 
 const PointMiniMap = dynamic(() => import("./point-minimap"), {
   ssr: false,
@@ -148,7 +148,7 @@ export function SurveyOnboarding({ initial, onClose, onSaved, presentation = "sc
   const scrollRef = useRef<HTMLDivElement>(null);
   const inactive = pointIsInactive(record);
   const photoCount = pending.length + record.photos.length;
-  const steps = STEPS.filter((item) => item.id !== "ficha");
+  const steps = STEPS.filter(({ id }) => id === "identificacao" || id === "revisao" || (!inactive && id !== "ficha"));
   const step = steps[index] ?? steps[0];
   const automation = useMemo(() => ({
     openDate: surveyOpenDate({ period: survey?.period || record.period, openedAtMs: survey?.openedAtMs }),
@@ -180,11 +180,7 @@ export function SurveyOnboarding({ initial, onClose, onSaved, presentation = "sc
     setError("");
   }
   function setActive(value: string) {
-    setRecord((current) => {
-      const turningOff = value.toLowerCase().includes("inativo");
-      const volume = turningOff ? "" : String(current.answers.volume ?? "").startsWith("Não se aplica") ? "" : current.answers.volume;
-      return { ...current, observedStatus: turningOff ? "sem-residuos" : "com-residuos", answers: { ...current.answers, statusTrimestral: value, volume: volume ?? "", ...(turningOff ? { limpezas: 0 } : {}) } };
-    });
+    setRecord((current) => setVistoriaActivity(current, value));
     setError("");
   }
   function setCode(raw: string) {
@@ -224,7 +220,7 @@ export function SurveyOnboarding({ initial, onClose, onSaved, presentation = "sc
       if (!/^[A-Z]{1,3}-\d+$/.test(String(record.answers.codigo ?? ""))) return "Informe o código do ponto, como CV-001.";
       if (!String(record.answers.endereco ?? "").trim()) return "Falta o endereço deste ponto.";
       if (!hasCoordinates(record)) return "Ainda não tenho as coordenadas. Toque em registrar minha posição.";
-      if (photoCount < 1) return "Tire a foto de hoje do ponto para continuar. Pode ser pela câmera.";
+      if (!inactive && photoCount < 1) return "Tire a foto de hoje do ponto para continuar. Pode ser pela câmera.";
       if (!String(record.answers.statusTrimestral ?? "").trim()) return "Me conta se o ponto está ativo.";
       if (!inactive && !volumeChoices(record.questionnaireVersion).some((choice) => choice.value === record.answers.volume)) return "Escolha a volumetria que você está vendo.";
     }
@@ -330,7 +326,7 @@ export function SurveyOnboarding({ initial, onClose, onSaved, presentation = "sc
 
             <section className="rounded-3xl border border-dashed border-emerald-300 bg-white p-4 dark:bg-zinc-900">
               <div className="flex items-start justify-between gap-3">
-                <div><h3 className="text-base font-semibold">Foto atual do ponto <span className="text-red-600">*</span></h3><p className="mt-1 text-sm text-zinc-500">Obrigatória. Use a câmera se estiver no local.</p></div>
+                <div><h3 className="text-base font-semibold">Foto atual do ponto {!inactive && <span className="text-red-600">*</span>}</h3><p className="mt-1 text-sm text-zinc-500">{inactive ? "Opcional para ponto inativo." : "Obrigatória. Use a câmera se estiver no local."}</p></div>
                 <Camera className="h-5 w-5 text-emerald-700" />
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
@@ -354,7 +350,7 @@ export function SurveyOnboarding({ initial, onClose, onSaved, presentation = "sc
               <div className="mt-3 grid gap-2 sm:grid-cols-2">{activities.map((choice) => <ChoiceButton key={choice.id} choice={{ ...choice, label: choice.id === "sim" ? "Sim, está ativo" : "Não, está inativo" }} letter={choice.id === "sim" ? "S" : "N"} pressed={record.answers.statusTrimestral === choice.value} disabled={busy} onClick={() => setActive(choice.value)} />)}</div>
             </section>
 
-            {inactive ? <p className="rounded-2xl bg-zinc-100 p-4 text-sm text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">Ponto inativo: a volumetria fica como não se aplica. Se você vir resíduos, marque que o ponto está ativo.</p> : <section>
+            {inactive ? <p className="rounded-2xl bg-zinc-100 p-4 text-sm text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">Os campos sobre o descarte serão preenchidos automaticamente. Continue para as observações.</p> : <section>
               <h3 className="text-base font-semibold">Volumetria do ponto</h3>
               <div className="mt-3 grid gap-2">{volumes.map((choice, choiceIndex) => <ChoiceButton key={choice.id} choice={choice} letter={letters[choiceIndex]} pressed={record.answers.volume === choice.value} disabled={busy} onClick={() => { setRecord((current) => ({ ...current, answers: { ...current.answers, volume: choice.value } })); setError(""); }} />)}</div>
             </section>}

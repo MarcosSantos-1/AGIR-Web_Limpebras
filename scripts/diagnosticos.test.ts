@@ -117,7 +117,19 @@ test("vistoria checklist fills official answers and leaves the paper's omitted q
   assert.ok(String(inactive.answers.revitalizacao).toLowerCase().includes("inativo"));
   assert.ok(String(inactive.answers.volume).startsWith("Não se aplica"));
   assert.ok(String(inactive.answers.residuoDomiciliar).startsWith("Não se aplica"));
-  assert.equal(inactive.answers.residuoEntulho, "Sim.");
+  const affectedColumns = ["H", "I", ...Array.from({ length: 24 }, (_, index) =>
+    index === 0 ? "Z" : `A${String.fromCharCode(64 + index)}`,
+  )];
+  for (const field of FIELDS.filter(({ column }) => affectedColumns.includes(column))) {
+    const expected = field.column === "AR"
+      ? "Não se aplica (inativo; e/ou beco, escadaria, passagem e/ou viela não trafegável por automóveis, caminhões e/ou motocicletas; e/ou outros)."
+      : "Não se aplica (inativo).";
+    assert.equal(inactive.answers[field.key], expected, field.key);
+  }
+  assert.equal(inactive.answers.statusTrimestral, "Permaneceu “inativo”, não recebeu descarte irregular de resíduos.");
+  assert.equal(inactive.answers.vistoriaErosao, undefined);
+  assert.equal(inactive.answers.vistoriaDanosVia, undefined);
+  assert.deepEqual(diagnosticErrors(inactive, true), {});
   assert.equal(inactive.observedStatus, "sem-residuos");
 });
 

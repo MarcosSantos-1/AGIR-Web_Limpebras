@@ -1,5 +1,5 @@
 import { isSubregionalId, subregionalIdFromSubprefeitura } from "@/lib/constants/subregionais";
-import { FIELDS, fieldVersion, localToday, type Diagnostic } from "@/lib/diagnosticos";
+import { FIELDS, INACTIVE_AUTOMATIC_KEYS, fieldVersion, localToday, pointIsInactive, withInactiveAnswers, type Diagnostic } from "@/lib/diagnosticos";
 import { extractPontoViciadoCodigoFromRecord } from "@/lib/map/ponto-codigo-from-record";
 import { VISTORIA_YES_NO_KEYS } from "@/lib/vistoria-keys";
 
@@ -61,9 +61,7 @@ export function isMarked(value: unknown) {
   return value === "Sim." || value === "sim";
 }
 
-export function pointIsInactive(record: Pick<Diagnostic, "answers">) {
-  return String(record.answers.statusTrimestral ?? "").toLowerCase().includes("inativo");
-}
+export { pointIsInactive } from "@/lib/diagnosticos";
 
 function optionsFor(key: string, version: string) {
   const field = FIELDS.find((item) => item.key === key);
@@ -71,10 +69,9 @@ function optionsFor(key: string, version: string) {
   return fieldVersion(field, version).options;
 }
 
-function yesNoAnswer(key: string, yes: boolean, inactive: boolean, version: string) {
+function yesNoAnswer(key: string, yes: boolean, version: string) {
   const options = optionsFor(key, version);
   if (yes) return options.find((option) => option === "Sim.") ?? "Sim.";
-  if (inactive) return options.find((option) => option.startsWith("Não se aplica")) ?? "Não.";
   return options.find((option) => option === "Não.") ?? "Não.";
 }
 
@@ -121,8 +118,16 @@ export function impactChoices(key: "impactoPedestres" | "impactoVeiculos", versi
   });
 }
 
-export function notApplicable(key: string, version: string) {
-  return optionsFor(key, version).find((option) => option.startsWith("Não se aplica")) ?? "";
+export function setVistoriaActivity(record: Diagnostic, statusTrimestral: string): Diagnostic {
+  const answers: Diagnostic["answers"] = { ...record.answers, statusTrimestral };
+  const next = { ...record, answers };
+  if (pointIsInactive(next)) return withInactiveAnswers(next);
+  if (pointIsInactive(record)) {
+    for (const key of INACTIVE_AUTOMATIC_KEYS) delete answers[key];
+    delete answers.vistoriaErosao;
+    delete answers.vistoriaDanosVia;
+  }
+  return { ...next, observedStatus: "com-residuos" };
 }
 
 function validDate(value: unknown) {
@@ -156,23 +161,16 @@ export function withAutomaticContext(record: Diagnostic): Diagnostic {
 export function applyQuarterlyAutomation(record: Diagnostic, automation?: VistoriaAutomation): Diagnostic {
   const answers: Diagnostic["answers"] = { ...record.answers, lote: "Lote 3" };
   const version = record.questionnaireVersion;
-  const inactive = pointIsInactive({ answers });
+  if (pointIsInactive(record)) return withInactiveAnswers({ ...record, answers });
   const revitalizacao = optionsFor("revitalizacao", version);
-  const coleta = optionsFor("coleta", version);
-  if (inactive) {
-    answers.revitalizacao = revitalizacao.find((option) => option.toLowerCase().includes("inativo")) ?? "Não se aplica (inativo).";
-    answers.coleta = coleta.find((option) => option.toLowerCase().includes("inativo")) ?? "Não se aplica (inativo).";
-    answers.limpezas = 0;
-  } else {
-    const checkDate = String(answers.dataChecagem ?? "");
-    const openDate = automation?.openDate || checkDate;
-    const had = pointHadRevitalizacao(String(answers.codigo ?? record.pointId), openDate, checkDate, automation?.events ?? []);
-    answers.revitalizacao = had
-      ? revitalizacao.find((option) => option.includes("Revitaliza SP")) ?? "Com revitalização vinculada ao Projeto Revitaliza SP."
-      : revitalizacao.find((option) => option.startsWith("Sem revitalização")) ?? "Sem revitalização.";
-    delete answers.coleta;
-    delete answers.limpezas;
-  }
+  const checkDate = String(answers.dataChecagem ?? "");
+  const openDate = automation?.openDate || checkDate;
+  const had = pointHadRevitalizacao(String(answers.codigo ?? record.pointId), openDate, checkDate, automation?.events ?? []);
+  answers.revitalizacao = had
+    ? revitalizacao.find((option) => option.includes("Revitaliza SP")) ?? "Com revitalização vinculada ao Projeto Revitaliza SP."
+    : revitalizacao.find((option) => option.startsWith("Sem revitalização")) ?? "Sem revitalização.";
+  delete answers.coleta;
+  delete answers.limpezas;
   return { ...record, answers };
 }
 
@@ -180,21 +178,16 @@ export function applyQuarterlyAutomation(record: Diagnostic, automation?: Vistor
 export function materializeVistoria(record: Diagnostic, automation?: VistoriaAutomation): Diagnostic {
   const base = withAutomaticContext(record);
   const answers = { ...base.answers };
-  const inactive = pointIsInactive(base);
+  if (pointIsInactive(base)) return applyQuarterlyAutomation(base, automation);
   const version = base.questionnaireVersion;
   for (const key of VISTORIA_YES_NO_KEYS) {
-    answers[key] = yesNoAnswer(key, isMarked(answers[key]), inactive, version);
+    answers[key] = yesNoAnswer(key, isMarked(answers[key]), version);
   }
   const erosao = isMarked(answers.vistoriaErosao);
   const danos = isMarked(answers.vistoriaDanosVia);
   answers.vistoriaErosao = erosao ? "Sim." : "Não.";
   answers.vistoriaDanosVia = danos ? "Sim." : "Não.";
-  answers.riscoErosao = yesNoAnswer("riscoErosao", erosao || danos, inactive, version);
-  if (inactive) {
-    answers.limpezas = 0;
-    const volume = notApplicable("volume", version);
-    if (volume) answers.volume = volume;
-  }
+  answers.riscoErosao = yesNoAnswer("riscoErosao", erosao || danos, version);
   for (const key of Object.keys(answers)) {
     if (VIRTUAL_KEYS.has(key)) continue;
     if (answers[key] === "") delete answers[key];
@@ -203,6 +196,6 @@ export function materializeVistoria(record: Diagnostic, automation?: VistoriaAut
     ...base,
     answers,
     pointId: String(answers.codigo ?? base.pointId),
-    observedStatus: inactive ? "sem-residuos" : "com-residuos",
+    observedStatus: "com-residuos",
   }, automation);
 }

@@ -48,7 +48,7 @@ export default function SummaryScreen(): JSX.Element {
           <Text style={{ fontFamily: "Geist_600SemiBold", fontSize: 12, color: inkOn(color) }}>{point.subLabel}</Text>
         </View>
       </View>
-      <ScrollView contentContainerStyle={{ gap: 12, paddingHorizontal: 20, paddingBottom: 28 }}>
+      <ScrollView contentContainerStyle={{ gap: 12, paddingHorizontal: 20, paddingBottom: insets.bottom + 28 }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
           {record.photos.length ? record.photos.map((item) => (
             <Pressable key={item.id} accessibilityRole="button" accessibilityLabel="Ampliar foto" onPress={() => setPhoto(item.url)}>

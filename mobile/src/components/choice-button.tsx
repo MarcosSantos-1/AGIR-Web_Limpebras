@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import { FeedbackPressable as Pressable } from "./feedback-pressable";
 
 export function ChoiceButton({ label, letter, selected, disabled, onPress }: { label: string; letter: string; selected: boolean; disabled?: boolean; onPress: () => void }) {
   return (

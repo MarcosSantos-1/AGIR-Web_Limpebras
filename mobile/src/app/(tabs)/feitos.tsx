@@ -1,5 +1,5 @@
 import { Spinner } from "heroui-native";
-import { useMemo, useState, type JSX } from "react";
+import { useDeferredValue, useMemo, useState, type JSX } from "react";
 import { FlatList, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -13,9 +13,10 @@ export default function DoneScreen(): JSX.Element {
   const router = useRouter();
   const { ready, error, survey, points } = useWorkspace();
   const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
   const [visibleCount, setVisibleCount] = useState(40);
   const [picked, setPicked] = useState<FieldPoint | null>(null);
-  const done = useMemo(() => points.filter((point) => point.state === "concluido" && matchesPointQuery(point, query)), [points, query]);
+  const done = useMemo(() => points.filter((point) => point.state === "concluido" && matchesPointQuery(point, deferredQuery)), [points, deferredQuery]);
   const shown = done.slice(0, visibleCount);
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#f4f4f5" }} edges={["top", "left", "right"]}>
@@ -31,6 +32,10 @@ export default function DoneScreen(): JSX.Element {
           <FlatList
             style={{ flex: 1 }}
             data={shown}
+            initialNumToRender={8}
+            maxToRenderPerBatch={8}
+            windowSize={5}
+            keyboardShouldPersistTaps="handled"
             keyExtractor={(item) => item.code}
             contentContainerStyle={{ gap: 10, paddingHorizontal: 20, paddingBottom: 24 }}
             renderItem={({ item }) => <PointRow point={item} showPhoto onPress={() => setPicked(item)} />}

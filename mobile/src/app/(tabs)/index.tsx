@@ -1,6 +1,6 @@
 import { signOut } from "firebase/auth";
 import { Spinner } from "heroui-native";
-import { useMemo, useState, type JSX } from "react";
+import { useDeferredValue, useMemo, useState, type JSX } from "react";
 import { FlatList, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -15,8 +15,9 @@ export default function NearbyScreen(): JSX.Element {
   const router = useRouter();
   const { ready, error, warning, survey, progress, points, location } = useWorkspace();
   const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
   const [picked, setPicked] = useState<FieldPoint | null>(null);
-  const pending = useMemo(() => points.filter((point) => point.state !== "concluido" && matchesPointQuery(point, query)).slice(0, 30), [points, query]);
+  const pending = useMemo(() => points.filter((point) => point.state !== "concluido" && matchesPointQuery(point, deferredQuery)).slice(0, 30), [points, deferredQuery]);
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#f4f4f5" }} edges={["top", "left", "right"]}>
       <View className="flex-row items-start justify-between px-5 pb-3 pt-2">
@@ -35,7 +36,7 @@ export default function NearbyScreen(): JSX.Element {
         {error ? <Notice tone="danger">{error}</Notice> : null}
         {warning ? <View className="mt-3"><Notice tone="warning">{warning}</Notice></View> : null}
         {!ready ? <View className="flex-1 items-center justify-center"><Spinner /><Text className="mt-3 text-sm text-muted">Carregando pontos do levantamento…</Text></View> : !survey ? <EmptyState title="Nenhum levantamento aberto" body="Abra um levantamento na página de Diagnósticos do AGIR. Ele aparece aqui para a equipe de campo." /> : pending.length === 0 ? <EmptyState title={query ? "Nenhum ponto com essa busca" : "Nada pendente neste filtro"} body={query ? "Tente o código, como CV-001, ou um pedaço do endereço." : "Troque a sub-regional ou veja os pontos já preenchidos na aba Feitos."} /> : (
-          <FlatList style={{ flex: 1 }} data={pending} keyExtractor={(item) => item.code} contentContainerStyle={{ gap: 10, paddingHorizontal: 20, paddingBottom: 24 }} renderItem={({ item }) => <PointRow point={item} onPress={() => setPicked(item)} />} />
+          <FlatList style={{ flex: 1 }} data={pending} initialNumToRender={8} maxToRenderPerBatch={8} windowSize={5} keyboardShouldPersistTaps="handled" keyExtractor={(item) => item.code} contentContainerStyle={{ gap: 10, paddingHorizontal: 20, paddingBottom: 24 }} renderItem={({ item }) => <PointRow point={item} onPress={() => setPicked(item)} />} />
         )}
       </View>
       <PointPreview point={picked} onClose={() => setPicked(null)} onContinue={(point) => { setPicked(null); router.push(point.state === "concluido" ? `/resumo/${point.code}` : `/vistoria/${point.code}`); }} />

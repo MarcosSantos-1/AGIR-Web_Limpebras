@@ -1,5 +1,5 @@
 import type { MapDisplayPoint } from "@/lib/map-features";
-import { FIELDS, localToday, periodForDate, QUESTIONNAIRE_VERSION, type Diagnostic } from "@/lib/diagnosticos";
+import { FIELDS, localToday, periodForDate, QUESTIONNAIRE_VERSION, withInactiveAnswers, type Diagnostic } from "@/lib/diagnosticos";
 import { newestByPoint, type Levantamento } from "@/lib/levantamentos";
 import { mergeSurveyRows } from "@/lib/levantamento-rows";
 import { overlayFichaAnswers, type PontoFichaDraft } from "@/lib/ponto-ficha";
@@ -30,7 +30,7 @@ export function pointDiagnostic(point: MapDisplayPoint, survey: Levantamento, ba
 }
 export function buildSurveyRows(survey: Levantamento, points: MapDisplayPoint[], baseline: Diagnostic[], records: Diagnostic[], fichas?: ReadonlyMap<string, PontoFichaDraft>) {
   const updates = recordsForSurvey(survey, records);
-  if (survey.sourceId) return mergeSurveyRows(baseline, updates);
+  if (survey.sourceId) return mergeSurveyRows(baseline, updates).map(withInactiveAnswers);
   const byCode = new Map(points.map((p) => [p.id, p]));
   const originals = new Map(baseline.map((r) => [r.pointId, r]));
   const saved = newestByPoint(updates);
@@ -42,7 +42,7 @@ export function buildSurveyRows(survey: Levantamento, points: MapDisplayPoint[],
     if (existing) {
       const answers = overlayFichaAnswers(existing.answers, ficha, "fill-empty");
       if (!knownBefore) answers.antiguidade = SURVEY_NOVO;
-      return [{ ...existing, answers }];
+      return [withInactiveAnswers({ ...existing, answers })];
     }
     const point = byCode.get(code);
     if (point) return [pointDiagnostic(point, survey, originals.get(code), ficha)];

@@ -15,9 +15,12 @@ import { buildSurveyRows, distanceMeters, recordsForSurvey, surveyPointState } f
 import type { VistoriaAutomation } from "../../../lib/vistoria-form";
 import { useAuth } from "@/features/auth";
 import { agirApiBase } from "@/lib/api";
+import { cachedSubscription, fieldCache } from "@/lib/cache";
 import { hasCoordinates, matchesSub, subOf, type FieldPoint, type SubFilter } from "@/features/format";
 
+const EMPTY_RECORDS: Diagnostic[] = [];
 const FILTER_KEY = "agir:campo:sub";
+const codeOrder = new Intl.Collator("pt-BR", { numeric: true });
 
 type WorkspaceValue = {
   ready: boolean;
@@ -69,14 +72,12 @@ export const SUB_FILTERS: { id: SubFilter; label: string }[] = [
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [surveys, setSurveys] = useState<Levantamento[]>([]);
-  const [records, setRecords] = useState<Diagnostic[]>([]);
-  const [baseline, setBaseline] = useState<Diagnostic[]>([]);
+  const [recordData, setRecordData] = useState<{ period: string; items: Diagnostic[] } | null>(null);
+  const [historyData, setHistoryData] = useState<{ resource: string; items: Diagnostic[] } | null>(null);
   const [fichas, setFichas] = useState<Map<string, PontoFichaDraft>>(new Map());
   const [custom, setCustom] = useState<MapDisplayPoint[]>([]);
   const [pointsReady, setPointsReady] = useState(false);
   const [metaReady, setMetaReady] = useState(false);
-  const [recordsReady, setRecordsReady] = useState(false);
-  const [historyReady, setHistoryReady] = useState(false);
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
   const [events, setEvents] = useState<VistoriaAutomation["events"]>([]);
@@ -84,6 +85,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [subFilter, setSubFilterState] = useState<SubFilter>("todas");
 
   const survey = surveys.find((item) => item.status === "em-preenchimento") ?? null;
+  const historyResource = `history:${agirApiBase()}:${survey?.sourceId ?? "latest"}`;
+  const baseline = historyData?.resource === historyResource ? historyData.items : EMPTY_RECORDS;
+  const historyReady = !agirApiBase() || historyData?.resource === historyResource;
+  const records = recordData?.period === survey?.period ? recordData?.items ?? EMPTY_RECORDS : EMPTY_RECORDS;
+  const recordsReady = !survey || recordData?.period === survey.period;
 
   useEffect(() => {
     AsyncStorage.getItem(FILTER_KEY).then((stored) => {
@@ -98,10 +104,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!user) return;
-    const offMeta = subscribeLevantamentos((items) => { setSurveys(items); setMetaReady(true); }, (cause) => setError(cause.message));
-    const offFichas = subscribePontoFichas((items) => setFichas(items), () => setFichas(new Map()));
-    const offCustom = subscribeCustomPontosViciados((items) => {
-      setCustom(items.flatMap((item) => item.point ? [item.point] : []));
+    const offMeta = cachedSubscription(fieldCache, user.uid, "surveys", subscribeLevantamentos,
+      (items) => { setSurveys(items); setMetaReady(true); }, (cause) => { setError(cause.message); setMetaReady(true); });
+    const offFichas = cachedSubscription<[string, PontoFichaDraft]>(fieldCache, user.uid, "fichas",
+      (next, fail) => subscribePontoFichas((items) => next([...items]), fail),
+      (items) => setFichas(new Map(items)), () => undefined);
+    const offCustom = cachedSubscription<MapDisplayPoint>(fieldCache, user.uid, "custom-points",
+      (next, fail) => subscribeCustomPontosViciados((items) => next(items.flatMap((item) => item.point ? [item.point] : [])), fail), (items) => {
+      setCustom(items);
       setPointsReady(true);
     }, () => setPointsReady(true));
     const offAgenda = subscribeAgendaEvents((items) => {
@@ -110,46 +120,62 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     return () => { offMeta(); offFichas(); offCustom(); offAgenda(); };
   }, [user]);
 
+  const period = survey?.period;
   useEffect(() => {
-    if (!user || !survey) return;
-    return subscribeDiagnostics(survey.period, (items) => { setRecords(items); setRecordsReady(true); }, (cause) => setError(cause.message));
-  }, [survey, user]);
+    if (!user || !period) return;
+    return cachedSubscription<Diagnostic>(fieldCache, user.uid, `records:${period}`,
+      (next, fail) => subscribeDiagnostics(period, next, fail),
+      (items) => setRecordData({ period, items }), (cause) => { setError(cause.message); setRecordData((current) => current?.period === period ? current : { period, items: [] }); });
+  }, [period, user]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !metaReady) return;
     let active = true;
-    if (!agirApiBase()) {
-      setWarning("Defina EXPO_PUBLIC_AGIR_API_URL para trazer o histórico da planilha. Os pontos do mapa continuam disponíveis.");
-      setBaseline([]);
-      setHistoryReady(true);
-      return;
-    }
-    historicalRequest().then(async (manifest) => {
-      const source = survey?.sourceId ?? manifest.sources?.at(-1)?.id;
+    let hasCached = false;
+    const resource = historyResource;
+    if (!agirApiBase()) return;
+    let receivedLive = false;
+    void fieldCache.read<Diagnostic[]>(user.uid, resource).then((cached) => {
+      if (active && !receivedLive && Array.isArray(cached)) {
+        hasCached = true;
+        setHistoryData({ resource, items: cached });
+      }
+    });
+    const load = async () => {
+      const source = survey?.sourceId ?? (await historicalRequest()).sources?.at(-1)?.id;
       const data = source ? await historicalRequest(source) : { records: [] };
-      if (active) { setBaseline(data.records ?? []); setHistoryReady(true); }
-    }).catch((cause: unknown) => {
       if (!active) return;
-      setBaseline([]);
-      setHistoryReady(true);
+      receivedLive = true;
+      setHistoryData({ resource, items: data.records ?? [] });
+      setWarning("");
+      void fieldCache.write(user.uid, resource, data.records ?? []);
+    };
+    void load().catch((cause: unknown) => {
+      if (!active) return;
+      if (!hasCached) setHistoryData({ resource, items: [] });
       setWarning(cause instanceof Error ? cause.message : "Não foi possível carregar o histórico. Dá para preencher os pontos mesmo assim.");
     });
     return () => { active = false; };
-  }, [survey?.sourceId, user]);
+  }, [historyResource, metaReady, survey?.sourceId, user]);
 
   useEffect(() => {
+    if (!user) return;
     let remove: Location.LocationSubscription | null = null;
     let cancelled = false;
     Location.requestForegroundPermissionsAsync().then(async ({ status }) => {
       if (cancelled || status !== "granted") return;
-      const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      const last = await Location.getLastKnownPositionAsync({ maxAge: 120_000, requiredAccuracy: 150 });
+      if (last && !cancelled) setLocation({ latitude: last.coords.latitude, longitude: last.coords.longitude, accuracy: last.coords.accuracy });
+      const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       if (!cancelled) setLocation({ latitude: current.coords.latitude, longitude: current.coords.longitude, accuracy: current.coords.accuracy });
-      remove = await Location.watchPositionAsync({ accuracy: Location.Accuracy.High, distanceInterval: 20 }, (next) => {
+      if (cancelled) return;
+      const subscription = await Location.watchPositionAsync({ accuracy: Location.Accuracy.Balanced, distanceInterval: 30, timeInterval: 10_000 }, (next) => {
         setLocation({ latitude: next.coords.latitude, longitude: next.coords.longitude, accuracy: next.coords.accuracy });
       });
+      if (cancelled) subscription.remove(); else remove = subscription;
     }).catch(() => undefined);
     return () => { cancelled = true; remove?.remove(); };
-  }, []);
+  }, [user]);
 
   const catalogue = useMemo(() => {
     const all = new Map(MAPA_MARKERS.filter((point) => point.type === "ponto-viciado").map((point) => [point.id, point]));
@@ -165,12 +191,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     });
   }, [catalogue, pointsReady, survey]);
 
-  const points = useMemo(() => {
+  const basePoints = useMemo(() => {
     if (!survey) return [];
     const originals = new Map(baseline.map((record) => [record.pointId, record]));
     const byCode = new Map(catalogue.map((point) => [point.id, point]));
     const rows = buildSurveyRows(survey, catalogue, baseline, records, fichas);
-    const here = location ? [location.latitude, location.longitude] as [number, number] : null;
     return rows.map((row) => {
       const point = byCode.get(row.pointId);
       const position = hasCoordinates(row) ? [Number(row.answers.latitude), Number(row.answers.longitude)] as [number, number] : point?.position ?? null;
@@ -183,10 +208,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         position: position && Number.isFinite(position[0]) && Number.isFinite(position[1]) ? position : null,
         subId: regional.id,
         subLabel: regional.label,
-        distance: here && position ? distanceMeters(here, position) : null,
+        distance: null,
       } satisfies FieldPoint;
-    }).sort((a, b) => (a.distance ?? Number.POSITIVE_INFINITY) - (b.distance ?? Number.POSITIVE_INFINITY) || a.code.localeCompare(b.code, "pt-BR", { numeric: true }));
-  }, [baseline, catalogue, fichas, location, records, survey]);
+    });
+  }, [baseline, catalogue, fichas, records, survey]);
+
+  const points = useMemo(() => {
+    const here: [number, number] | null = location ? [location.latitude, location.longitude] : null;
+    return basePoints.map((point): FieldPoint => ({ ...point,
+      distance: here && point.position ? distanceMeters(here, point.position) : null,
+    })).sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity) || codeOrder.compare(a.code, b.code));
+  }, [basePoints, location]);
 
   const counts = useMemo(() => {
     const next = emptyCounts();

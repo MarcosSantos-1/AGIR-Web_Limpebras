@@ -1,5 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Image, Linking, Modal, Pressable, Text, View } from "react-native";
+import { Image, Linking, Modal, Pressable as Backdrop, ScrollView, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { FeedbackPressable as Pressable } from "./feedback-pressable";
 import type { FieldPoint } from "@/features/format";
 
 const mapsIcon = require("../../assets/images/maps.png");
@@ -43,10 +45,12 @@ export function RouteButtons({ point }: { point: FieldPoint }) {
 }
 
 export function PointPreview({ point, onClose, onContinue, showRoutes = true }: { point: FieldPoint | null; onClose: () => void; onContinue: (point: FieldPoint) => void; showRoutes?: boolean }) {
+  const insets = useSafeAreaInsets();
   return (
-    <Modal visible={!!point} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Fechar" onPress={onClose} style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.45)" }}>
-        <Pressable onPress={() => undefined} style={{ gap: 12, borderTopLeftRadius: 28, borderTopRightRadius: 28, backgroundColor: "#ffffff", paddingHorizontal: 20, paddingTop: 20, paddingBottom: 28 }}>
+    <Modal visible={!!point} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent navigationBarTranslucent>
+      <Backdrop accessibilityRole="button" accessibilityLabel="Fechar" onPress={onClose} style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.45)" }}>
+        <View style={{ maxHeight: "85%", borderTopLeftRadius: 28, borderTopRightRadius: 28, backgroundColor: "#ffffff" }} onStartShouldSetResponder={() => true}>
+        <ScrollView bounces={false} contentContainerStyle={{ gap: 12, paddingHorizontal: 20, paddingTop: 20, paddingBottom: insets.bottom + 24 }}>
           {point ? (
             <>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -64,8 +68,9 @@ export function PointPreview({ point, onClose, onContinue, showRoutes = true }: 
               </Pressable>
             </>
           ) : null}
-        </Pressable>
-      </Pressable>
+        </ScrollView>
+        </View>
+      </Backdrop>
     </Modal>
   );
 }

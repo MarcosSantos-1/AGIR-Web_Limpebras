@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Camera, ChevronLeft, ChevronRight, Loader2, MapPin, Save, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { FIELDS, STEPS, diagnosticErrors, fieldVersion, periodForDate, type Diagnostic, type DiagnosticField } from "@/lib/diagnosticos";
+import { FIELDS, STEPS, diagnosticErrors, fieldVersion, periodForDate, withInactiveAnswers, type Diagnostic, type DiagnosticField } from "@/lib/diagnosticos";
 import { compressImageFileIfNeeded } from "@/lib/image-compress";
 import { uploadFileToPath, extensionForMime } from "@/lib/storage/upload-helpers";
 import { saveDiagnostic } from "@/lib/firestore/diagnosticos";
@@ -103,7 +103,7 @@ export function DiagnosticEditor({ initial, readOnly = false, onClose, onSaved }
     }, () => { setGpsBusy(false); toast.error("Não foi possível obter a localização. Preencha as coordenadas manualmente."); }, { enableHighAccuracy: true, timeout: 15000 });
   }
   async function save(complete: boolean) {
-    let next = { ...record, state: complete ? "concluido" as const : record.state === "importado" ? "importado" as const : "rascunho" as const };
+    let next = withInactiveAnswers({ ...record, state: complete ? "concluido" : record.state === "importado" ? "importado" : "rascunho" });
     const problems = diagnosticErrors(next, complete, initial);
     setErrors(problems);
     if (Object.keys(problems).length) {
@@ -134,6 +134,7 @@ export function DiagnosticEditor({ initial, readOnly = false, onClose, onSaved }
     } finally { setBusy(false); }
   }
 
+  const displayRecord = withInactiveAnswers(record);
   const visibleFields = FIELDS.filter((f) => f.step === step && !(record.kind === "visita" && f.quarterly));
   return <section className="rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
     <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4 sm:p-6">
@@ -157,7 +158,7 @@ export function DiagnosticEditor({ initial, readOnly = false, onClose, onSaved }
           {record.kind === "visita" && <div><label htmlFor="diag-observed" className="mb-1.5 block text-sm font-medium">Situação encontrada na visita</label><select id="diag-observed" className={inputClass} disabled={readOnly} value={record.observedStatus} onChange={(e) => setRecord((r) => ({ ...r, observedStatus: e.target.value as Diagnostic["observedStatus"] }))}><option value="nao-avaliado">Não foi possível avaliar</option><option value="com-residuos">Com resíduos</option><option value="sem-residuos">Sem resíduos no momento</option></select></div>}
         </div>}
         <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
-          {visibleFields.map((field) => <Field key={field.key} field={field} record={record} change={change} error={errors[field.key]} readOnly={readOnly} />)}
+          {visibleFields.map((field) => <Field key={field.key} field={field} record={displayRecord} change={change} error={errors[field.key]} readOnly={readOnly} />)}
         </div>
         {step === 0 && !readOnly && <Button type="button" variant="outline" onClick={locate} disabled={gpsBusy}><MapPin className="mr-2 h-4 w-4" />{gpsBusy ? "Obtendo localização…" : "Usar minha localização"}</Button>}
         {step === 3 && <p className="text-xs text-zinc-500">As origens indicam possibilidades observadas. Não representam identificação comprovada de responsáveis.</p>}

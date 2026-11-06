@@ -14,8 +14,8 @@ import { WorkspaceProvider } from "@/features/workspace";
 import "../global.css";
 
 export default function RootLayout(): JSX.Element {
-  const [fontsReady] = useFonts({ Geist_400Regular, Geist_500Medium, Geist_600SemiBold, Geist_700Bold });
-  if (!fontsReady) return <GestureHandlerRootView style={{ flex: 1 }} />;
+  const [fontsReady, fontError] = useFonts({ Geist_400Regular, Geist_500Medium, Geist_600SemiBold, Geist_700Bold });
+  if (!fontsReady && !fontError) return <GestureHandlerRootView style={{ flex: 1 }} />;
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -41,7 +41,7 @@ function Gate() {
   }, [onLogin, ready, router, user]);
   if (!ready) return null;
   return (
-    <WorkspaceProvider>
+    <WorkspaceProvider key={user?.uid ?? "signed-out"}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="login" />
         <Stack.Screen name="(tabs)" />

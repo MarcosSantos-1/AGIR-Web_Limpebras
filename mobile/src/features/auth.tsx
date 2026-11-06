@@ -16,7 +16,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const configured = isFirebaseConfigured();
   const [ready, setReady] = useState(!configured);
   const [user, setUser] = useState<User | null>(null);
-  const [name, setName] = useState("");
+  const [profileName, setProfileName] = useState({ uid: "", name: "" });
+  const name = profileName.uid === user?.uid ? profileName.name : "";
 
   useEffect(() => {
     if (!configured) return;
@@ -27,8 +28,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [configured]);
 
   useEffect(() => {
-    if (!user) { setName(""); return; }
-    return subscribeUserProfile(user.uid, (profile) => setName(profile?.nome?.trim() ?? ""), () => setName(""));
+    if (!user) return;
+    return subscribeUserProfile(user.uid,
+      (profile) => setProfileName({ uid: user.uid, name: profile?.nome?.trim() ?? "" }),
+      () => setProfileName({ uid: user.uid, name: "" }));
   }, [user]);
 
   const value = useMemo<AuthValue>(() => ({

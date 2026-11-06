@@ -17,5 +17,5 @@ export default function VistoriaScreen(): JSX.Element {
       <Button className="min-h-12" onPress={() => router.back()}>Voltar</Button>
     </View>
   );
-  return <VistoriaWizard initial={point.row} onClose={() => router.back()} onSaved={() => router.back()} />;
+  return <VistoriaWizard key={point.row.id} initial={point.row} onClose={() => router.back()} onSaved={() => router.back()} />;
 }

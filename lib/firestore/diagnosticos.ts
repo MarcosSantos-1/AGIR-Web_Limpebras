@@ -1,6 +1,6 @@
 import { collection, doc, getDocs, onSnapshot, query, runTransaction, where } from "firebase/firestore";
 import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase";
-import { DIAGNOSTICOS_COLLECTION, diagnosticErrors, sortDiagnostics, type Diagnostic } from "@/lib/diagnosticos";
+import { DIAGNOSTICOS_COLLECTION, diagnosticErrors, sortDiagnostics, withInactiveAnswers, type Diagnostic } from "@/lib/diagnosticos";
 import catalog from "@/data/features-PV.json";
 
 const catalogueCodes = new Set(catalog.features.map((point) => point.setor));
@@ -16,7 +16,8 @@ export function subscribeDiagnosticsByPoint(pointId: string, next: (records: Dia
     (snapshot) => next(snapshot.docs.map((d) => ({ ...d.data(), id: d.id }) as Diagnostic).sort(sortDiagnostics)), error);
 }
 
-export async function saveDiagnostic(record: Diagnostic, responsibleName: string) {
+export async function saveDiagnostic(input: Diagnostic, responsibleName: string) {
+  const record = withInactiveAnswers(input);
   const user = getFirebaseAuth().currentUser;
   if (!user) throw new Error("Entre na sua conta para salvar.");
   const db = getFirebaseDb();
