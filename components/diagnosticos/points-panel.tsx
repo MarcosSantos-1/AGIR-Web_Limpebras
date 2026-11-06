@@ -7,13 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/auth-context";
 import { deleteDiagnostic, historicalRequest, subscribeDiagnostics } from "@/lib/firestore/diagnosticos";
-import { FIELDS, diagnosticStatus, localToday, newDiagnostic, type Diagnostic, type HistoricalSource } from "@/lib/diagnosticos";
+import { FIELDS, diagnosticStatus, localToday, newDiagnostic, withInactiveAnswers, type Diagnostic, type HistoricalSource } from "@/lib/diagnosticos";
 import { DiagnosticEditor, draftKey, inputClass } from "./diagnostic-editor";
 import { SurveyOnboarding } from "./survey-onboarding";
 import { deleteStoredFilesByPublicUrls } from "@/lib/storage/delete-stored-files";
 
 function downloadJson(records: Diagnostic[]) {
-  const blob = new Blob([JSON.stringify({ schemaVersion: 1, exportedAt: new Date().toISOString(), records }, null, 2)], { type: "application/json" });
+  const blob = new Blob([JSON.stringify({ schemaVersion: 1, exportedAt: new Date().toISOString(), records: records.map(withInactiveAnswers) }, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a"); anchor.href = url; anchor.download = `diagnosticos-${localToday()}.json`; anchor.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -31,7 +31,8 @@ async function downloadExcel(records: Diagnostic[]) {
     { header: "Fotos (URLs)", key: "photos", width: 50 }, { header: "Fonte", key: "source", width: 50 },
     { header: "Versão do questionário", key: "questionnaireVersion", width: 30 },
   ];
-  for (const record of records) {
+  for (const input of records) {
+    const record = withInactiveAnswers(input);
     const row = sheet.addRow({ ...record.answers, id: record.id, kind: record.kind, period: record.period, state: record.state, observedStatus: record.kind === "visita" ? diagnosticStatus(record) : "", notes: record.notes, photos: record.photos.map((p) => p.url).join("\n"), source: record.source?.file ?? "Campo", questionnaireVersion: record.questionnaireVersion });
     const date = String(record.answers.dataChecagem ?? "");
     if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -165,7 +166,7 @@ export function PointsPanel() {
       <div className="grid gap-4 xl:grid-cols-2">{visible.map((record) => <article key={record.id} className="flex flex-col rounded-2xl border bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
         <div className="flex items-start justify-between gap-3"><div><h3 className="font-semibold">{record.pointId}</h3><p className="mt-1 text-xs text-zinc-500">{String(record.answers.subprefeitura ?? "")} · {String(record.answers.distrito ?? "")}</p></div><span className={`rounded-full px-2.5 py-1 text-xs ${record.state === "concluido" ? "bg-emerald-50 text-emerald-700" : record.state === "rascunho" ? "bg-amber-50 text-amber-800" : "bg-blue-50 text-blue-700"}`}>{tab === "historico" ? "Planilha original" : record.state === "concluido" ? "Concluído" : record.state === "rascunho" ? "Rascunho" : "Importado"}</span></div>
         <p className="mt-4 text-sm font-medium">{String(record.answers.endereco ?? "Endereço não informado")}</p><p className="mt-2 text-sm text-zinc-500">{String(record.answers.dataChecagem ?? "").split("-").reverse().join("/")} · {record.kind === "visita" ? "Visita de campo" : "Levantamento trimestral"}</p>
-        <p className="mt-3 rounded-xl bg-zinc-50 p-3 text-xs dark:bg-zinc-800">{diagnosticStatus(record)}</p>
+        <p className="mt-3 rounded-xl bg-zinc-50 p-3 text-xs dark:bg-zinc-800">{diagnosticStatus(withInactiveAnswers(record))}</p>
         <p className="mt-3 break-words text-xs text-zinc-500">{record.photos.length} fotos · {record.sourceId === "campo" ? record.responsibleName || "Registro de campo" : record.sourceId}</p>
         <div className="mt-4 flex flex-wrap gap-2"><Button variant="outline" size="sm" onClick={() => setEditor({ record, readOnly: true })}><Eye className="mr-2 h-4 w-4" />Detalhes</Button>{tab === "firebase" && <><Button variant="outline" size="sm" onClick={() => setEditor({ record, readOnly: false })}><Pencil className="mr-2 h-4 w-4" />Editar</Button><Button variant="ghost" size="sm" className="text-red-600" onClick={() => setDeleting(record)}><Trash2 className="mr-2 h-4 w-4" />Excluir</Button></>}
           <Button variant="ghost" size="sm" onClick={() => { const fresh = newDiagnostic(); fresh.answers = { ...fresh.answers, ...Object.fromEntries(FIELDS.filter((f) => ["codigo", "subprefeitura", "sigla", "distrito", "endereco", "complemento", "latitude", "longitude", "lote"].includes(f.key)).map((f) => [f.key, record.answers[f.key] ?? ""])) }; fresh.pointId = record.pointId; setEditor({ record: fresh, readOnly: false }); }}>Nova visita</Button>
