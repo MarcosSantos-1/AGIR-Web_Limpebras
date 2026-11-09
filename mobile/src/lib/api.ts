@@ -1,3 +1,4 @@
+import { File } from "expo-file-system";
 import { getFirebaseAuth } from "@/lib/firebase";
 
 export function agirApiBase() {
@@ -27,7 +28,10 @@ export async function uploadDiagnosticPhoto(objectKey: string, uri: string, mime
   const name = objectKey.split("/").pop() || "foto.jpg";
   const form = new FormData();
   form.append("key", objectKey);
-  form.append("file", { uri, name, type: mime } as unknown as Blob);
+  // O fetch global do Expo (SDK 58) não aceita o formato antigo `{ uri, name, type }` do
+  // React Native ("Unsupported FormDataPart implementation"). Ele aceita um objeto com `bytes()`.
+  const file = new File(uri);
+  form.append("file", { name, type: mime, bytes: () => file.bytes() } as unknown as Blob);
   const response = await authorizedFetch("/api/storage/upload", { method: "POST", body: form });
   if (!response.ok) throw new Error(await readError(response, "Não foi possível enviar a foto."));
   const body = (await response.json()) as { url?: string };

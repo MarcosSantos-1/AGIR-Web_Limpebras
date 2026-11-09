@@ -1,11 +1,13 @@
 import { z } from "zod";
 import { verifyIdToken } from "@/lib/firebase-admin";
-import { firestoreFields, withPontoViciadoDocuments } from "@/lib/firestore/ponto-viciado-transaction";
+import { withPontoViciadoDocuments } from "@/lib/firestore/ponto-viciado-transaction";
 import { MAPA_PONTOS_VICIO_FORM } from "@/lib/map-features";
 import { loadSubregionais } from "@/lib/map/subregionais-server";
 import { MSG_FORA_DO_LOTE, subregionalFromCoordinates } from "@/lib/map/subregionais";
 import { FICHA_ANSWER_KEYS, fichaErrors } from "@/lib/ponto-ficha";
 import { nextPontoViciadoCodigo, normalizePontoViciadoCodigo } from "@/lib/ponto-viciado-codigo";
+
+export const runtime = "nodejs";
 
 const coordinates = z.object({
   lat: z.number().min(-90).max(90),
@@ -32,9 +34,8 @@ export async function POST(request: Request) {
   if (!token) return Response.json({ error: "Entre na sua conta para continuar." }, { status: 401 });
 
   let uid: string;
-  let projectId: string;
   try {
-    ({ uid, aud: projectId } = await verifyIdToken(token));
+    ({ uid } = await verifyIdToken(token));
   } catch {
     return Response.json({ error: "Não foi possível validar sua sessão do Firebase." }, { status: 401 });
   }
@@ -55,16 +56,16 @@ export async function POST(request: Request) {
       return Response.json({ error: "Revise a ficha do ponto." }, { status: 422 });
     }
 
-    const result = await withPontoViciadoDocuments(projectId, token, input.action === "preview", (docs, writes, root) => {
+    const result = await withPontoViciadoDocuments(input.action === "preview", (docs, writes) => {
       const active = new Set<string>();
       const deleted = new Set<string>();
       for (const doc of docs) {
-        const data = doc.fields;
-        const rawCode = data?.codigo?.stringValue;
-        if (!rawCode) continue;
+        const data = doc.data;
+        const rawCode = data.codigo;
+        if (typeof rawCode !== "string" || !rawCode) continue;
         const code = normalizePontoViciadoCodigo(rawCode);
-        const hidden = data?.oculto?.booleanValue === true;
-        if (input.action === "create" && !hidden && data?.requestId?.stringValue === input.requestId && data?.createdByUid?.stringValue === uid) {
+        const hidden = data.oculto === true;
+        if (input.action === "create" && !hidden && data.requestId === input.requestId && data.createdByUid === uid) {
           return { codigo: code };
         }
         (hidden ? deleted : active).add(code);
@@ -97,41 +98,40 @@ export async function POST(request: Request) {
         return null;
       }
 
-      const name = root + "/customPontosViciados/" + code;
-      const matching = docs.filter((doc) => normalizePontoViciadoCodigo(doc.fields?.codigo?.stringValue ?? "") === code);
-      const canonical = docs.find((doc) => doc.name === name);
+      const name = "customPontosViciados/" + code;
+      const matching = docs.filter((doc) => normalizePontoViciadoCodigo(String(doc.data.codigo ?? "")) === code);
+      const canonical = docs.find((doc) => doc.path === name);
       const previous = canonical ?? matching[0];
-      const currentDocument = canonical ? { updateTime: canonical.updateTime } : { exists: false as const };
+      const create = !canonical;
       for (const doc of matching) {
-        if (doc.name !== name) writes.push({ delete: doc.name });
+        if (doc.path !== name) writes.push({ delete: doc.path });
       }
 
       const now = Date.now();
-      const ficha = root + "/appSettings/ponto-ficha-" + code;
+      const ficha = "appSettings/ponto-ficha-" + code;
       if (input.action === "delete") {
         writes.push(
-          { update: { name, fields: firestoreFields({ codigo: code, oculto: true, updatedAtMs: now }) }, currentDocument },
+          { set: name, data: { codigo: code, oculto: true, updatedAtMs: now }, create },
           { delete: ficha },
         );
       } else {
-        const fields = firestoreFields({
+        const data: Record<string, string | number | boolean> = {
           codigo: code,
           subprefeitura: sub?.label ?? (input.action === "edit" ? input.subprefeitura : ""),
           address: input.address,
           lat: input.lat,
           lng: input.lng,
           updatedAtMs: now,
-        });
+        };
         if (input.action === "edit") {
-          const creation = firestoreFields({ createdAtMs: now, createdByUid: uid });
-          Object.assign(fields, { ...creation, ...previous?.fields, ...fields });
+          Object.assign(data, { createdAtMs: now, createdByUid: uid, ...previous?.data, ...data });
         } else {
-          Object.assign(fields, firestoreFields({ requestId: input.requestId, createdAtMs: now, createdByUid: uid }));
+          Object.assign(data, { requestId: input.requestId, createdAtMs: now, createdByUid: uid });
         }
 
         writes.push(
-          { update: { name, fields }, currentDocument },
-          { update: { name: ficha, fields: firestoreFields({ ...input.ficha, type: "ponto-ficha", codigo: code, updatedAtMs: now, updatedByUid: uid }) } },
+          { set: name, data, create },
+          { set: ficha, data: { ...input.ficha, type: "ponto-ficha", codigo: code, updatedAtMs: now, updatedByUid: uid } },
         );
       }
       return { codigo: code };
