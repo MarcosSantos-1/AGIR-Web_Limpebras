@@ -135,6 +135,15 @@ function validDate(value: unknown) {
   return /^\d{4}-\d{2}-\d{2}$/.test(date) && !Number.isNaN(Date.parse(`${date}T12:00:00Z`)) && new Date(`${date}T12:00:00Z`).toISOString().slice(0, 10) === date;
 }
 
+/** O mapa grava o rótulo operacional (“Vila Maria / Vila Guilherme”). A planilha só aceita a alternativa oficial, sem espaços na barra. */
+function officialSubprefeitura(raw: string, version: string) {
+  const options = optionsFor("subprefeitura", version);
+  if (options.includes(raw)) return raw;
+  const regional = subregionalIdFromSubprefeitura(raw);
+  if (!regional) return raw;
+  return options.find((option) => subregionalIdFromSubprefeitura(option) === regional) ?? raw;
+}
+
 /** Preenche data, sigla e sub-regional sem pedir digitação. Não altera o que a pessoa marcou. */
 export function withAutomaticContext(record: Diagnostic): Diagnostic {
   const answers = { ...record.answers };
@@ -147,6 +156,8 @@ export function withAutomaticContext(record: Diagnostic): Diagnostic {
     if (siglas.includes(prefix)) answers.sigla = prefix;
   }
   answers.lote = "Lote 3";
+  const territory = String(answers.subprefeitura ?? "").trim();
+  if (territory) answers.subprefeitura = officialSubprefeitura(territory, record.questionnaireVersion);
   const regional = subregionalIdFromSubprefeitura(String(answers.subprefeitura ?? ""));
   if (regional) answers.subregional = regional;
   else if (answers.subregional !== undefined && !isSubregionalId(answers.subregional)) delete answers.subregional;

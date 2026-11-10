@@ -133,6 +133,41 @@ test("vistoria checklist fills official answers and leaves the paper's omitted q
   assert.equal(inactive.observedStatus, "sem-residuos");
 });
 
+test("a new MG point keeps the map label and still completes with the official subprefeitura", () => {
+  const r = visit();
+  r.kind = "trimestral";
+  r.pointId = "MG-173";
+  r.answers = {
+    ...r.answers,
+    codigo: "MG-173",
+    endereco: "Avenida do Poeta, 1000",
+    latitude: -23.49,
+    longitude: -46.57,
+    subprefeitura: "Vila Maria / Vila Guilherme",
+    sigla: "MG",
+    statusTrimestral: activityChoices(r.questionnaireVersion)[0].value,
+    volume: volumeChoices(r.questionnaireVersion)[1].value,
+    impactoPedestres: impactChoices("impactoPedestres", r.questionnaireVersion)[0].value,
+    impactoVeiculos: impactChoices("impactoVeiculos", r.questionnaireVersion)[0].value,
+    termoVistoria: "sim",
+  };
+  assert.equal(diagnosticErrors(r, true).subprefeitura, "Escolha uma alternativa desta versão do questionário.");
+  const ready = materializeVistoria(r);
+  assert.equal(ready.answers.subprefeitura, "Vila Maria/Vila Guilherme");
+  assert.equal(ready.answers.subregional, "vila-maria-guilherme");
+  assert.deepEqual(diagnosticErrors(ready, true), {});
+
+  const aliases = [
+    ["Jaçanã / Tremembé", "Jaçanã/Tremembé"],
+    ["Santana / Tucuruvi", "Santana/Tucuruvi"],
+    ["Casa Verde/Cachoeirinha", "Casa Verde"],
+  ] as const;
+  for (const [label, official] of aliases) {
+    r.answers.subprefeitura = label;
+    assert.equal(materializeVistoria(r).answers.subprefeitura, official);
+  }
+});
+
 test("field vistoria does not require the permanent point profile", () => {
   const r = visit();
   r.kind = "trimestral";
