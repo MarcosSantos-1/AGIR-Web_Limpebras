@@ -8,13 +8,14 @@ import catalog from "@/data/features-PV.json";
 import { useAgendaEvents } from "@/contexts/agenda-events-context";
 import { useAuth } from "@/contexts/auth-context";
 import { useUserProfile } from "@/contexts/user-profile-context";
+import { DatePickerField } from "@/components/forms/date-picker-field";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { isSubregionalId, subregionalIdFromSubprefeitura, subregionalMeta } from "@/lib/constants/subregionais";
 import { diagnosticErrors, localToday, type Diagnostic } from "@/lib/diagnosticos";
 import { saveDiagnostic } from "@/lib/firestore/diagnosticos";
 import { savePontoFicha } from "@/lib/firestore/ponto-fichas";
-import { OPERACAO_LEVANTAMENTO_NOTA, surveyOpenDate, type Levantamento } from "@/lib/levantamentos";
+import { OPERACAO_LEVANTAMENTO_NOTA, periodIsoRange, surveyOpenDate, type Levantamento } from "@/lib/levantamentos";
 import { fichaDraftFromAnswers } from "@/lib/ponto-ficha";
 import { compressImageFileIfNeeded } from "@/lib/image-compress";
 import { extensionForMime, uploadFileToPath } from "@/lib/storage/upload-helpers";
@@ -53,7 +54,7 @@ const ICONS: Record<string, LucideIcon> = {
 };
 
 const STEPS: { id: "identificacao" | "ficha" | "residuos" | "origens" | "condicoes" | "impactos" | "proximidades" | "revisao"; title: string; help: string }[] = [
-  { id: "identificacao", title: "Identificação do ponto", help: "O endereço, as coordenadas e a sub-regional já ficam salvos. A data da checagem é o dia em que você conclui este formulário, com a foto." },
+  { id: "identificacao", title: "Identificação do ponto", help: "O endereço, as coordenadas e a sub-regional já ficam salvos. A data da checagem começa em hoje e pode ser um dia anterior deste trimestre." },
   { id: "ficha", title: "Ficha do ponto", help: "Dá para corrigir o que já veio da planilha. O complemento é opcional. O restante precisa de uma escolha para concluir." },
   { id: "residuos", title: "1. Tipos de resíduos sólidos presentes", help: "Marque só o que encontrou. Se não houver nenhum destes, pode seguir sem marcar." },
   { id: "origens", title: "2. Possível origem do descarte", help: "Uma leitura do que parece ter gerado o material. Não precisa ter certeza absoluta." },
@@ -75,6 +76,18 @@ function PhotoPreview({ file }: { file: File }) {
 function formatDate(value: unknown) {
   const date = String(value ?? "");
   return /^\d{4}-\d{2}-\d{2}$/.test(date) ? date.split("-").reverse().join("/") : "hoje";
+}
+
+function boundedCheckDate(record: Diagnostic) {
+  const today = localToday();
+  let date = String(record.answers.dataChecagem ?? "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > today) date = today;
+  if (record.kind !== "trimestral") return date;
+  const range = periodIsoRange(record.period);
+  if (!range) return date;
+  if (date < range.start) date = range.start > today ? today : range.start;
+  if (date > range.end) date = range.end;
+  return date > today ? today : date;
 }
 
 function formatCoord(value: unknown) {
@@ -230,7 +243,7 @@ export function SurveyOnboarding({ initial, onClose, onSaved, presentation = "sc
   }
   function stepForError(key: string) {
     let id: (typeof STEPS)[number]["id"] = "revisao";
-    if (["codigo", "endereco", "latitude", "longitude", "dataChecagem", "statusTrimestral", "volume"].includes(key)) id = "identificacao";
+    if (["codigo", "endereco", "latitude", "longitude", "dataChecagem", "statusTrimestral", "volume", "period"].includes(key)) id = "identificacao";
     else if (["complemento", "tipoLogradouro", "outroLogradouro", "topografia", "ocupacao"].includes(key) || key.startsWith("entorno")) id = "ficha";
     else if (RESIDUOS.some((item) => item.key === key)) id = "residuos";
     else if (ORIGENS.some((item) => item.key === key)) id = "origens";
@@ -248,7 +261,8 @@ export function SurveyOnboarding({ initial, onClose, onSaved, presentation = "sc
       }
     }
     const state = complete ? "concluido" as const : record.state === "importado" ? "importado" as const : "rascunho" as const;
-    const answers = complete ? { ...record.answers, dataChecagem: localToday() } : record.answers;
+    const checkDate = boundedCheckDate(record);
+    const answers = complete ? { ...record.answers, dataChecagem: checkDate } : record.answers;
     const prepared = { ...record, answers, state, responsibleName: responsible };
     let next = complete ? materializeVistoria(prepared, automation) : applyQuarterlyAutomation(withAutomaticContext(prepared), automation);
     next = { ...next, answers: { ...next.answers, termoVistoria: record.answers.termoVistoria === "sim" ? "sim" : "" } };
@@ -287,6 +301,9 @@ export function SurveyOnboarding({ initial, onClose, onSaved, presentation = "sc
   const pedestrians = impactChoices("impactoPedestres", record.questionnaireVersion);
   const vehicles = impactChoices("impactoVeiculos", record.questionnaireVersion);
   const letters = ["A", "B", "C", "D"];
+  const checkDate = boundedCheckDate(record);
+  const checkRange = record.kind === "trimestral" ? periodIsoRange(record.period) : null;
+  const checkMax = checkRange && checkRange.end < localToday() ? checkRange.end : localToday();
 
   const body = (
     <>
@@ -315,8 +332,11 @@ export function SurveyOnboarding({ initial, onClose, onSaved, presentation = "sc
                 {identityFromPoint ? <p className="text-lg font-semibold">{record.answers.codigo}</p> : <div><label htmlFor="vistoria-codigo" className="mb-1.5 block text-sm font-medium">Código do ponto</label><input id="vistoria-codigo" list="vistoria-pontos" className="h-12 w-full rounded-2xl border bg-white px-4 dark:bg-zinc-950" placeholder="CV-001" value={String(record.answers.codigo ?? "")} onChange={(event) => setCode(event.target.value)} /><datalist id="vistoria-pontos">{POINTS.map((point) => <option key={point.setor} value={point.setor}>{point.address}</option>)}</datalist></div>}
                 {addressFromPoint ? <p className="text-sm text-zinc-600 dark:text-zinc-300">{record.answers.endereco}</p> : <div><label htmlFor="vistoria-endereco" className="mb-1.5 block text-sm font-medium">Endereço</label><input id="vistoria-endereco" className="h-12 w-full rounded-2xl border bg-white px-4 dark:bg-zinc-950" placeholder="Rua, número" value={String(record.answers.endereco ?? "")} onChange={(event) => setRecord((current) => ({ ...current, answers: { ...current.answers, endereco: event.target.value } }))} /></div>}
                 {!coordsFromPoint && hasCoordinates(record) && <button type="button" className="text-xs font-medium text-emerald-700 underline" disabled={gpsBusy || busy} onClick={locate}>{gpsBusy ? "Buscando sua posição…" : "Atualizar com a minha posição"}</button>}
+                <div>
+                  <label htmlFor="vistoria-data" className="mb-1.5 block text-sm font-medium">Data da checagem</label>
+                  <DatePickerField id="vistoria-data" value={checkDate} min={checkRange?.start} max={checkMax} disabled={busy} onChange={(value) => { setRecord((current) => ({ ...current, answers: { ...current.answers, dataChecagem: value } })); setError(""); }} className="h-12 rounded-2xl" />
+                </div>
                 <div className="flex flex-wrap gap-2 text-xs">
-                  <span className="rounded-full bg-emerald-50 px-3 py-1.5 font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-100">Data da checagem {formatDate(localToday())}</span>
                   {regional && <span className="rounded-full bg-zinc-100 px-3 py-1.5 font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">Sub-regional {regional}</span>}
                   {String(record.answers.distrito ?? "").trim() && <span className="rounded-full bg-zinc-100 px-3 py-1.5 font-medium text-zinc-700 dark:bg-zinc-800">Distrito {record.answers.distrito}</span>}
                   {coords && <span className="rounded-full bg-zinc-100 px-3 py-1.5 font-medium text-zinc-700 dark:bg-zinc-800">Coordenadas {coords}</span>}
@@ -354,7 +374,7 @@ export function SurveyOnboarding({ initial, onClose, onSaved, presentation = "sc
               <h3 className="text-base font-semibold">Volumetria do ponto</h3>
               <div className="mt-3 grid gap-2">{volumes.map((choice, choiceIndex) => <ChoiceButton key={choice.id} choice={choice} letter={letters[choiceIndex]} pressed={record.answers.volume === choice.value} disabled={busy} onClick={() => { setRecord((current) => ({ ...current, answers: { ...current.answers, volume: choice.value } })); setError(""); }} />)}</div>
             </section>}
-            {record.kind === "trimestral" && <p className="rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-950 dark:bg-emerald-950 dark:text-emerald-50"><span className="block text-xs font-semibold uppercase tracking-wide text-emerald-700">Revitalização neste levantamento</span><span className="mt-1 block font-medium">{String(applyQuarterlyAutomation(withAutomaticContext({ ...record, answers: { ...record.answers, dataChecagem: localToday() } }), automation).answers.revitalizacao ?? "")}</span></p>}
+            {record.kind === "trimestral" && <p className="rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-950 dark:bg-emerald-950 dark:text-emerald-50"><span className="block text-xs font-semibold uppercase tracking-wide text-emerald-700">Revitalização neste levantamento</span><span className="mt-1 block font-medium">{String(applyQuarterlyAutomation(withAutomaticContext({ ...record, answers: { ...record.answers, dataChecagem: checkDate } }), automation).answers.revitalizacao ?? "")}</span></p>}
           </div>}
 
           {step.id === "residuos" && <div className="mt-6 grid gap-2 sm:grid-cols-2">{RESIDUOS.map((item) => <CheckCard key={item.key} item={item} pressed={isMarked(record.answers[item.key])} disabled={busy} onClick={() => toggle(item.key)} />)}</div>}
@@ -374,7 +394,7 @@ export function SurveyOnboarding({ initial, onClose, onSaved, presentation = "sc
             <p className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">{OPERACAO_LEVANTAMENTO_NOTA}</p>
             <div><label htmlFor="vistoria-notas" className="mb-2 block text-sm font-medium">Observações</label><textarea id="vistoria-notas" disabled={busy} className="min-h-32 w-full rounded-3xl border bg-white p-4 text-base dark:bg-zinc-900" placeholder="Algo que a lista não cobriu? Escreva aqui." value={record.notes} onChange={(event) => setRecord((current) => ({ ...current, notes: event.target.value }))} /></div>
             <div className="grid gap-2 text-sm sm:grid-cols-2">
-              {[["Ponto", record.answers.codigo], ["Local", record.answers.endereco], ["Data da checagem", formatDate(localToday())], ["Sub-regional", regional || "Não identificada"], ["Coordenadas", coords || "Aguardando"]].map(([label, value]) => <p key={label} className="rounded-2xl bg-white px-4 py-3 dark:bg-zinc-900"><span className="block text-xs text-zinc-500">{label}</span><span className="font-medium">{String(value || "—")}</span></p>)}
+              {[["Ponto", record.answers.codigo], ["Local", record.answers.endereco], ["Data da checagem", formatDate(checkDate)], ["Sub-regional", regional || "Não identificada"], ["Coordenadas", coords || "Aguardando"]].map(([label, value]) => <p key={label} className="rounded-2xl bg-white px-4 py-3 dark:bg-zinc-900"><span className="block text-xs text-zinc-500">{label}</span><span className="font-medium">{String(value || "—")}</span></p>)}
             </div>
             <label className={`flex cursor-pointer items-start gap-3 rounded-3xl border-2 p-4 ${record.answers.termoVistoria === "sim" ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950" : "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"}`}>
               <input type="checkbox" className="mt-1 h-5 w-5 accent-emerald-600" checked={record.answers.termoVistoria === "sim"} onChange={(event) => { setRecord((current) => ({ ...current, answers: { ...current.answers, termoVistoria: event.target.checked ? "sim" : "" } })); setError(""); }} />

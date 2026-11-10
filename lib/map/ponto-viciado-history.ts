@@ -12,6 +12,8 @@ export type PontoViciadoHistoryLink = {
   title: string;
   /** Primeira foto da revitalização concluída no app. */
   photoUrl?: string;
+  /** Fotos da revitalização concluída, sem repetir a mesma URL. */
+  photoUrls?: string[];
   /** Panfletos distribuídos, quando houve. */
   panfletos?: number;
   /** Quilos de resíduos, sem o sufixo "kg". */
@@ -24,12 +26,18 @@ function pesoKgFromObservations(observations: string): string | undefined {
   return raw || undefined;
 }
 
-function firstPhotoUrl(urls: Array<string | undefined>): string | undefined {
-  for (const url of urls) {
-    const t = url?.trim();
-    if (t) return t;
+function photoUrlsFrom(groups: Array<string[] | undefined>): string[] {
+  const seen = new Set<string>();
+  const urls: string[] = [];
+  for (const group of groups) {
+    for (const url of group ?? []) {
+      const clean = url.trim();
+      if (!clean || seen.has(clean)) continue;
+      seen.add(clean);
+      urls.push(clean);
+    }
   }
-  return undefined;
+  return urls;
 }
 
 /**
@@ -61,17 +69,15 @@ export function buildPontoViciadoHistoryIndex(
     const ev = agendaById.get(r.id);
     const obs = [r.observations, ev?.observations].filter(Boolean).join("\n");
     const panfletosRaw = r.panfletosDistribuidos ?? ev?.panfletosDistribuidos;
-    const photoUrl = firstPhotoUrl([
-      ...(r.extraPhotoUrls ?? []),
-      ...(ev?.completionPhotoDataUrls ?? []),
-    ]);
+    const photoUrls = photoUrlsFrom([r.extraPhotoUrls, ev?.completionPhotoDataUrls]);
+    const photoUrl = photoUrls[0];
     const pesoKg = pesoKgFromObservations(obs);
     const next: PontoViciadoHistoryLink = {
       agendaNumericId: r.id,
       agendaMonthYm: ym,
       date: r.date,
       title: r.title,
-      ...(photoUrl ? { photoUrl } : {}),
+      ...(photoUrl ? { photoUrl, photoUrls } : {}),
       ...(typeof panfletosRaw === "number" && panfletosRaw > 0
         ? { panfletos: panfletosRaw }
         : {}),
@@ -106,10 +112,8 @@ export function historyCardForAgendaId(
 
   const obs = [rec?.observations, ev?.observations].filter(Boolean).join("\n");
   const panfletosRaw = rec?.panfletosDistribuidos ?? ev?.panfletosDistribuidos;
-  const photoUrl = firstPhotoUrl([
-    ...(rec?.extraPhotoUrls ?? []),
-    ...(ev?.completionPhotoDataUrls ?? []),
-  ]);
+  const photoUrls = photoUrlsFrom([rec?.extraPhotoUrls, ev?.completionPhotoDataUrls]);
+  const photoUrl = photoUrls[0];
   const pesoKg = pesoKgFromObservations(obs);
 
   return {
@@ -117,7 +121,7 @@ export function historyCardForAgendaId(
     agendaMonthYm: ym,
     date,
     title: rec?.title || ev?.title || "Ação realizada",
-    ...(photoUrl ? { photoUrl } : {}),
+    ...(photoUrl ? { photoUrl, photoUrls } : {}),
     ...(typeof panfletosRaw === "number" && panfletosRaw > 0
       ? { panfletos: panfletosRaw }
       : {}),

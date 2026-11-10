@@ -5,6 +5,11 @@ import catalog from "@/data/features-PV.json";
 
 const catalogueCodes = new Set(catalog.features.map((point) => point.setor));
 
+export function subscribeAllDiagnostics(next: (records: Diagnostic[]) => void, error: (error: Error) => void) {
+  return onSnapshot(collection(getFirebaseDb(), DIAGNOSTICOS_COLLECTION),
+    (snapshot) => next(snapshot.docs.map((d) => ({ ...d.data(), id: d.id }) as Diagnostic)), error);
+}
+
 export function subscribeDiagnostics(period: string, next: (records: Diagnostic[]) => void, error: (error: Error) => void) {
   return onSnapshot(query(collection(getFirebaseDb(), DIAGNOSTICOS_COLLECTION), where("period", "==", period)),
     (snapshot) => next(snapshot.docs.map((d) => ({ ...d.data(), id: d.id }) as Diagnostic).sort(sortDiagnostics)), error);

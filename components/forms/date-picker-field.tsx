@@ -23,6 +23,10 @@ type Props = {
   className?: string;
   required?: boolean;
   invalid?: boolean;
+  /** yyyy-MM-dd inclusive. Dias anteriores ficam indisponíveis. */
+  min?: string;
+  /** yyyy-MM-dd inclusive. Dias posteriores ficam indisponíveis. */
+  max?: string;
 };
 
 /** Evita deslocamento de fuso ao interpretar yyyy-MM-dd */
@@ -40,11 +44,19 @@ export function DatePickerField({
   className,
   required,
   invalid,
+  min,
+  max,
 }: Props) {
   const selected = parseIsoDate(value);
   const label = selected
     ? format(selected, "dd/MM/yyyy", { locale: ptBR })
     : placeholder;
+  const earliest = parseIsoDate(min ?? "");
+  const latest = parseIsoDate(max ?? "");
+  const disabledDays = [
+    ...(earliest ? [{ before: earliest }] : []),
+    ...(latest ? [{ after: latest }] : []),
+  ];
 
   return (
     <Popover>
@@ -75,6 +87,7 @@ export function DatePickerField({
           }}
           locale={ptBR}
           initialFocus
+          disabled={disabledDays.length ? disabledDays : undefined}
         />
       </PopoverContent>
     </Popover>

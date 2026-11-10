@@ -252,9 +252,6 @@ function buildPoints(): { markers: MapDisplayPoint[]; polygons: MapPolygon[] } {
             label: "Status",
             value: statusLabelPt(st, f.status),
           },
-          ...(frequencia
-            ? [{ label: "Frequência", value: frequencia }]
-            : []),
         ],
       };
     }),

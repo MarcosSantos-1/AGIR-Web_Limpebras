@@ -2,7 +2,7 @@ import { strict as assert } from "node:assert";
 import { test } from "node:test";
 import { FIELDS, newDiagnostic } from "../lib/diagnosticos";
 import { buildLevantamentoWorkbook } from "../lib/levantamento-workbook";
-import { orderedExportRows, periodDates, surveyProgress } from "../lib/levantamentos";
+import { orderedExportRows, periodDates, periodIsoRange, surveyProgress } from "../lib/levantamentos";
 import { mergeSurveyRows } from "../lib/levantamento-rows";
 
 test("progress counts completed points rather than fields or duplicate diagnostics", () => {
@@ -40,6 +40,8 @@ test("workbook keeps exactly A:AW, original headers, typed values and new points
 test("quarter dates include correct month and leap-year boundaries", () => {
   assert.equal(periodDates("2026-T4"), "01/10/2026 — 31/12/2026");
   assert.equal(periodDates("2024-T1"), "01/01/2024 — 31/03/2024");
+  assert.deepEqual(periodIsoRange("2026-T4"), { start: "2026-10-01", end: "2026-12-31" });
+  assert.equal(periodIsoRange("2024-T1")?.end, "2024-03-31");
 });
 
 test("historical edits replace the same source row even after correcting a point code", () => {

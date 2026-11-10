@@ -32,11 +32,25 @@ export function periodLabel(period: string) {
   return `${quarter}º trimestre de ${year}`;
 }
 export function periodDates(period: string) {
-  const [year, quarter] = period.split("-T").map(Number);
-  const start = (quarter - 1) * 3 + 1;
-  const end = quarter * 3;
-  const last = new Date(Date.UTC(year, end, 0)).getUTCDate();
-  return `01/${String(start).padStart(2, "0")}/${year} — ${last}/${String(end).padStart(2, "0")}/${year}`;
+  const range = periodIsoRange(period);
+  if (!range) return period;
+  const [start, end] = [range.start, range.end].map((iso) => iso.split("-").reverse().join("/"));
+  return `${start} — ${end}`;
+}
+
+/** Limites inclusivos do trimestre, em yyyy-MM-dd. */
+export function periodIsoRange(period: string): { start: string; end: string } | null {
+  const match = /^(\d{4})-T([1-4])$/.exec(period);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const quarter = Number(match[2]);
+  const startMonth = (quarter - 1) * 3 + 1;
+  const endMonth = quarter * 3;
+  const last = new Date(Date.UTC(year, endMonth, 0)).getUTCDate();
+  return {
+    start: `${match[1]}-${String(startMonth).padStart(2, "0")}-01`,
+    end: `${match[1]}-${String(endMonth).padStart(2, "0")}-${String(last).padStart(2, "0")}`,
+  };
 }
 export function newestByPoint(records: Diagnostic[]) {
   const index = new Map<string, Diagnostic>();

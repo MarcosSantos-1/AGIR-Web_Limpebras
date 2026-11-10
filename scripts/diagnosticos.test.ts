@@ -2,6 +2,8 @@ import { strict as assert } from "node:assert";
 import { test } from "node:test";
 import historical from "../data/diagnosticos/historical.json";
 import { FIELDS, diagnosticErrors, fieldVersion, newDiagnostic, periodForDate, type Diagnostic } from "../lib/diagnosticos";
+import { latestCompletedByPoint, mapStatusFromDiagnostic } from "../lib/map/diagnostic-map-status";
+import { classifyPontoViciado } from "../lib/map/ponto-viciado-visual";
 import { activityChoices, impactChoices, materializeVistoria, volumeChoices } from "../lib/vistoria-form";
 import { fichaOptions } from "../lib/ponto-ficha";
 import { sanitizeStorageObjectKey } from "../lib/storage/storage-object-key";
@@ -218,4 +220,18 @@ test("unchanged historical alternatives can be preserved while editing but must 
 test("photo storage supports diagnostics while rejecting traversal", () => {
   assert.equal(sanitizeStorageObjectKey("diagnosticos/uuid/photo.jpg"), "diagnosticos/uuid/photo.jpg");
   assert.equal(sanitizeStorageObjectKey("diagnosticos/../photo.jpg"), null);
+});
+
+test("the latest completed diagnostic sets the map point inactive without hiding a revitalization", () => {
+  const older = visit();
+  older.pointId = "MG-173";
+  older.state = "concluido";
+  older.answers = { ...older.answers, codigo: "MG-173", dataChecagem: "2026-10-02", statusTrimestral: "Esteve “ativo”, recebeu descarte irregular de resíduos." };
+  const latest = { ...older, id: "newer", updatedAtMs: 20, answers: { ...older.answers, dataChecagem: "2026-11-01", statusTrimestral: "Permaneceu “inativo”, não recebeu descarte irregular de resíduos." } };
+  const byPoint = latestCompletedByPoint([older, latest, { ...latest, id: "draft", state: "rascunho" }]);
+  assert.equal(mapStatusFromDiagnostic(byPoint.get("MG-173")), "inativo");
+  assert.equal(classifyPontoViciado({ status: "inativo", volumetria: "Mais de 5 m³", revitalizadoNoSistema: true }), "inativo");
+  const active = { ...latest, answers: { ...latest.answers, statusTrimestral: "Esteve “ativo”, recebeu descarte irregular de resíduos." } };
+  assert.equal(mapStatusFromDiagnostic(active), "ativo");
+  assert.equal(classifyPontoViciado({ status: "ativo", revitalizadoNoSistema: true }), "revitalizado");
 });

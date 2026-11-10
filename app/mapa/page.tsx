@@ -8,6 +8,7 @@ import Link from "next/link";
 import {
   Plus,
   Layers,
+  CircleDot,
   MapPin,
   AlertTriangle,
   Trash2,
@@ -58,6 +59,7 @@ import {
   resolveMapaItem,
   agendaEventsToMapDisplayPoints,
   type MapDisplayPoint,
+  type MapaStatus,
   type MapPolygon,
 } from "@/lib/map-features";
 import { SubregionalSelectField } from "@/components/forms/subregional-select-field";
@@ -100,6 +102,9 @@ import { useNovaAcao } from "@/components/acao/nova-acao-provider";
 import { subscribeHistoryRecords } from "@/lib/firestore/history";
 import type { HistoryRecordDoc } from "@/data/history-records";
 import { PontoDiagnosticoCard } from "@/components/map/ponto-diagnostico-card";
+import { subscribeAllDiagnostics } from "@/lib/firestore/diagnosticos";
+import type { Diagnostic } from "@/lib/diagnosticos";
+import { latestCompletedByPoint, mapStatusFromDiagnostic } from "@/lib/map/diagnostic-map-status";
 import { PontoFichaFields } from "@/components/pontos/ponto-ficha-fields";
 import { buildPontoViciadoHistoryIndex, historyCardForAgendaId } from "@/lib/map/ponto-viciado-history";
 import {
@@ -321,6 +326,7 @@ function MapaPageContent() {
   } = useCustomPontosViciados();
 
   const [historyRecords, setHistoryRecords] = useState<HistoryRecordDoc[]>([]);
+  const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
 
   useEffect(() => {
     return subscribeHistoryRecords(
@@ -329,10 +335,25 @@ function MapaPageContent() {
     );
   }, []);
 
+  useEffect(() => subscribeAllDiagnostics(setDiagnostics, () => setDiagnostics([])), []);
+
   const pvHistoryByCodigo = useMemo(
     () => buildPontoViciadoHistoryIndex(historyRecords, agendaEvents),
     [historyRecords, agendaEvents],
   );
+
+  const diagnosticStatusByCode = useMemo(() => {
+    const latest = latestCompletedByPoint(diagnostics);
+    const out = new Map<string, Extract<MapaStatus, "ativo" | "inativo">>();
+    for (const [code, record] of latest) {
+      const status = mapStatusFromDiagnostic(record);
+      if (status) out.set(code, status);
+    }
+    return out;
+  }, [diagnostics]);
+
+  const statusForPoint = (id: string, catalogue: MapaStatus): MapaStatus =>
+    diagnosticStatusByCode.get(id.toUpperCase()) ?? catalogue;
 
   const [selectedTypes, setSelectedTypes] = useState<string[]>([
     ...DEFAULT_MAP_LAYER_TYPES,
@@ -468,14 +489,14 @@ function MapaPageContent() {
       out.set(
         p.id,
         classifyPontoViciado({
-          status: p.status,
+          status: diagnosticStatusByCode.get(p.id.toUpperCase()) ?? p.status,
           volumetria: p.volumetria,
           revitalizadoNoSistema: pvHistoryByCodigo.has(p.id.toUpperCase()),
         }),
       );
     }
     return out;
-  }, [allMarkers, pvHistoryByCodigo]);
+  }, [allMarkers, diagnosticStatusByCode, pvHistoryByCodigo]);
 
   const { filteredMarkers, filteredPolygons, visibleCount } = useMemo(() => {
     const markers = allMarkers.filter((p) => {
@@ -505,11 +526,11 @@ function MapaPageContent() {
           position: p.position,
           recurrent: p.recurrent,
           occurrences: p.occurrences,
-          status: p.status,
+          status: p.type === "ponto-viciado" ? diagnosticStatusByCode.get(p.id.toUpperCase()) ?? p.status : p.status,
           color: faixa ? PV_FAIXA_VISUAL[faixa].hex : undefined,
         };
       }),
-    [filteredMarkers, faixaByMarkerId],
+    [diagnosticStatusByCode, filteredMarkers, faixaByMarkerId],
   );
 
   const selectedItem: MapItem | null = resolveMapaItem(
@@ -1453,6 +1474,14 @@ function MapaPageContent() {
                     </span>
                   </div>
                 ) : null}
+                {selectedItem.type === "ponto-viciado" ? (
+                  <div className="flex items-center gap-3 text-sm">
+                    <CircleDot className="h-4 w-4 shrink-0 text-zinc-400" />
+                    <span className="text-zinc-600 dark:text-zinc-300">
+                      Status: {({ inativo: "Inativo", resolvido: "Revitalizado", ativo: "Ativo", "em-andamento": "Em andamento", recorrente: "Recorrente" } as const)[statusForPoint(selectedItem.id, selectedItem.status)]}
+                    </span>
+                  </div>
+                ) : null}
                 {"serviceDateTimeBr" in selectedItem &&
                 selectedItem.serviceDateTimeBr ? (
                   <div className="flex items-center gap-3 text-sm">
@@ -1526,7 +1555,7 @@ function MapaPageContent() {
                 {(() => {
                   const lines = (selectedItem.detailLines ?? []).filter((d) => {
                     if (d.label === "Nº de limpezas") return false;
-                    if (d.label === "Volumetria" && selectedItem.type === "ponto-viciado") return false;
+                    if (selectedItem.type === "ponto-viciado" && (d.label === "Volumetria" || d.label === "Frequência" || d.label === "Status")) return false;
                     return true;
                   });
                   if (!lines.length) return null;
@@ -1562,23 +1591,24 @@ function MapaPageContent() {
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        {card.photoUrl ? (
-                          <img
-                            src={card.photoUrl}
-                            alt=""
-                            className="h-32 w-full object-cover"
-                          />
+                        {(card.photoUrls ?? (card.photoUrl ? [card.photoUrl] : [])).length ? (
+                          <div className={`grid gap-0.5 ${(card.photoUrls?.length ?? 1) > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+                            {(card.photoUrls ?? [card.photoUrl!]).slice(0, 4).map((url) => (
+                              <img key={url} src={url} alt="Foto da revitalização" className="h-28 w-full object-cover" />
+                            ))}
+                          </div>
                         ) : (
                           <div className="flex h-16 items-center justify-center bg-zinc-100 text-zinc-400 dark:bg-zinc-800">
                             <History className="h-5 w-5" />
                           </div>
                         )}
                         <div className="space-y-1 p-3">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Histórico</p>
                           <p className="text-sm font-medium text-zinc-800 dark:text-zinc-100">
                             {card.title}
                           </p>
                           <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                            {formatDateBr(card.date)}
+                            {isPv ? "Data da revitalização" : "Data"}: {formatDateBr(card.date)}
                           </p>
                           <p className="text-xs font-medium text-orange-600 dark:text-orange-400">
                             Abrir no histórico
